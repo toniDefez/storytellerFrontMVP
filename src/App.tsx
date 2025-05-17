@@ -3,6 +3,7 @@ import LoginPage from './pages/login/LoginPage'
 import MainLayout from './layouts/MainLayout'
 import RegisterPage from './pages/register/RegisterPage'
 import HomePage from './pages/home/HomePage'
+import CreateWorldPage from './pages/home/CreateWorldPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<MainLayout />}>
           <Route path="worlds" element={<HomePage />} />
+          <Route path="worlds/create" element={<CreateWorldPage />} />
         </Route>
       </Route>
 
