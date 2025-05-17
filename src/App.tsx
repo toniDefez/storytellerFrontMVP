@@ -1,10 +1,11 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import LoginPage from './pages/login/LoginPage'
 import MainLayout from './layouts/MainLayout'
 import RegisterPage from './pages/register/RegisterPage'
 import HomePage from './pages/home/HomePage'
 import CreateWorldPage from './pages/home/CreateWorldPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import NotFoundPage from './pages/NotFoundPage'
 
 function App() {
   return (
@@ -22,7 +23,7 @@ function App() {
       </Route>
 
       {/* Redirección por defecto */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }
