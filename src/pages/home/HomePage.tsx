@@ -12,6 +12,7 @@ interface World {
   politics: string
   culture: string
   factions: string[]
+  description: string
 }
 
 export default function HomePage() {
@@ -74,12 +75,14 @@ export default function HomePage() {
         {worlds.map(world => (
           <WorldCard
             key={world.id}
+            id={world.id}
             name={world.name}
             era={world.era}
             climate={world.climate}
             politics={world.politics}
             culture={world.culture}
             factions={world.factions}
+            description={world.description}
           />
         ))}
       </div>

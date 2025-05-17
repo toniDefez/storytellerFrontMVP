@@ -6,6 +6,7 @@ import HomePage from './pages/home/HomePage'
 import CreateWorldPage from './pages/home/CreateWorldPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import NotFoundPage from './pages/NotFoundPage'
+import WorldDetailPage from './pages/home/WorldDetailPage'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/" element={<MainLayout />}>
           <Route path="worlds" element={<HomePage />} />
           <Route path="worlds/create" element={<CreateWorldPage />} />
+          <Route path="worlds/:id" element={<WorldDetailPage />} />
         </Route>
       </Route>
 
