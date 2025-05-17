@@ -10,6 +10,7 @@ interface World {
   politics: string;
   culture: string;
   factions: string[];
+  description: string;
 }
 
 export default function CreateWorldPage() {
@@ -21,8 +22,8 @@ export default function CreateWorldPage() {
   const [politics, setPolitics] = useState('')
   const [culture, setCulture] = useState('')
   const [factions, setFactions] = useState<string[]>([''])
-  // AI fields
   const [description, setDescription] = useState('')
+  // AI fields
   const [aiLoading, setAiLoading] = useState(false)
   const [aiWorld, setAiWorld] = useState<World | null>(null)
   // Common
@@ -42,13 +43,13 @@ export default function CreateWorldPage() {
     setError('')
     const token = localStorage.getItem('token')
     try {
-      const res = await fetch(`${API_URL}/worlds`, {
+      const res = await fetch(`${API_URL}/world`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name, era, climate, politics, culture, factions: factions.filter(f => f.trim()) }),
+        body: JSON.stringify({ name, era, climate, politics, culture, factions: factions.filter(f => f.trim()), description }),
       })
       if (res.ok) {
         navigate('/worlds')
@@ -120,12 +121,12 @@ export default function CreateWorldPage() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-[80vh] bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100">
-      <div className="bg-white/90 shadow-2xl rounded-2xl px-10 pt-10 pb-8 w-full max-w-xl border border-gray-200 backdrop-blur-md">
+    <div className="flex justify-center md:justify-start items-center min-h-[80vh] bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 px-4 md:px-10">
+      <div className="w-full max-w-xl mx-auto bg-white/90 shadow-2xl rounded-2xl px-10 pt-10 pb-8 border border-gray-200 backdrop-blur-md">
         <h2 className="text-3xl font-extrabold mb-8 text-center text-purple-800 tracking-tight drop-shadow">Crear nuevo mundo</h2>
         <div className="flex justify-center gap-4 mb-8">
-          <button onClick={() => setMode('manual')} className={`px-4 py-2 rounded-lg font-bold transition ${mode === 'manual' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-purple-100'}`}>Manual</button>
-          <button onClick={() => setMode('ai')} className={`px-4 py-2 rounded-lg font-bold transition ${mode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-purple-100'}`}>Generar con IA</button>
+          <button onClick={() => setMode('manual')} type="button" className={`px-4 py-2 rounded-lg font-bold transition ${mode === 'manual' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-purple-100'}`}>Manual</button>
+          <button onClick={() => setMode('ai')} type="button" className={`px-4 py-2 rounded-lg font-bold transition ${mode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-purple-100'}`}>Generar con IA</button>
         </div>
         {error && <p className="mb-4 text-red-600 text-sm text-center font-semibold">{error}</p>}
         {mode === 'manual' && (
@@ -149,6 +150,10 @@ export default function CreateWorldPage() {
             <div className="mb-4">
               <label className="block text-gray-700 mb-1 font-medium">Cultura</label>
               <input type="text" value={culture} onChange={e => setCulture(e.target.value)} className="w-full border rounded-lg px-3 py-2" required />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-1 font-medium">Descripción</label>
+              <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full border rounded-lg px-3 py-2 min-h-[80px]" required />
             </div>
             <div className="mb-6">
               <label className="block text-gray-700 mb-1 font-medium">Facciones</label>

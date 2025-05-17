@@ -62,24 +62,27 @@ export default function HomePage() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 p-4 xl:p-10">
-      {/* Card para crear mundo */}
-      <div onClick={() => navigate('/worlds/create')} className="flex flex-col items-center justify-center border-2 border-dashed border-purple-300 rounded-2xl bg-white/70 shadow-md p-8 hover:shadow-xl cursor-pointer transition group">
-        <svg className="h-12 w-12 text-purple-400 group-hover:text-purple-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-        <span className="text-lg font-semibold text-purple-700 group-hover:text-purple-900">Crear nuevo mundo</span>
+    <>
+      <h1 className="text-3xl font-bold mb-6">Panel de Control</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Card para crear mundo */}
+        <div onClick={() => navigate('/worlds/create')} className="flex flex-col items-center justify-center border-2 border-dashed border-purple-300 rounded-2xl bg-white/70 shadow-md p-8 hover:shadow-xl cursor-pointer transition group">
+          <svg className="h-12 w-12 text-purple-400 group-hover:text-purple-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+          <span className="text-lg font-semibold text-purple-700 group-hover:text-purple-900">Crear nuevo mundo</span>
+        </div>
+        {/* Cards de mundos */}
+        {worlds.map(world => (
+          <WorldCard
+            key={world.id}
+            name={world.name}
+            era={world.era}
+            climate={world.climate}
+            politics={world.politics}
+            culture={world.culture}
+            factions={world.factions}
+          />
+        ))}
       </div>
-      {/* Cards de mundos */}
-      {worlds.map(world => (
-        <WorldCard
-          key={world.id}
-          name={world.name}
-          era={world.era}
-          climate={world.climate}
-          politics={world.politics}
-          culture={world.culture}
-          factions={world.factions}
-        />
-      ))}
-    </div>
+    </>
   )
 }

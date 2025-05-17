@@ -51,7 +51,7 @@ export default function MainLayout() {
       )}
 
       {/* Contenido */}
-      <main className="flex-1 p-0 md:p-6 md:ml-64 xl:ml-80 transition-all duration-300 max-w-full xl:max-w-6xl mx-auto">
+      <main className="flex-1 transition-all duration-300 p-6">
         {/* Topbar for mobile */}
         <div className="md:hidden flex items-center justify-between bg-white/80 shadow px-4 py-3 sticky top-0 z-10">
           <button onClick={() => setSidebarOpen(true)} className="text-gray-700 hover:text-purple-700">
@@ -68,7 +68,9 @@ export default function MainLayout() {
         </header>
         {/* Renderiza aquí las páginas */}
         <div className="mt-4 xl:mt-10 xl:px-10">
-          <Outlet />
+          <div className="max-w-6xl mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>
