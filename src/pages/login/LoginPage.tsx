@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import EmailInput from '../../components/EmailInput'
 import PasswordInput from '../../components/PasswordInput'
+import ErrorModal from '../../components/ErrorModal'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [showErrorModal, setShowErrorModal] = useState(false)
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,6 +25,7 @@ export default function LoginPage() {
       localStorage.setItem('token', token)
       navigate('/worlds')
     } else {
+      setShowErrorModal(true)
       setError('Credenciales incorrectas')
     }
   }
@@ -73,6 +76,14 @@ export default function LoginPage() {
           </Link>
         </p>
       </form>
+
+      <ErrorModal
+        open={showErrorModal}
+        title="Error de inicio de sesión"
+        message={error || 'No se pudo iniciar sesión. Inténtalo de nuevo.'}
+        buttonText="Cerrar"
+        onClose={() => setShowErrorModal(false)}
+      />
     </div>
   )
 }
