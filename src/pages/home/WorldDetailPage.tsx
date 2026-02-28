@@ -1,108 +1,135 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-
-interface World {
-  id: number
-  name: string
-  era: string
-  climate: string
-  politics: string
-  culture: string
-  factions: string[]
-  description: string
-}
+import { getWorldDetail, deleteWorld } from '../../services/api'
+import type { WorldDetail } from '../../services/api'
 
 export default function WorldDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [world, setWorld] = useState<World | null>(null)
+  const [detail, setDetail] = useState<WorldDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    fetch(`${API_URL}/world/get?id=${id}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(data => {
-        setWorld(data)
-        setLoading(false)
-      })
-      .catch(() => {
-        setError('No se pudo cargar el mundo.')
-        setLoading(false)
-      })
+    if (!id) return
+    getWorldDetail(Number(id))
+      .then(setDetail)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
   }, [id])
 
   const handleDelete = async () => {
     if (!window.confirm('¿Seguro que quieres borrar este mundo?')) return
-    const token = localStorage.getItem('token')
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/worlds/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (res.ok) {
-        navigate('/worlds')
-      } else {
-        setError('No se pudo borrar el mundo.')
-      }
+      await deleteWorld(Number(id))
+      navigate('/worlds')
     } catch {
       setError('No se pudo borrar el mundo.')
-    } finally {
       setLoading(false)
     }
   }
 
   if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando mundo...</div>
   if (error) return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
-  if (!world) return null
+  if (!detail) return null
+
+  const { world, characters, scenes } = detail
 
   return (
-    <div className="max-w-3xl mx-auto bg-white/90 shadow-2xl rounded-2xl p-8 mt-8 border border-gray-200">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-extrabold text-purple-800">{world.name}</h2>
-        <div className="flex gap-2">
-          <button onClick={() => navigate(`/worlds/${id}/edit`)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold">Editar</button>
+    <div className="max-w-4xl mx-auto space-y-8 mt-8">
+      {/* World Info */}
+      <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-3xl font-extrabold text-purple-800">{world.name}</h2>
           <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold">Borrar</button>
         </div>
-      </div>
-      <div className="mb-4"><span className="font-semibold">Era:</span> {world.era}</div>
-      <div className="mb-4"><span className="font-semibold">Clima:</span> {world.climate}</div>
-      <div className="mb-4"><span className="font-semibold">Política:</span> {world.politics}</div>
-      <div className="mb-4"><span className="font-semibold">Cultura:</span> {world.culture}</div>
-      <div className="mb-4"><span className="font-semibold">Descripción:</span> {world.description}</div>
-      <div className="mb-4"><span className="font-semibold">Facciones:</span>
-        <ul className="list-disc list-inside ml-4">
-          {world.factions.map(f => <li key={f}>{f}</li>)}
-        </ul>
-      </div>
-      <hr className="my-8" />
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-xl font-bold text-purple-700">Personajes</h3>
-          <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded font-semibold">+ Añadir personaje</button>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div><span className="font-semibold text-gray-700">Era:</span> {world.era}</div>
+          <div><span className="font-semibold text-gray-700">Clima:</span> {world.climate}</div>
+          <div><span className="font-semibold text-gray-700">Política:</span> {world.politics}</div>
+          <div><span className="font-semibold text-gray-700">Cultura:</span> {world.culture}</div>
         </div>
-        {/* Aquí iría la lista de personajes del mundo */}
-        <div className="text-gray-500 italic">(Próximamente: listado de personajes)</div>
+        {world.description && (
+          <div className="mb-4"><span className="font-semibold text-gray-700">Descripción:</span> {world.description}</div>
+        )}
+        {world.factions && world.factions.length > 0 && (
+          <div>
+            <span className="font-semibold text-gray-700">Facciones:</span>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {world.factions.map(f => (
+                <span key={f} className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">{f}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-xl font-bold text-purple-700">Escenas</h3>
-          <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded font-semibold">+ Añadir escena</button>
+
+      {/* Characters Section */}
+      <div className="bg-white/90 shadow-xl rounded-2xl p-8 border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-purple-700">Personajes ({characters?.length || 0})</h3>
+          <Link
+            to={`/worlds/${id}/characters/create`}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm"
+          >
+            + Crear personaje
+          </Link>
         </div>
-        {/* Aquí iría la lista de escenas del mundo */}
-        <div className="text-gray-500 italic">(Próximamente: listado de escenas)</div>
+        {!characters || characters.length === 0 ? (
+          <p className="text-gray-500 italic">Aún no hay personajes en este mundo.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {characters.map(c => (
+              <div key={c.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition">
+                <h4 className="font-bold text-gray-800">{c.name}</h4>
+                <p className="text-sm text-purple-600">{c.role}</p>
+                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{c.personality}</p>
+                {c.goals && c.goals.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {c.goals.slice(0, 2).map((g, i) => (
+                      <span key={i} className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs">{g}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Scenes Section */}
+      <div className="bg-white/90 shadow-xl rounded-2xl p-8 border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-purple-700">Escenas ({scenes?.length || 0})</h3>
+          <Link
+            to={`/worlds/${id}/scenes/create`}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm"
+          >
+            + Crear escena
+          </Link>
+        </div>
+        {!scenes || scenes.length === 0 ? (
+          <p className="text-gray-500 italic">Aún no hay escenas en este mundo.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {scenes.map(s => (
+              <Link
+                key={s.id}
+                to={`/worlds/${id}/scenes/${s.id}`}
+                className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition block"
+              >
+                <h4 className="font-bold text-gray-800">{s.title}</h4>
+                <div className="flex flex-wrap gap-2 mt-1 text-sm">
+                  <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded">{s.location}</span>
+                  <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{s.time}</span>
+                  <span className="bg-pink-50 text-pink-700 px-2 py-0.5 rounded">{s.tone}</span>
+                </div>
+                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{s.context}</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

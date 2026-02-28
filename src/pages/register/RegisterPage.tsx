@@ -4,6 +4,7 @@ import SuccessModal from '../../components/SuccessModal'
 import { validateEmail, validatePassword } from '../../utils/validation'
 import EmailInput from '../../components/EmailInput'
 import PasswordInput from '../../components/PasswordInput'
+import { register } from '../../services/api'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -38,19 +39,11 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
     if (!validate()) return
-
-    const res = await fetch('http://localhost:8080/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username:email, password }),
-    })
-
-    if (res.ok) {
+    try {
+      await register(email, password)
       setShowSuccess(true)
-      // Redirige después de cerrar el modal
-    } else {
-      const { message } = await res.json()
-      setError(message || 'Error al registrar usuario')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al registrar usuario')
     }
   }
 

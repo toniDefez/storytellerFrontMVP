@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import EmailInput from '../../components/EmailInput'
 import PasswordInput from '../../components/PasswordInput'
 import ErrorModal from '../../components/ErrorModal'
+import { login } from '../../services/api'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -13,18 +14,11 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    const res = await fetch('http://localhost:8080/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username:email, password }),
-    })
-
-    if (res.ok) {
-      const { token } = await res.json()
-      localStorage.setItem('token', token)
+    try {
+      const data = await login(email, password)
+      localStorage.setItem('token', data.token)
       navigate('/worlds')
-    } else {
+    } catch {
       setShowErrorModal(true)
       setError('Credenciales incorrectas')
     }

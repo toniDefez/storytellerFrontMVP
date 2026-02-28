@@ -1,5 +1,5 @@
 // src/layouts/MainLayout.tsx
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 
 export default function MainLayout() {
@@ -24,15 +24,12 @@ export default function MainLayout() {
           </button>
         </div>
         <nav className="flex flex-col gap-1 flex-1">
-          <a href="/worlds" className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-purple-700 transition font-semibold text-lg xl:text-xl">
+          <Link to="/worlds" className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-purple-700 transition font-semibold text-lg xl:text-xl">
             <span className="text-2xl">🌍</span> Mundos
-          </a>
-          <a href="/characters" className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-purple-700 transition font-semibold text-lg xl:text-xl">
-            <span className="text-2xl">🧑‍🎤</span> Personajes
-          </a>
-          <a href="/scenes" className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-purple-700 transition font-semibold text-lg xl:text-xl">
-            <span className="text-2xl">🎬</span> Escenas
-          </a>
+          </Link>
+          <Link to="/settings/installation" className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-purple-700 transition font-semibold text-lg xl:text-xl">
+            <span className="text-2xl">⚙️</span> Instalación
+          </Link>
         </nav>
         <div className="mt-8 pt-4 border-t border-white/20">
           <button

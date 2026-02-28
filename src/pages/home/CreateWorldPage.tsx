@@ -1,17 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-
-interface World {
-  name: string;
-  era: string;
-  climate: string;
-  politics: string;
-  culture: string;
-  factions: string[];
-  description: string;
-}
+import { createWorld, generateWorld } from '../../services/api'
+import type { World } from '../../services/api'
 
 export default function CreateWorldPage() {
   const [mode, setMode] = useState<'manual' | 'ai'>('manual')
@@ -41,24 +31,11 @@ export default function CreateWorldPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const token = localStorage.getItem('token')
     try {
-      const res = await fetch(`${API_URL}/world`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name, era, climate, politics, culture, factions: factions.filter(f => f.trim()), description }),
-      })
-      if (res.ok) {
-        navigate('/worlds')
-      } else {
-        const data = await res.json()
-        setError(data?.error || 'No se pudo crear el mundo.')
-      }
-    } catch {
-      setError('No se pudo crear el mundo.')
+      await createWorld({ name, era, climate, politics, culture, factions: factions.filter(f => f.trim()), description })
+      navigate('/worlds')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear el mundo.')
     } finally {
       setLoading(false)
     }
@@ -69,25 +46,11 @@ export default function CreateWorldPage() {
     setAiLoading(true)
     setError('')
     setAiWorld(null)
-    const token = localStorage.getItem('token')
     try {
-      const res = await fetch(`${API_URL}/world/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ description }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setAiWorld(data)
-      } else {
-        const data = await res.json()
-        setError(data?.error || 'No se pudo generar el mundo.')
-      }
-    } catch {
-      setError('No se pudo generar el mundo.')
+      const world = await generateWorld(description)
+      setAiWorld(world)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se pudo generar el mundo.')
     } finally {
       setAiLoading(false)
     }
@@ -97,24 +60,19 @@ export default function CreateWorldPage() {
     if (!aiWorld) return
     setLoading(true)
     setError('')
-    const token = localStorage.getItem('token')
     try {
-      const res = await fetch(`${API_URL}/world`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(aiWorld),
+      await createWorld({
+        name: aiWorld.name,
+        era: aiWorld.era,
+        climate: aiWorld.climate,
+        politics: aiWorld.politics,
+        culture: aiWorld.culture,
+        factions: aiWorld.factions || [],
+        description: aiWorld.description || '',
       })
-      if (res.ok) {
-        navigate('/worlds')
-      } else {
-        const data = await res.json()
-        setError(data?.error || 'No se pudo crear el mundo.')
-      }
-    } catch {
-      setError('No se pudo crear el mundo.')
+      navigate('/worlds')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear el mundo.')
     } finally {
       setLoading(false)
     }
