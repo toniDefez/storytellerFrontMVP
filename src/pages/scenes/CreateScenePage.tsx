@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { createScene, generateScene } from '../../services/api'
 import type { Scene } from '../../services/api'
+import { useInstallation } from '../../hooks/useInstallation'
+import NoInstallationBanner from '../../components/NoInstallationBanner'
 
 export default function CreateScenePage() {
   const { id: worldId } = useParams()
@@ -23,6 +25,7 @@ export default function CreateScenePage() {
   // Common
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const { hasInstallation, checked: installationChecked } = useInstallation()
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -123,6 +126,7 @@ export default function CreateScenePage() {
 
         {mode === 'ai' && (
           <div>
+            {installationChecked && !hasInstallation && <NoInstallationBanner />}
             <form onSubmit={handleAIGenerate}>
               <div className="mb-6">
                 <label className="block text-gray-700 mb-1 font-medium">Describe la escena que quieres crear</label>

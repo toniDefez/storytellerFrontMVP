@@ -220,6 +220,25 @@ export function getSceneNarrative(sceneId: number) {
 
 // --- Installation ---
 
+export interface Installation {
+  id: number
+  user_id: number
+  machine_name: string
+  os: string
+  arch: string
+  version: string
+  ip: string
+  port: number
+  status: string
+  last_seen_at: string
+  created_at: string
+  channel_id: string
+}
+
+export function getMyInstallation() {
+  return request<Installation>('/installation/me')
+}
+
 export function getLinkingToken() {
   return request<{ token: string }>('/installation/linking-token')
 }

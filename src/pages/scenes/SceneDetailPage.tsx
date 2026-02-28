@@ -9,6 +9,8 @@ import {
   getWorldDetail,
 } from '../../services/api'
 import type { SceneDetail, Character, Event as StoryEvent } from '../../services/api'
+import { useInstallation } from '../../hooks/useInstallation'
+import NoInstallationBanner from '../../components/NoInstallationBanner'
 
 export default function SceneDetailPage() {
   const { worldId, sceneId } = useParams()
@@ -31,6 +33,8 @@ export default function SceneDetailPage() {
   // Narrative
   const [narrative, setNarrative] = useState<string | null>(null)
   const [generatingNarrative, setGeneratingNarrative] = useState(false)
+
+  const { hasInstallation, checked: installationChecked } = useInstallation()
 
   useEffect(() => {
     if (!sceneId || !worldId) return
@@ -208,6 +212,7 @@ export default function SceneDetailPage() {
         )}
 
         {/* Generate Events Form */}
+        {installationChecked && !hasInstallation && <NoInstallationBanner />}
         <form onSubmit={handleGenerateEvents} className="p-4 bg-gray-50 rounded-lg border">
           <h4 className="font-semibold text-gray-700 mb-3">Generar eventos con IA</h4>
           <div className="mb-3">

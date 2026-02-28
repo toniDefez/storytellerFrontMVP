@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createWorld, generateWorld } from '../../services/api'
 import type { World } from '../../services/api'
+import { useInstallation } from '../../hooks/useInstallation'
+import NoInstallationBanner from '../../components/NoInstallationBanner'
 
 export default function CreateWorldPage() {
   const [mode, setMode] = useState<'manual' | 'ai'>('manual')
@@ -20,6 +22,7 @@ export default function CreateWorldPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { hasInstallation, checked: installationChecked } = useInstallation()
 
   const handleFactionChange = (idx: number, value: string) => {
     setFactions(factions.map((f, i) => (i === idx ? value : f)))
@@ -132,6 +135,7 @@ export default function CreateWorldPage() {
         )}
         {mode === 'ai' && (
           <div>
+            {installationChecked && !hasInstallation && <NoInstallationBanner />}
             <form onSubmit={handleAIGenerate}>
               <div className="mb-6">
                 <label className="block text-gray-700 mb-1 font-medium">Describe el mundo que quieres crear</label>
