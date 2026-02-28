@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { createCharacter, generateCharacter } from '../../services/api'
 import type { Character } from '../../services/api'
+import { useInstallation } from '../../hooks/useInstallation'
+import NoInstallationBanner from '../../components/NoInstallationBanner'
 
 export default function CreateCharacterPage() {
   const { id: worldId } = useParams()
@@ -23,6 +25,7 @@ export default function CreateCharacterPage() {
   // Common
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const { hasInstallation, checked: installationChecked } = useInstallation()
 
   const handleGoalChange = (idx: number, value: string) => {
     setGoals(goals.map((g, i) => (i === idx ? value : g)))
@@ -139,6 +142,7 @@ export default function CreateCharacterPage() {
 
         {mode === 'ai' && (
           <div>
+            {installationChecked && !hasInstallation && <NoInstallationBanner />}
             <form onSubmit={handleAIGenerate}>
               <div className="mb-6">
                 <label className="block text-gray-700 mb-1 font-medium">Describe el personaje que quieres crear</label>
