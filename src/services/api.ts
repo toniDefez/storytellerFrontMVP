@@ -235,8 +235,16 @@ export interface Installation {
   channel_id: string
 }
 
-export function getMyInstallation() {
-  return request<Installation>('/installation/me')
+export async function getMyInstallation(): Promise<Installation | null> {
+  const res = await fetch(`${API_URL}/installation/me`, {
+    headers: authHeaders(),
+  })
+  if (res.status === 204) return null
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || body.message || `Error ${res.status}`)
+  }
+  return res.json()
 }
 
 export function getLinkingToken() {
