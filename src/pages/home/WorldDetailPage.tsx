@@ -1,7 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { getWorldDetail, deleteWorld } from '../../services/api'
-import type { WorldDetail } from '../../services/api'
+import type { WorldDetail, World } from '../../services/api'
 
 export default function WorldDetailPage() {
   const { id } = useParams()
@@ -20,14 +20,32 @@ export default function WorldDetailPage() {
 
     getWorldDetail(worldId)
       .then(data => {
-        // Defensive guard: API may return an empty object or malformed payload.
-        if (!data || typeof data !== 'object' || !('world' in data) || !data.world) {
+        if (!data || typeof data !== 'object') {
           throw new Error('No se encontró el mundo solicitado.')
         }
+
+        // Current backend shape:
+        // { id, name, era, climate, politics, culture, factions, summary, characters, scenes }
+        const raw = data as unknown as Record<string, unknown>
+        if (!raw.name) {
+          throw new Error('No se encontró el mundo solicitado.')
+        }
+
+        const normalizedWorld: World = {
+          id: Number(raw.id ?? worldId),
+          name: String(raw.name ?? ''),
+          era: String(raw.era ?? ''),
+          climate: String(raw.climate ?? ''),
+          politics: String(raw.politics ?? ''),
+          culture: String(raw.culture ?? ''),
+          factions: Array.isArray(raw.factions) ? (raw.factions as string[]) : [],
+          description: String(raw.summary ?? ''),
+        }
+
         setDetail({
-          world: data.world,
-          characters: Array.isArray(data.characters) ? data.characters : [],
-          scenes: Array.isArray(data.scenes) ? data.scenes : [],
+          world: normalizedWorld,
+          characters: Array.isArray(raw.characters) ? raw.characters : [],
+          scenes: Array.isArray(raw.scenes) ? raw.scenes : [],
         })
       })
       .catch(err => setError(err.message))
@@ -99,7 +117,11 @@ export default function WorldDetailPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {characters.map(c => (
-              <div key={c.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition">
+              <Link
+                key={c.id}
+                to={`/worlds/${id}/characters/${c.id}`}
+                className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition block"
+              >
                 <h4 className="font-bold text-gray-800">{c.name}</h4>
                 <p className="text-sm text-purple-600">{c.role}</p>
                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">{c.personality}</p>
@@ -110,7 +132,7 @@ export default function WorldDetailPage() {
                     ))}
                   </div>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         )}
