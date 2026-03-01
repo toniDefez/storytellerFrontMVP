@@ -7,19 +7,59 @@ import NoInstallationBanner from '../../components/NoInstallationBanner'
 import { PillSelect, MultiPillSelect } from '../../components/PillSelect'
 
 const ROLE_OPTIONS = ['Guerrero', 'Mago', 'Pícaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano']
+const ROLE_DESC: Record<string, string> = {
+  Guerrero: 'Forjado en batalla, experto en armas y estrategia de combate.',
+  Mago: 'Domina las artes arcanas, estudiando fuerzas más allá de lo mortal.',
+  Pícaro: 'Sombras como aliadas, hábil en el engaño, el robo y el sigilo.',
+  Explorador: 'Cartógrafo de lo desconocido, superviviente nato en tierras ignotas.',
+  Sanador: 'Canaliza el poder de la vida, alivia el sufrimiento y combate la muerte.',
+  Mercader: 'El oro mueve el mundo. Sabe cuándo comprar, vender... y traicionar.',
+  Noble: 'Nacido entre privilegios, navega las intrigas de la corte como pez en el agua.',
+  Sacerdote: 'Voz de su dios en el mundo mortal, árbitro de lo sagrado y lo profano.',
+  Villano: 'Fuerzas oscuras lo impulsan. Sus motivos, aunque retorcidos, tienen lógica.',
+  Artesano: 'Crea con sus manos lo que otros solo sueñan. Maestro de un oficio único.',
+}
+
 const PERSONALITY_OPTIONS = ['Valiente', 'Astuto', 'Compasivo', 'Arrogante', 'Misterioso', 'Leal', 'Vengativo', 'Ingenuo', 'Sabio', 'Impulsivo', 'Reservado', 'Temerario']
+const PERSONALITY_DESC: Record<string, string> = {
+  Valiente: 'Enfrenta el miedo de frente, a veces sin pensar en las consecuencias.',
+  Astuto: 'Siempre tres pasos adelante. Ve ángulos donde otros solo ven muros.',
+  Compasivo: 'El sufrimiento ajeno le afecta genuinamente. Actúa desde el corazón.',
+  Arrogante: 'Convencido de su superioridad, lo que le abre puertas... y enemistades.',
+  Misterioso: 'Guarda sus cartas. Su pasado, sus motivos, sus lealtades: todo en duda.',
+  Leal: 'Hasta el final. Su palabra dada es un pacto de sangre que nunca rompe.',
+  Vengativo: 'Las deudas se pagan. No olvida, no perdona, solo espera su momento.',
+  Ingenuo: 'Ve el bien en todos. Una inocencia que puede ser su mayor fortaleza o ruina.',
+  Sabio: 'Ha vivido lo suficiente para saber cuándo hablar y cuándo callar.',
+  Impulsivo: 'Actúa antes de pensar. Su instinto es veloz, sus remordimientos, lentos.',
+  Reservado: 'Pocas palabras, mucha observación. Lo que no dice pesa más que lo que dice.',
+  Temerario: 'El riesgo le atrae. Vive más en el filo que en la comodidad.',
+}
+
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="relative my-6 flex items-center gap-3">
+      <div className="flex-1 border-t border-gray-100" />
+      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.18em]">{label}</span>
+      <div className="flex-1 border-t border-gray-100" />
+    </div>
+  )
+}
 
 function FieldGroup({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="mb-5">
       <div className="flex items-baseline gap-2 mb-2">
-        <label className="block text-gray-700 font-medium text-sm uppercase tracking-wide">{label}</label>
-        {hint && <span className="text-xs text-gray-400">{hint}</span>}
+        <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{label}</label>
+        {hint && <span className="text-[10px] text-gray-300 italic">{hint}</span>}
       </div>
       {children}
     </div>
   )
 }
+
+const inputClass = 'w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 transition'
+const textareaClass = `${inputClass} min-h-[90px] resize-none`
 
 export default function CreateCharacterPage() {
   const { id: worldId } = useParams()
@@ -109,94 +149,106 @@ export default function CreateCharacterPage() {
   }
 
   return (
-    <div className="flex justify-center items-start min-h-[80vh] px-4 md:px-10 py-8">
-      <div className="w-full max-w-2xl mx-auto bg-white/90 shadow-2xl rounded-2xl px-10 pt-10 pb-8 border border-gray-200 backdrop-blur-md">
-        <h2 className="text-3xl font-extrabold mb-8 text-center text-purple-800 tracking-tight drop-shadow">Crear personaje</h2>
+    <div className="flex justify-center items-start min-h-[80vh] bg-gradient-to-br from-slate-50 via-violet-50 to-purple-50 px-4 md:px-10 py-10">
+      <div className="w-full max-w-2xl mx-auto">
+        <div className="relative bg-white shadow-xl shadow-violet-100/60 rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
 
-        <div className="flex justify-center gap-4 mb-8">
-          <button onClick={() => setMode('manual')} type="button" className={`px-4 py-2 rounded-lg font-bold transition ${mode === 'manual' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-purple-100'}`}>Manual</button>
-          <button onClick={() => setMode('ai')} type="button" className={`px-4 py-2 rounded-lg font-bold transition ${mode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-purple-100'}`}>Generar con IA</button>
-        </div>
+          <div className="px-10 pt-8 pb-9">
+            <h2 className="text-2xl font-bold mb-1 text-gray-800 tracking-tight">Crear personaje</h2>
+            <p className="text-sm text-gray-400 mb-7">Da vida a quien habitará tu mundo.</p>
 
-        {error && <p className="mb-4 text-red-600 text-sm text-center font-semibold">{error}</p>}
-
-        {mode === 'manual' && (
-          <form onSubmit={handleManualSubmit}>
-            <FieldGroup label="Nombre">
-              <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border rounded-lg px-3 py-2" required placeholder="El nombre del personaje..." />
-            </FieldGroup>
-
-            <div className="border-t border-gray-100 my-5" />
-
-            <FieldGroup label="Rol">
-              <PillSelect options={ROLE_OPTIONS} value={role} onChange={setRole} />
-            </FieldGroup>
-
-            <FieldGroup label="Personalidad" hint="selecciona los rasgos que lo definen">
-              <MultiPillSelect options={PERSONALITY_OPTIONS} value={personalityTags} onChange={setPersonalityTags} />
-            </FieldGroup>
-
-            <div className="border-t border-gray-100 my-5" />
-
-            <FieldGroup label="Trasfondo">
-              <textarea value={background} onChange={e => setBackground(e.target.value)} className="w-full border rounded-lg px-3 py-2 min-h-[80px]" required placeholder="Historia de vida, origen, eventos que lo marcaron..." />
-            </FieldGroup>
-
-            <div className="mb-6">
-              <div className="flex items-baseline gap-2 mb-2">
-                <label className="block text-gray-700 font-medium text-sm uppercase tracking-wide">Objetivos</label>
-              </div>
-              {goals.map((g, idx) => (
-                <div key={idx} className="flex gap-2 mb-2">
-                  <input type="text" value={g} onChange={e => handleGoalChange(idx, e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder={`Objetivo #${idx + 1}`} />
-                  {goals.length > 1 && (
-                    <button type="button" onClick={() => removeGoal(idx)} className="text-red-400 hover:text-red-600 font-bold px-2 transition">✕</button>
-                  )}
-                </div>
-              ))}
-              <button type="button" onClick={addGoal} className="text-purple-600 hover:underline text-sm mt-1">+ Añadir objetivo</button>
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-8 w-fit">
+              <button onClick={() => setMode('manual')} type="button" className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'manual' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Manual</button>
+              <button onClick={() => setMode('ai')} type="button" className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'ai' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Generar con IA</button>
             </div>
 
-            <button type="submit" disabled={loading} className="bg-gradient-to-r from-blue-500 to-pink-500 hover:from-blue-600 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-all duration-200 text-lg tracking-wide w-full disabled:opacity-60">
-              {loading ? 'Creando...' : 'Crear personaje'}
-            </button>
-          </form>
-        )}
+            {error && (
+              <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
+            )}
 
-        {mode === 'ai' && (
-          <div>
-            {installationChecked && !hasInstallation && <NoInstallationBanner />}
-            <form onSubmit={handleAIGenerate}>
-              <div className="mb-6">
-                <label className="block text-gray-700 mb-1 font-medium">Describe el personaje que quieres crear</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full border rounded-lg px-3 py-2 min-h-[80px]" placeholder="Ej: Un guerrero noble con un pasado trágico..." required />
-              </div>
-              <button type="submit" disabled={aiLoading} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-all duration-200 text-lg tracking-wide w-full disabled:opacity-60 mb-4">
-                {aiLoading ? 'Generando...' : 'Generar personaje con IA'}
-              </button>
-            </form>
-            {aiCharacter && (
-              <div className="mt-6 p-6 rounded-2xl bg-purple-50 border border-purple-200 shadow-inner">
-                <h3 className="text-xl font-bold text-purple-700 mb-4">Personaje generado</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex gap-2"><span className="font-semibold text-gray-500 w-28 shrink-0">Nombre</span><span>{aiCharacter.name}</span></div>
-                  <div className="flex gap-2"><span className="font-semibold text-gray-500 w-28 shrink-0">Rol</span><span>{aiCharacter.role}</span></div>
-                  <div className="flex gap-2"><span className="font-semibold text-gray-500 w-28 shrink-0">Personalidad</span><span>{aiCharacter.personality}</span></div>
-                  <div className="flex gap-2"><span className="font-semibold text-gray-500 w-28 shrink-0">Trasfondo</span><span>{aiCharacter.background}</span></div>
-                  {aiCharacter.goals && aiCharacter.goals.length > 0 && (
-                    <div className="flex gap-2">
-                      <span className="font-semibold text-gray-500 w-28 shrink-0">Objetivos</span>
-                      <span>{aiCharacter.goals.join(', ')}</span>
+            {mode === 'manual' && (
+              <form onSubmit={handleManualSubmit}>
+                <FieldGroup label="Nombre">
+                  <input type="text" value={name} onChange={e => setName(e.target.value)} className={inputClass} required placeholder="El nombre del personaje..." />
+                </FieldGroup>
+
+                <SectionDivider label="Identidad" />
+
+                <FieldGroup label="Rol">
+                  <PillSelect options={ROLE_OPTIONS} value={role} onChange={setRole} descriptions={ROLE_DESC} />
+                </FieldGroup>
+
+                <FieldGroup label="Personalidad" hint="selecciona los rasgos que lo definen">
+                  <MultiPillSelect options={PERSONALITY_OPTIONS} value={personalityTags} onChange={setPersonalityTags} descriptions={PERSONALITY_DESC} />
+                </FieldGroup>
+
+                <SectionDivider label="Historia" />
+
+                <FieldGroup label="Trasfondo">
+                  <textarea value={background} onChange={e => setBackground(e.target.value)} className={textareaClass} required placeholder="Historia de vida, origen, eventos que lo marcaron..." />
+                </FieldGroup>
+
+                <div className="mb-7">
+                  <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Objetivos</label>
+                  {goals.map((g, idx) => (
+                    <div key={idx} className="flex gap-2 mb-2">
+                      <input type="text" value={g} onChange={e => handleGoalChange(idx, e.target.value)} className={inputClass} placeholder={`Objetivo #${idx + 1}`} />
+                      {goals.length > 1 && (
+                        <button type="button" onClick={() => removeGoal(idx)} className="text-gray-300 hover:text-red-400 font-bold px-2 transition text-lg">✕</button>
+                      )}
                     </div>
-                  )}
+                  ))}
+                  <button type="button" onClick={addGoal} className="text-violet-500 hover:text-violet-700 text-xs font-semibold mt-1 transition">+ Añadir objetivo</button>
                 </div>
-                <button onClick={handleAISave} disabled={loading} className="mt-5 bg-gradient-to-r from-blue-500 to-pink-500 hover:from-blue-600 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-all duration-200 text-lg tracking-wide w-full disabled:opacity-60">
-                  {loading ? 'Guardando...' : 'Guardar personaje'}
+
+                <button type="submit" disabled={loading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50">
+                  {loading ? 'Creando personaje...' : 'Crear personaje'}
                 </button>
+              </form>
+            )}
+
+            {mode === 'ai' && (
+              <div>
+                {installationChecked && !hasInstallation && <NoInstallationBanner />}
+                <form onSubmit={handleAIGenerate}>
+                  <FieldGroup label="Describe el personaje que quieres crear">
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} className={textareaClass} placeholder="Ej: Un guerrero noble con un pasado trágico y una lealtad inquebrantable..." required />
+                  </FieldGroup>
+                  <button type="submit" disabled={aiLoading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
+                    {aiLoading ? 'Generando...' : 'Generar personaje con IA'}
+                  </button>
+                </form>
+
+                {aiCharacter && (
+                  <div className="mt-2 rounded-xl border border-violet-200 overflow-hidden">
+                    <div className="px-5 py-3 bg-violet-600">
+                      <h3 className="text-sm font-bold text-white">{aiCharacter.name}</h3>
+                      <p className="text-xs text-violet-200">{aiCharacter.role}</p>
+                    </div>
+                    <div className="p-5 bg-violet-50 space-y-2">
+                      {[
+                        { label: 'Personalidad', value: aiCharacter.personality },
+                        { label: 'Trasfondo', value: aiCharacter.background },
+                        ...(aiCharacter.goals?.length ? [{ label: 'Objetivos', value: aiCharacter.goals.join(', ') }] : []),
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex gap-3 text-sm">
+                          <span className="text-violet-400 font-semibold w-24 shrink-0">{label}</span>
+                          <span className="text-gray-700">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="px-5 py-3 bg-white border-t border-violet-100">
+                      <button onClick={handleAISave} disabled={loading} className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50">
+                        {loading ? 'Guardando...' : 'Guardar este personaje'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
