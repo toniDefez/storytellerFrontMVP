@@ -11,9 +11,25 @@ export default function WorldDetailPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!id) return
-    getWorldDetail(Number(id))
-      .then(setDetail)
+    const worldId = Number(id)
+    if (!id || Number.isNaN(worldId)) {
+      setError('ID de mundo inválido.')
+      setLoading(false)
+      return
+    }
+
+    getWorldDetail(worldId)
+      .then(data => {
+        // Defensive guard: API may return an empty object or malformed payload.
+        if (!data || typeof data !== 'object' || !('world' in data) || !data.world) {
+          throw new Error('No se encontró el mundo solicitado.')
+        }
+        setDetail({
+          world: data.world,
+          characters: Array.isArray(data.characters) ? data.characters : [],
+          scenes: Array.isArray(data.scenes) ? data.scenes : [],
+        })
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [id])
@@ -32,7 +48,9 @@ export default function WorldDetailPage() {
 
   if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando mundo...</div>
   if (error) return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
-  if (!detail) return null
+  if (!detail?.world) {
+    return <div className="flex justify-center items-center h-96 text-lg text-red-500">No se encontró el mundo solicitado.</div>
+  }
 
   const { world, characters, scenes } = detail
 
