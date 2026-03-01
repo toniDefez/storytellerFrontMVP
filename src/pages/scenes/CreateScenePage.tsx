@@ -126,7 +126,7 @@ export default function CreateScenePage() {
   }
 
   return (
-    <div className="flex justify-center items-start min-h-[80vh] bg-gradient-to-br from-slate-50 via-violet-50 to-purple-50 px-4 md:px-10 py-10">
+    <div className="flex justify-center items-start min-h-[80vh] py-4">
       <div className="w-full max-w-2xl mx-auto">
         <div className="relative bg-white shadow-xl shadow-violet-100/60 rounded-2xl border border-gray-100 overflow-hidden">
           <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />

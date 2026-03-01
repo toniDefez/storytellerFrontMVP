@@ -1,5 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 
 interface WorldCardProps {
   id: number
@@ -13,14 +14,14 @@ interface WorldCardProps {
 }
 
 const CLIMATE_HEADER: Record<string, string> = {
-  Ártico:      'from-cyan-400 to-blue-500',
-  Tropical:    'from-emerald-400 to-teal-500',
-  Desértico:   'from-amber-400 to-orange-500',
-  Volcánico:   'from-red-500 to-rose-600',
-  Oceánico:    'from-blue-400 to-indigo-500',
-  Montañoso:   'from-slate-400 to-stone-500',
-  Tóxico:      'from-lime-400 to-green-600',
-  Templado:    'from-violet-400 to-purple-500',
+  Ártico:    'from-cyan-400 to-blue-500',
+  Tropical:  'from-emerald-400 to-teal-500',
+  Desértico: 'from-amber-400 to-orange-500',
+  Volcánico: 'from-red-500 to-rose-600',
+  Oceánico:  'from-blue-400 to-indigo-500',
+  Montañoso: 'from-slate-400 to-stone-500',
+  Tóxico:    'from-lime-400 to-green-600',
+  Templado:  'from-violet-400 to-purple-500',
 }
 
 const DEFAULT_HEADER = 'from-violet-500 to-purple-600'
@@ -30,19 +31,19 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics,
   const headerGradient = CLIMATE_HEADER[climate] ?? DEFAULT_HEADER
 
   return (
-    <div
-      className="group rounded-2xl bg-white shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden"
+    <motion.div
+      className="rounded-2xl bg-white shadow-sm border border-gray-100 cursor-pointer overflow-hidden"
+      whileHover={{ y: -4, boxShadow: '0 12px 32px rgba(0,0,0,0.10)' }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       onClick={() => navigate(`/worlds/${id}`)}
     >
-      {/* Gradient header */}
       <div className={`bg-gradient-to-br ${headerGradient} px-5 pt-5 pb-7 relative`}>
         <h3 className="text-lg font-bold text-white leading-tight drop-shadow-sm">{name}</h3>
         <p className="text-xs text-white/70 mt-0.5">{era}</p>
-        {/* Fade into card body */}
         <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-b from-transparent to-white/10" />
       </div>
 
-      {/* Body */}
       <div className="px-5 pt-3 pb-5">
         {description && (
           <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{description}</p>
@@ -68,7 +69,7 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics,
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }
 
