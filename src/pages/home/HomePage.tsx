@@ -18,37 +18,57 @@ export default function HomePage() {
   }, [])
 
   if (loading) {
-    return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando mundos...</div>
+    return <div className="flex justify-center items-center h-96 text-sm text-gray-400">Cargando mundos...</div>
   }
 
   if (error) {
-    return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
+    return <div className="flex justify-center items-center h-96 text-sm text-red-500">{error}</div>
   }
 
   if (worlds.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 w-full">
-        <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" alt="Empty" className="w-32 h-32 mb-6 opacity-60" />
-        <h2 className="text-2xl font-bold text-gray-700 mb-2">Aún no tienes mundos!</h2>
-        <p className="text-gray-500 mb-6">Crea tu primer mundo y comienza a imaginar.</p>
-        <button onClick={() => navigate('/worlds/create')} className="bg-gradient-to-r from-blue-500 to-pink-500 hover:from-blue-600 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-all duration-200 text-lg tracking-wide flex items-center gap-2">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          Crear mundo
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center mb-6">
+          <svg className="w-8 h-8 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <circle cx="12" cy="12" r="10" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Aún no tienes mundos</h2>
+        <p className="text-sm text-gray-400 mb-8 text-center max-w-xs">Crea tu primer mundo y empieza a construir tu historia.</p>
+        <button
+          onClick={() => navigate('/worlds/create')}
+          className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-violet-200 transition-all"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Crear mi primer mundo
         </button>
       </div>
     )
   }
 
   return (
-    <>
-      <h1 className="text-3xl font-bold mb-6">Panel de Control</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {/* Card para crear mundo */}
-        <div onClick={() => navigate('/worlds/create')} className="flex flex-col items-center justify-center border-2 border-dashed border-purple-300 rounded-2xl bg-white/70 shadow-md p-8 hover:shadow-xl cursor-pointer transition group">
-          <svg className="h-12 w-12 text-purple-400 group-hover:text-purple-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          <span className="text-lg font-semibold text-purple-700 group-hover:text-purple-900">Crear nuevo mundo</span>
+    <div>
+      {/* Page header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Mis mundos</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{worlds.length} {worlds.length === 1 ? 'mundo creado' : 'mundos creados'}</p>
         </div>
-        {/* Cards de mundos */}
+        <button
+          onClick={() => navigate('/worlds/create')}
+          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-violet-200 transition-all"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Nuevo mundo
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {worlds.map(world => (
           <WorldCard
             key={world.id}
@@ -63,6 +83,6 @@ export default function HomePage() {
           />
         ))}
       </div>
-    </>
+    </div>
   )
 }
