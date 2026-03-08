@@ -5,6 +5,7 @@ import type { Character } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
 import { PillSelect, MultiPillSelect } from '../../components/PillSelect'
+import { inputClass, textareaClass } from '../../utils/styles'
 
 const ROLE_OPTIONS = ['Guerrero', 'Mago', 'Pícaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano']
 const ROLE_DESC: Record<string, string> = {
@@ -57,9 +58,6 @@ function FieldGroup({ label, hint, children }: { label: string; hint?: string; c
     </div>
   )
 }
-
-const inputClass = 'w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 transition'
-const textareaClass = `${inputClass} min-h-[90px] resize-none`
 
 export default function CreateCharacterPage() {
   const { id: worldId } = useParams()
@@ -202,9 +200,14 @@ export default function CreateCharacterPage() {
                   <button type="button" onClick={addGoal} className="text-violet-500 hover:text-violet-700 text-xs font-semibold mt-1 transition">+ Añadir objetivo</button>
                 </div>
 
-                <button type="submit" disabled={loading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50">
-                  {loading ? 'Creando personaje...' : 'Crear personaje'}
-                </button>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => navigate(-1)} className="flex-1 py-3 px-6 border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold rounded-xl transition text-sm">
+                    Cancelar
+                  </button>
+                  <button type="submit" disabled={loading} className="flex-1 py-3 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50">
+                    {loading ? 'Creando personaje...' : 'Crear personaje'}
+                  </button>
+                </div>
               </form>
             )}
 

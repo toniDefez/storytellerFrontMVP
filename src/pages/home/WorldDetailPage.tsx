@@ -2,10 +2,13 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { getWorldDetail, deleteWorld } from '../../services/api'
 import type { WorldDetail, World } from '../../services/api'
+import { useToast } from '../../components/Toast'
+import { SkeletonDetail } from '../../components/Skeleton'
 
 export default function WorldDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const [detail, setDetail] = useState<WorldDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -57,14 +60,15 @@ export default function WorldDetailPage() {
     setLoading(true)
     try {
       await deleteWorld(Number(id))
+      addToast('Mundo eliminado correctamente.', 'success')
       navigate('/worlds')
     } catch {
-      setError('No se pudo borrar el mundo.')
+      addToast('No se pudo borrar el mundo.', 'error')
       setLoading(false)
     }
   }
 
-  if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando mundo...</div>
+  if (loading) return <SkeletonDetail />
   if (error) return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
   if (!detail?.world) {
     return <div className="flex justify-center items-center h-96 text-lg text-red-500">No se encontró el mundo solicitado.</div>
@@ -78,7 +82,10 @@ export default function WorldDetailPage() {
       <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-extrabold text-purple-800">{world.name}</h2>
-          <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold">Borrar</button>
+          <div className="flex gap-2">
+            <Link to={`/worlds/${id}/edit`} className="bg-violet-100 hover:bg-violet-200 text-violet-700 px-4 py-2 rounded-lg font-semibold text-sm">Editar</Link>
+            <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Borrar</button>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div><span className="font-semibold text-gray-700">Era:</span> {world.era}</div>

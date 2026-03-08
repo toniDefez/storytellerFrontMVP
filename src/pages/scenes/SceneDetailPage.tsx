@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
   getSceneDetail,
@@ -7,10 +7,13 @@ import {
   generateEvents,
   getSceneNarrative,
   getWorldDetail,
+  deleteEvent,
 } from '../../services/api'
 import type { SceneDetail, Character, Event as StoryEvent } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
+import { useToast } from '../../components/Toast'
+import { SkeletonDetail } from '../../components/Skeleton'
 
 export default function SceneDetailPage() {
   const { worldId, sceneId } = useParams()
@@ -35,6 +38,7 @@ export default function SceneDetailPage() {
   const [generatingNarrative, setGeneratingNarrative] = useState(false)
 
   const { hasInstallation, checked: installationChecked } = useInstallation()
+  const { addToast } = useToast()
 
   useEffect(() => {
     if (!sceneId || !worldId) return
@@ -58,11 +62,14 @@ export default function SceneDetailPage() {
 
   const handleDelete = async () => {
     if (!window.confirm('¿Seguro que quieres borrar esta escena?')) return
+    setLoading(true)
     try {
       await deleteScene(Number(sceneId))
+      addToast('Escena eliminada correctamente.', 'success')
       navigate(`/worlds/${worldId}`)
     } catch {
-      setError('No se pudo borrar la escena.')
+      addToast('No se pudo borrar la escena.', 'error')
+      setLoading(false)
     }
   }
 
@@ -73,9 +80,10 @@ export default function SceneDetailPage() {
       await addCharacterToScene(Number(sceneId), selectedCharId)
       setShowAddChar(false)
       setSelectedCharId(null)
+      addToast('Personaje añadido a la escena.', 'success')
       loadData()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo añadir el personaje.')
+      addToast(err instanceof Error ? err.message : 'No se pudo añadir el personaje.', 'error')
     } finally {
       setAddingChar(false)
     }
@@ -114,7 +122,20 @@ export default function SceneDetailPage() {
     }
   }
 
-  if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando escena...</div>
+  const handleDeleteEvent = async (eventId: number) => {
+    try {
+      await deleteEvent(eventId)
+      setDetail(prev => prev ? {
+        ...prev,
+        events: prev.events.filter(ev => ev.id !== eventId),
+      } : prev)
+      addToast('Evento eliminado.', 'success')
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'No se pudo eliminar el evento.', 'error')
+    }
+  }
+
+  if (loading) return <SkeletonDetail />
   if (error && !detail) return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
   if (!detail) return null
 
@@ -131,7 +152,10 @@ export default function SceneDetailPage() {
       <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-extrabold text-purple-800">{scene.title}</h2>
-          <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold">Borrar</button>
+          <div className="flex gap-2">
+            <Link to={`/worlds/${worldId}/scenes/${sceneId}/edit`} className="bg-violet-100 hover:bg-violet-200 text-violet-700 px-4 py-2 rounded-lg font-semibold text-sm">Editar</Link>
+            <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Borrar</button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-3 mb-4">
           <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-medium">{scene.location}</span>
@@ -200,12 +224,23 @@ export default function SceneDetailPage() {
         ) : (
           <div className="space-y-4 mb-6">
             {sortedEvents.map((ev: StoryEvent, idx: number) => (
-              <div key={ev.id || idx} className="border-l-4 border-purple-400 pl-4 py-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold">#{idx + 1}</span>
-                  {ev.spot && <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded text-xs">{ev.spot}</span>}
+              <div key={ev.id || idx} className="border-l-4 border-purple-400 pl-4 py-2 flex justify-between items-start gap-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold">#{idx + 1}</span>
+                    {ev.spot && <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded text-xs">{ev.spot}</span>}
+                  </div>
+                  <p className="text-gray-700">{ev.action}</p>
                 </div>
-                <p className="text-gray-700">{ev.action}</p>
+                {ev.id && (
+                  <button
+                    onClick={() => handleDeleteEvent(ev.id)}
+                    className="text-gray-300 hover:text-red-500 font-bold text-lg leading-none shrink-0 transition"
+                    title="Eliminar evento"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             ))}
           </div>

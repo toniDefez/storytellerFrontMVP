@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { getCharacterById } from '../../services/api'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import { getCharacterById, deleteCharacter } from '../../services/api'
 import type { Character } from '../../services/api'
+import { SkeletonDetail } from '../../components/Skeleton'
+import { useToast } from '../../components/Toast'
 
 export default function CharacterDetailPage() {
   const { worldId, characterId } = useParams()
+  const navigate = useNavigate()
+  const { addToast } = useToast()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -23,7 +28,20 @@ export default function CharacterDetailPage() {
       .finally(() => setLoading(false))
   }, [characterId])
 
-  if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando personaje...</div>
+  const handleDelete = async () => {
+    if (!window.confirm('¿Seguro que quieres eliminar este personaje?')) return
+    setDeleting(true)
+    try {
+      await deleteCharacter(Number(characterId))
+      addToast('Personaje eliminado correctamente.', 'success')
+      navigate(worldId ? `/worlds/${worldId}` : '/worlds')
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'No se pudo eliminar el personaje.', 'error')
+      setDeleting(false)
+    }
+  }
+
+  if (loading) return <SkeletonDetail />
   if (error) return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
   if (!character) return <div className="flex justify-center items-center h-96 text-lg text-red-500">No se encontró el personaje.</div>
 
@@ -36,12 +54,27 @@ export default function CharacterDetailPage() {
     <div className="max-w-3xl mx-auto mt-8 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-extrabold text-purple-800">{character.name}</h2>
-        <Link
-          to={worldId ? `/worlds/${worldId}` : '/worlds'}
-          className="text-sm font-semibold text-purple-700 hover:text-purple-900"
-        >
-          Volver al mundo
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to={worldId ? `/worlds/${worldId}` : '/worlds'}
+            className="text-sm font-semibold text-purple-700 hover:text-purple-900"
+          >
+            Volver al mundo
+          </Link>
+          <Link
+            to={`/worlds/${worldId}/characters/${characterId}/edit`}
+            className="bg-violet-100 hover:bg-violet-200 text-violet-700 px-3 py-1.5 rounded-lg font-semibold text-sm"
+          >
+            Editar
+          </Link>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-semibold text-sm disabled:opacity-60"
+          >
+            {deleting ? 'Eliminando...' : 'Eliminar'}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200 space-y-6">
