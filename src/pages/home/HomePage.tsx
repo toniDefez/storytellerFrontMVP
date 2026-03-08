@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import WorldCard from '../../components/WorldCard'
+import { SkeletonCard } from '../../components/Skeleton'
 import { getWorlds } from '../../services/api'
 import type { World } from '../../services/api'
 
@@ -29,7 +30,11 @@ export default function HomePage() {
   }, [])
 
   if (loading) {
-    return <div className="flex justify-center items-center h-96 text-sm text-gray-400">Cargando mundos...</div>
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+      </div>
+    )
   }
 
   if (error) {

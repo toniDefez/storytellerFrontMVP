@@ -40,6 +40,13 @@ export function register(username: string, password: string) {
   })
 }
 
+export function validateToken() {
+  return request<{ status: string }>('/validate-token', {
+    method: 'POST',
+    body: JSON.stringify({ token: getToken() }),
+  })
+}
+
 // --- Worlds ---
 
 export interface World {
@@ -78,6 +85,13 @@ export function generateWorld(description: string) {
 export function deleteWorld(id: number) {
   return request<{ status: string }>(`/world/delete?id=${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function updateWorld(id: number, input: Partial<Omit<World, 'id'>>) {
+  return request<World>(`/world/update?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
   })
 }
 
@@ -134,6 +148,19 @@ export function getCharacterById(id: number) {
   return request<Character>(`/character/get?id=${id}`)
 }
 
+export function updateCharacter(id: number, input: Partial<Omit<Character, 'id' | 'world_id'>>) {
+  return request<Character>(`/character/update?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteCharacter(id: number) {
+  return request<{ status: string }>(`/character/delete?id=${id}`, {
+    method: 'DELETE',
+  })
+}
+
 // --- Scenes ---
 
 export function createScene(scene: Omit<Scene, 'id'>) {
@@ -157,6 +184,13 @@ export function getSceneById(id: number) {
 export function deleteScene(id: number) {
   return request<{ status: string }>(`/scene/delete?id=${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function updateScene(id: number, input: Partial<Omit<Scene, 'id' | 'world_id'>>) {
+  return request<Scene>(`/scene/update?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
   })
 }
 
@@ -205,6 +239,12 @@ export function generateEvents(sceneId: number, characterIds: number[], descript
   return request<{ events: Event[] }>('/event/generate', {
     method: 'POST',
     body: JSON.stringify({ scene_id: sceneId, character_ids: characterIds, description, num_events: numEvents }),
+  })
+}
+
+export function deleteEvent(id: number) {
+  return request<{ status: string }>(`/event/delete?id=${id}`, {
+    method: 'DELETE',
   })
 }
 
