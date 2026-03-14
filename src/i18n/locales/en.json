@@ -1,0 +1,28 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "generate": "Generate",
+    "copy": "Copy",
+    "copied": "Copied",
+    "error": "Error",
+    "back": "Back"
+  },
+  "nav": {
+    "worlds": "Worlds",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabGeneral": "General",
+    "tabInstallation": "Installation",
+    "language": "Language",
+    "languageHint": "Select the interface language",
+    "languageEs": "Español",
+    "languageEn": "English"
+  }
+}

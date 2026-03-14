@@ -1,0 +1,28 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "generate": "Generar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "error": "Error",
+    "back": "Volver"
+  },
+  "nav": {
+    "worlds": "Mundos",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "settings": {
+    "title": "Configuración",
+    "tabGeneral": "General",
+    "tabInstallation": "Instalación",
+    "language": "Idioma",
+    "languageHint": "Selecciona el idioma de la interfaz",
+    "languageEs": "Español",
+    "languageEn": "English"
+  }
+}
