@@ -9,7 +9,10 @@
     "copy": "Copy",
     "copied": "Copied",
     "error": "Error",
-    "back": "Back"
+    "back": "Back",
+    "edit": "Edit",
+    "saveChanges": "Save changes",
+    "saving": "Saving..."
   },
   "nav": {
     "worlds": "Worlds",
@@ -94,7 +97,17 @@
       "aiSaving": "Saving...",
       "aiSaveButton": "Save this world"
     },
+    "edit": {
+      "title": "Edit world",
+      "subtitle": "Modify the details of your world.",
+      "submitting": "Saving...",
+      "submitButton": "Save changes",
+      "error": "Could not update the world.",
+      "successTitle": "World updated",
+      "successDesc": "Changes have been saved successfully."
+    },
     "detail": {
+      "editButton": "Edit",
       "deleteTitle": "Delete this world?",
       "deleteMessage": "This will permanently delete \"{{name}}\" and all its content. This action cannot be undone.",
       "deleteConfirm": "Delete world",
@@ -208,11 +221,21 @@
       "aiPreviewBackground": "Background",
       "aiPreviewGoals": "Goals"
     },
+    "edit": {
+      "title": "Edit character",
+      "subtitle": "Modify the details of your character.",
+      "submitting": "Saving...",
+      "submitButton": "Save changes",
+      "error": "Could not update the character.",
+      "successTitle": "Character updated",
+      "successDesc": "Changes have been saved successfully."
+    },
     "detail": {
       "invalidId": "Invalid character ID.",
       "notFound": "The character was not found.",
       "loadError": "Could not load the character.",
       "backButton": "Back to world",
+      "editButton": "Edit",
       "noRole": "No role",
       "personalitySection": "Personality",
       "noPersonality": "No traits defined.",
@@ -221,7 +244,12 @@
       "goalsSection": "Goals",
       "noGoals": "No goals defined.",
       "stateSection": "State",
-      "noState": "No state recorded."
+      "noState": "No state recorded.",
+      "deleteTitle": "Delete this character?",
+      "deleteMessage": "This will permanently delete \"{{name}}\". This action cannot be undone.",
+      "deleteConfirm": "Delete character",
+      "deleteButton": "Delete",
+      "deleteError": "Could not delete the character."
     },
     "roles": {
       "Guerrero": "Warrior",
@@ -303,7 +331,17 @@
       "aiPreviewContext": "Context",
       "aiDefaultTitle": "Generated scene"
     },
+    "edit": {
+      "title": "Edit scene",
+      "subtitle": "Modify the details of your scene.",
+      "submitting": "Saving...",
+      "submitButton": "Save changes",
+      "error": "Could not update the scene.",
+      "successTitle": "Scene updated",
+      "successDesc": "Changes have been saved successfully."
+    },
     "detail": {
+      "editButton": "Edit",
       "deleteTitle": "Delete this scene?",
       "deleteMessage": "This will permanently delete \"{{title}}\" and all its events. This action cannot be undone.",
       "deleteConfirm": "Delete scene",
@@ -388,6 +426,9 @@
     "characterDetail": "{{name}}",
     "createScene": "Create scene",
     "sceneDetail": "{{title}}",
+    "editWorld": "Edit world",
+    "editCharacter": "Edit character",
+    "editScene": "Edit scene",
     "settings": "Settings",
     "login": "Sign in",
     "register": "Create account",

@@ -9,7 +9,10 @@
     "copy": "Copiar",
     "copied": "Copiado",
     "error": "Error",
-    "back": "Volver"
+    "back": "Volver",
+    "edit": "Editar",
+    "saveChanges": "Guardar cambios",
+    "saving": "Guardando..."
   },
   "nav": {
     "worlds": "Mundos",
@@ -94,7 +97,17 @@
       "aiSaving": "Guardando...",
       "aiSaveButton": "Guardar este mundo"
     },
+    "edit": {
+      "title": "Editar mundo",
+      "subtitle": "Modifica los detalles de tu mundo.",
+      "submitting": "Guardando...",
+      "submitButton": "Guardar cambios",
+      "error": "No se pudo actualizar el mundo.",
+      "successTitle": "Mundo actualizado",
+      "successDesc": "Los cambios se han guardado correctamente."
+    },
     "detail": {
+      "editButton": "Editar",
       "deleteTitle": "¿Borrar este mundo?",
       "deleteMessage": "Esto eliminará \"{{name}}\" y todo su contenido de forma permanente. Esta acción no se puede deshacer.",
       "deleteConfirm": "Borrar mundo",
@@ -208,11 +221,21 @@
       "aiPreviewBackground": "Trasfondo",
       "aiPreviewGoals": "Objetivos"
     },
+    "edit": {
+      "title": "Editar personaje",
+      "subtitle": "Modifica los detalles de tu personaje.",
+      "submitting": "Guardando...",
+      "submitButton": "Guardar cambios",
+      "error": "No se pudo actualizar el personaje.",
+      "successTitle": "Personaje actualizado",
+      "successDesc": "Los cambios se han guardado correctamente."
+    },
     "detail": {
       "invalidId": "ID de personaje inválido.",
       "notFound": "No se encontró el personaje.",
       "loadError": "No se pudo cargar el personaje.",
       "backButton": "Volver al mundo",
+      "editButton": "Editar",
       "noRole": "Sin rol",
       "personalitySection": "Personalidad",
       "noPersonality": "No hay rasgos definidos.",
@@ -221,7 +244,12 @@
       "goalsSection": "Objetivos",
       "noGoals": "No hay objetivos definidos.",
       "stateSection": "Estado",
-      "noState": "Sin estado registrado."
+      "noState": "Sin estado registrado.",
+      "deleteTitle": "¿Borrar este personaje?",
+      "deleteMessage": "Esto eliminará \"{{name}}\" de forma permanente. Esta acción no se puede deshacer.",
+      "deleteConfirm": "Borrar personaje",
+      "deleteButton": "Borrar",
+      "deleteError": "No se pudo borrar el personaje."
     },
     "roles": {
       "Guerrero": "Guerrero",
@@ -303,7 +331,17 @@
       "aiPreviewContext": "Contexto",
       "aiDefaultTitle": "Escena generada"
     },
+    "edit": {
+      "title": "Editar escena",
+      "subtitle": "Modifica los detalles de tu escena.",
+      "submitting": "Guardando...",
+      "submitButton": "Guardar cambios",
+      "error": "No se pudo actualizar la escena.",
+      "successTitle": "Escena actualizada",
+      "successDesc": "Los cambios se han guardado correctamente."
+    },
     "detail": {
+      "editButton": "Editar",
       "deleteTitle": "¿Borrar esta escena?",
       "deleteMessage": "Esto eliminará \"{{title}}\" y todos sus eventos de forma permanente. Esta acción no se puede deshacer.",
       "deleteConfirm": "Borrar escena",
@@ -388,6 +426,9 @@
     "characterDetail": "{{name}}",
     "createScene": "Crear escena",
     "sceneDetail": "{{title}}",
+    "editWorld": "Editar mundo",
+    "editCharacter": "Editar personaje",
+    "editScene": "Editar escena",
     "settings": "Configuración",
     "login": "Iniciar sesión",
     "register": "Crear cuenta",

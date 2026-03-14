@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
-import { Plus, Users, Clapperboard, Trash2 } from 'lucide-react'
+import { Plus, Users, Clapperboard, Trash2, Pencil } from 'lucide-react'
 
 const CLIMATE_GRADIENT: Record<string, string> = {
   Artico:    'from-cyan-400 to-blue-600',
@@ -136,7 +136,18 @@ export default function WorldDetailPage() {
       {/* ── Hero Section ── */}
       <div className="rounded-xl overflow-hidden shadow-lg">
         <div className={`bg-gradient-to-br ${gradient} px-8 py-10 relative`}>
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white/80 hover:text-white hover:bg-white/15"
+              asChild
+            >
+              <Link to={`/worlds/${id}/edit`}>
+                <Pencil className="h-4 w-4 mr-1.5" />
+                {t('world.detail.editButton')}
+              </Link>
+            </Button>
             <Button
               variant="ghost"
               size="sm"

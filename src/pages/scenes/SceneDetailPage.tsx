@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -14,7 +14,7 @@ import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Pencil } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -170,7 +170,15 @@ export default function SceneDetailPage() {
       <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-200 p-8 shadow-sm">
         <div className="flex justify-between items-start">
           <h2 className="font-[var(--font-display)] text-3xl font-bold text-slate-800">{scene.title}</h2>
-          <Button variant="destructive" size="sm" onClick={() => setShowConfirmDelete(true)}>{t('scene.detail.deleteButton')}</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/worlds/${worldId}/scenes/${sceneId}/edit`}>
+                <Pencil className="h-4 w-4 mr-1.5" />
+                {t('scene.detail.editButton')}
+              </Link>
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => setShowConfirmDelete(true)}>{t('scene.detail.deleteButton')}</Button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2 mt-4 mb-4">
           <Badge className="bg-sky-100 text-sky-700 border-sky-200 hover:bg-sky-150">{scene.location}</Badge>
