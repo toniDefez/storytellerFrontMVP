@@ -25,13 +25,17 @@ const CLIMATE_GRADIENT: Record<string, string> = {
 const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
 
 export default function WorldDetailPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const [detail, setDetail] = useState<WorldDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.worldDetail', { name: detail?.world?.name ?? '' })} — StoryTeller`
+  }, [t, i18n.language, detail?.world?.name])
 
   useEffect(() => {
     const worldId = Number(id)

@@ -370,6 +370,29 @@
       "IntimoDesc": "Behind closed doors, characters reveal themselves. Vulnerability and genuine connection."
     }
   },
+  "error": {
+    "notFoundCode": "404",
+    "notFoundTitle": "Page not found",
+    "notFoundDesc": "The URL you entered doesn't exist or has been moved. Please check the address or go back to the home page.",
+    "goHome": "Go to home"
+  },
+  "modal": {
+    "defaultConfirm": "Confirm",
+    "defaultCancel": "Cancel"
+  },
+  "pageTitle": {
+    "home": "My worlds",
+    "createWorld": "Create world",
+    "worldDetail": "{{name}}",
+    "createCharacter": "Create character",
+    "characterDetail": "{{name}}",
+    "createScene": "Create scene",
+    "sceneDetail": "{{title}}",
+    "settings": "Settings",
+    "login": "Sign in",
+    "register": "Create account",
+    "notFound": "Page not found"
+  },
   "installation": {
     "setupTitle": "Set up local generator",
     "setupDesc": "To generate AI content you need a generator running on your machine.",

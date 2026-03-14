@@ -21,11 +21,15 @@ const cardVariant = {
 }
 
 export default function HomePage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [worlds, setWorlds] = useState<World[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.home')} — StoryTeller`
+  }, [t, i18n.language])
 
   useEffect(() => {
     getWorlds()

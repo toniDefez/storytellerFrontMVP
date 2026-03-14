@@ -12,10 +12,14 @@ import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 
 export default function CharacterDetailPage() {
   const { worldId, characterId } = useParams()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.characterDetail', { name: character?.name ?? '' })} — StoryTeller`
+  }, [t, i18n.language, character?.name])
 
   useEffect(() => {
     const id = Number(characterId)

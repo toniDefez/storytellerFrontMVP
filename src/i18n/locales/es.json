@@ -370,6 +370,29 @@
       "IntimoDesc": "A puerta cerrada, los personajes se revelan. Vulnerabilidad y conexión real."
     }
   },
+  "error": {
+    "notFoundCode": "404",
+    "notFoundTitle": "Página no encontrada",
+    "notFoundDesc": "La URL que has introducido no existe o ha sido movida. Por favor, revisa la dirección o vuelve al inicio.",
+    "goHome": "Ir al inicio"
+  },
+  "modal": {
+    "defaultConfirm": "Confirmar",
+    "defaultCancel": "Cancelar"
+  },
+  "pageTitle": {
+    "home": "Mis mundos",
+    "createWorld": "Crear mundo",
+    "worldDetail": "{{name}}",
+    "createCharacter": "Crear personaje",
+    "characterDetail": "{{name}}",
+    "createScene": "Crear escena",
+    "sceneDetail": "{{title}}",
+    "settings": "Configuración",
+    "login": "Iniciar sesión",
+    "register": "Crear cuenta",
+    "notFound": "Página no encontrada"
+  },
   "installation": {
     "setupTitle": "Configurar generador local",
     "setupDesc": "Para generar contenido con IA necesitas un generador ejecutándose en tu máquina.",

@@ -26,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 export default function SceneDetailPage() {
   const { worldId, sceneId } = useParams()
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [detail, setDetail] = useState<SceneDetail | null>(null)
   const [worldCharacters, setWorldCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,6 +48,10 @@ export default function SceneDetailPage() {
 
   const { hasInstallation, checked: installationChecked } = useInstallation()
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.sceneDetail', { title: detail?.scene?.title ?? '' })} — StoryTeller`
+  }, [t, i18n.language, detail?.scene?.title])
 
   useEffect(() => {
     if (!sceneId || !worldId) return

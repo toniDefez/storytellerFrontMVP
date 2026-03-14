@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -11,6 +12,10 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'general'
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.settings')} — StoryTeller`
+  }, [t, i18n.language])
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value }, { replace: true })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createWorld, generateWorld } from '../../services/api'
@@ -18,8 +18,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 
 export default function CreateWorldPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [, setMode] = useState<'manual' | 'ai'>('manual')
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.createWorld')} — StoryTeller`
+  }, [t, i18n.language])
   const [name, setName] = useState('')
   const [era, setEra] = useState('')
   const [climate, setClimate] = useState('')

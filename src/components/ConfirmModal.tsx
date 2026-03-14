@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,12 +26,14 @@ export default function ConfirmModal({
   open,
   title,
   message,
-  confirmText = 'Confirmar',
-  cancelText = 'Cancelar',
+  confirmText,
+  cancelText,
   onConfirm,
   onCancel,
   danger = false,
 }: ConfirmModalProps) {
+  const { t } = useTranslation()
+
   return (
     <AlertDialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onCancel() }}>
       <AlertDialogContent>
@@ -39,12 +42,12 @@ export default function ConfirmModal({
           <AlertDialogDescription>{message}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel onClick={onCancel}>{cancelText ?? t('modal.defaultCancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className={danger ? buttonVariants({ variant: 'destructive' }) : undefined}
           >
-            {confirmText}
+            {confirmText ?? t('modal.defaultConfirm')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

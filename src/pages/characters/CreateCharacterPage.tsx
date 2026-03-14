@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { createCharacter, generateCharacter } from '../../services/api'
@@ -23,8 +23,12 @@ const PERSONALITY_VALUES = ['Valiente', 'Astuto', 'Compasivo', 'Arrogante', 'Mis
 export default function CreateCharacterPage() {
   const { id: worldId } = useParams()
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [, setMode] = useState<'manual' | 'ai'>('manual')
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.createCharacter')} — StoryTeller`
+  }, [t, i18n.language])
 
   const [name, setName] = useState('')
   const [role, setRole] = useState('')

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { validateEmail, validatePassword } from '../../utils/validation'
@@ -12,8 +12,12 @@ import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function RegisterPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [email, setEmail] = useState('')
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.register')} — StoryTeller`
+  }, [t, i18n.language])
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
