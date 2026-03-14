@@ -3,14 +3,25 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const pillTransition = { type: 'spring', stiffness: 400, damping: 18 } as const
 
+export type PillOption = string | { value: string; label: string }
+
+function getOptionValue(opt: PillOption): string {
+  return typeof opt === 'string' ? opt : opt.value
+}
+
+function getOptionLabel(opt: PillOption): string {
+  return typeof opt === 'string' ? opt : opt.label
+}
+
 interface PillSelectProps {
-  options: string[]
+  options: PillOption[]
   value: string
   onChange: (value: string) => void
   descriptions?: Record<string, string>
+  allowDeselect?: boolean
 }
 
-export function PillSelect({ options, value, onChange, descriptions }: PillSelectProps) {
+export function PillSelect({ options, value, onChange, descriptions, allowDeselect }: PillSelectProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const activeKey = hovered ?? (value || null)
   const activeDesc = activeKey ? descriptions?.[activeKey] : null
@@ -18,25 +29,30 @@ export function PillSelect({ options, value, onChange, descriptions }: PillSelec
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        {options.map(opt => (
-          <motion.button
-            key={opt}
-            type="button"
-            onClick={() => onChange(value === opt ? '' : opt)}
-            onMouseEnter={() => setHovered(opt)}
-            onMouseLeave={() => setHovered(null)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.93 }}
-            transition={pillTransition}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
-              value === opt
-                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
-                : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
-            }`}
-          >
-            {opt}
-          </motion.button>
-        ))}
+        {options.map(opt => {
+          const v = getOptionValue(opt)
+          return (
+            <motion.button
+              key={v}
+              type="button"
+              onClick={() => {
+                onChange(value === v && allowDeselect !== false ? '' : v)
+              }}
+              onMouseEnter={() => setHovered(v)}
+              onMouseLeave={() => setHovered(null)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.93 }}
+              transition={pillTransition}
+              className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
+                value === v
+                  ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
+                  : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
+              }`}
+            >
+              {getOptionLabel(opt)}
+            </motion.button>
+          )
+        })}
       </div>
 
       <AnimatePresence>
@@ -60,7 +76,7 @@ export function PillSelect({ options, value, onChange, descriptions }: PillSelec
 }
 
 interface MultiPillSelectProps {
-  options: string[]
+  options: PillOption[]
   value: string[]
   onChange: (value: string[]) => void
   descriptions?: Record<string, string>
@@ -70,33 +86,37 @@ export function MultiPillSelect({ options, value, onChange, descriptions }: Mult
   const [hovered, setHovered] = useState<string | null>(null)
   const activeDesc = hovered ? descriptions?.[hovered] : null
 
-  const toggle = (opt: string) => {
-    if (value.includes(opt)) onChange(value.filter(v => v !== opt))
-    else onChange([...value, opt])
+  const toggle = (opt: PillOption) => {
+    const v = getOptionValue(opt)
+    if (value.includes(v)) onChange(value.filter(existing => existing !== v))
+    else onChange([...value, v])
   }
 
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        {options.map(opt => (
-          <motion.button
-            key={opt}
-            type="button"
-            onClick={() => toggle(opt)}
-            onMouseEnter={() => setHovered(opt)}
-            onMouseLeave={() => setHovered(null)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.93 }}
-            transition={pillTransition}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
-              value.includes(opt)
-                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
-                : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
-            }`}
-          >
-            {opt}
-          </motion.button>
-        ))}
+        {options.map(opt => {
+          const v = getOptionValue(opt)
+          return (
+            <motion.button
+              key={v}
+              type="button"
+              onClick={() => toggle(opt)}
+              onMouseEnter={() => setHovered(v)}
+              onMouseLeave={() => setHovered(null)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.93 }}
+              transition={pillTransition}
+              className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
+                value.includes(v)
+                  ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
+                  : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
+              }`}
+            >
+              {getOptionLabel(opt)}
+            </motion.button>
+          )
+        })}
       </div>
 
       <AnimatePresence>
