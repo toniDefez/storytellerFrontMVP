@@ -25,15 +25,29 @@
   --color-chart-3: hsl(var(--chart-3));
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
+
+  /* Semantic entity colors */
+  --color-entity-world: hsl(var(--primary));
+  --color-entity-world-light: hsl(263 80% 95%);
+  --color-entity-character: hsl(25 95% 53%);
+  --color-entity-character-light: hsl(33 100% 96%);
+  --color-entity-character-muted: hsl(25 90% 42%);
+  --color-entity-scene: hsl(199 89% 48%);
+  --color-entity-scene-light: hsl(199 100% 95%);
+  --color-entity-scene-muted: hsl(199 80% 38%);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --font-display: 'Lora', Georgia, 'Times New Roman', serif;
+  --font-body: 'Source Sans 3', system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
+    --background: 40 20% 98%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -66,7 +80,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
   }
 }
 

@@ -14,7 +14,8 @@
       "Bash(npm install:*)",
       "Bash(git add:*)",
       "Bash(npx:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(node:*)"
     ]
   }
 }
