@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getLinkingToken } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -44,10 +45,10 @@ const scaleIn = {
 
 // --- Helpers ---
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return iso
-  return d.toLocaleString()
+  return d.toLocaleString(locale === 'en' ? 'en-US' : 'es-ES')
 }
 
 // --- Sub-components ---
@@ -100,6 +101,7 @@ function DetailRow({
 }
 
 function TokenGenerator({ compact }: { compact?: boolean }) {
+  const { t } = useTranslation()
   const [token, setToken] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -113,7 +115,7 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
       const result = await getLinkingToken()
       setToken(result.token)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo generar el token.')
+      setError(err instanceof Error ? err.message : t('installation.tokenError'))
     } finally {
       setLoading(false)
     }
@@ -137,12 +139,12 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generando...
+              {t('installation.generating')}
             </>
           ) : (
             <>
               <Key className="mr-2 h-4 w-4" />
-              Generar token de vinculacion
+              {t('installation.generateToken')}
             </>
           )}
         </Button>
@@ -174,7 +176,7 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
               <div className="flex items-center gap-2">
                 <Zap className="h-3.5 w-3.5 text-primary" />
                 <span className="font-semibold text-sm text-foreground">
-                  Token de vinculacion
+                  {t('installation.tokenLabel')}
                 </span>
               </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -195,7 +197,7 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
                         className="flex items-center gap-1.5 text-emerald-600"
                       >
                         <Check className="h-3.5 w-3.5" />
-                        Copiado
+                        {t('installation.tokenCopied')}
                       </motion.span>
                     ) : (
                       <motion.span
@@ -207,7 +209,7 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
                         className="flex items-center gap-1.5"
                       >
                         <Copy className="h-3.5 w-3.5" />
-                        Copiar
+                        {t('installation.tokenCopy')}
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -218,8 +220,7 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
               {token}
             </div>
             <p className="text-xs text-muted-foreground mt-2.5">
-              Este token es de un solo uso. Una vez utilizado para vincular, no
-              podra reutilizarse.
+              {t('installation.tokenWarning')}
             </p>
           </motion.div>
         )}
@@ -229,36 +230,34 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
 }
 
 function SetupSteps() {
+  const { t } = useTranslation()
+
+  const codeClass = "bg-muted px-1.5 py-0.5 rounded text-xs font-mono"
+
   const steps = [
     {
       icon: Download,
       color: 'text-violet-500',
       bg: 'bg-violet-500',
-      title: 'Descarga el generador',
-      description:
-        'Clona o descarga el repositorio del generador local (storyteller-generator-v2) en tu maquina.',
+      title: t('installation.step1Title'),
+      description: t('installation.step1Desc'),
     },
     {
       icon: Key,
       color: 'text-amber-500',
       bg: 'bg-amber-500',
-      title: 'Genera un token de vinculacion',
-      description:
-        'Usa el boton de abajo para generar un token. Copialo al portapapeles.',
+      title: t('installation.step2Title'),
+      description: t('installation.step2Desc'),
     },
     {
       icon: Terminal,
       color: 'text-sky-500',
       bg: 'bg-sky-500',
-      title: 'Configura el token en el generador',
+      title: t('installation.step3Title'),
       content: (
         <>
           <p className="text-sm text-muted-foreground mb-2">
-            Agrega el token en el archivo{' '}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
-              .env
-            </code>{' '}
-            del generador:
+            <Trans i18nKey="installation.step3Desc" components={{ code: <code className={codeClass} /> }} />
           </p>
           <div className="bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800">
             <span className="text-sky-400">INSTALLATION_TOKEN</span>=
@@ -271,30 +270,17 @@ function SetupSteps() {
       icon: Play,
       color: 'text-emerald-500',
       bg: 'bg-emerald-500',
-      title: 'Inicia el generador',
+      title: t('installation.step4Title'),
       content: (
         <>
           <p className="text-sm text-muted-foreground mb-2">
-            Ejecuta Docker Compose. El servicio de bootstrap se vinculara
-            automaticamente con tu cuenta:
+            {t('installation.step4Desc')}
           </p>
           <div className="bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800">
             <span className="text-emerald-400">$</span> docker compose up
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            El bootstrap configura automaticamente el{' '}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
-              CHANNEL_ID
-            </code>{' '}
-            y el{' '}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
-              INSTALLATION_ACCESS_TOKEN
-            </code>{' '}
-            en tu{' '}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
-              .env
-            </code>
-            .
+            <Trans i18nKey="installation.step4Auto" components={{ code: <code className={codeClass} /> }} />
           </p>
         </>
       ),
@@ -332,6 +318,7 @@ function SetupSteps() {
 }
 
 function LinkedHeader() {
+  const { t } = useTranslation()
   return (
     <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-r from-emerald-500/10 via-primary/10 to-emerald-500/10 px-6 py-5">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_hsl(var(--primary)/0.08),_transparent_70%)]" />
@@ -342,10 +329,10 @@ function LinkedHeader() {
           </div>
           <div>
             <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-0.5">
-              Vinculado
+              {t('installation.linkedBadge')}
             </p>
             <h2 className="text-xl font-bold text-foreground">
-              Generador local
+              {t('installation.linkedTitle')}
             </h2>
           </div>
         </div>
@@ -357,6 +344,7 @@ function LinkedHeader() {
 // --- Main page ---
 
 export function InstallationSection() {
+  const { t, i18n } = useTranslation()
   const { installation, hasInstallation, loading } = useInstallation()
 
   if (loading) {
@@ -400,34 +388,34 @@ export function InstallationSection() {
               <motion.div variants={stagger} initial="hidden" animate="show">
                 <DetailRow
                   icon={Monitor}
-                  label="Sistema operativo"
+                  label={t('installation.osLabel')}
                   value={installation.os}
                 />
                 <DetailRow
                   icon={Cpu}
-                  label="Arquitectura"
+                  label={t('installation.archLabel')}
                   value={installation.arch}
                 />
                 <DetailRow
                   icon={Globe}
-                  label="IP"
+                  label={t('installation.ipLabel')}
                   value={`${installation.ip}:${installation.port}`}
                 />
                 <DetailRow
                   icon={Clock}
-                  label="Ultima conexion"
-                  value={formatDate(installation.last_seen_at)}
+                  label={t('installation.lastSeenLabel')}
+                  value={formatDate(installation.last_seen_at, i18n.language)}
                 />
                 <DetailRow
                   icon={Link2}
-                  label="Vinculada desde"
-                  value={formatDate(installation.created_at)}
+                  label={t('installation.createdAtLabel')}
+                  value={formatDate(installation.created_at, i18n.language)}
                 />
               </motion.div>
 
               <div className="mt-5 rounded-lg border bg-muted/40 p-3">
                 <span className="text-xs text-muted-foreground font-medium">
-                  Channel ID
+                  {t('installation.channelIdLabel')}
                 </span>
                 <div className="font-mono text-xs text-foreground break-all mt-1 leading-relaxed">
                   {installation.channel_id}
@@ -443,12 +431,11 @@ export function InstallationSection() {
               <div className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-base font-semibold text-foreground">
-                  Revincular instalacion
+                  {t('installation.relinkTitle')}
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Si necesitas vincular una nueva maquina o reinstalar el generador,
-                genera un nuevo token.
+                {t('installation.relinkDesc')}
               </p>
             </CardHeader>
             <CardContent>
@@ -476,11 +463,10 @@ export function InstallationSection() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-foreground">
-                  Configurar generador local
+                  {t('installation.setupTitle')}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Para generar contenido con IA necesitas un generador ejecutandose
-                  en tu maquina.
+                  {t('installation.setupDesc')}
                 </p>
               </div>
             </div>
