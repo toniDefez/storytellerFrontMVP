@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getCharacterById } from '../../services/api'
 import type { Character } from '../../services/api'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function CharacterDetailPage() {
   const { worldId, characterId } = useParams()
@@ -12,7 +14,7 @@ export default function CharacterDetailPage() {
   useEffect(() => {
     const id = Number(characterId)
     if (!characterId || Number.isNaN(id)) {
-      setError('ID de personaje inválido.')
+      setError('ID de personaje invalido.')
       setLoading(false)
       return
     }
@@ -24,8 +26,20 @@ export default function CharacterDetailPage() {
   }, [characterId])
 
   if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando personaje...</div>
-  if (error) return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
-  if (!character) return <div className="flex justify-center items-center h-96 text-lg text-red-500">No se encontró el personaje.</div>
+  if (error) return (
+    <div className="flex justify-center items-center h-96">
+      <Alert variant="destructive" className="max-w-md">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    </div>
+  )
+  if (!character) return (
+    <div className="flex justify-center items-center h-96">
+      <Alert variant="destructive" className="max-w-md">
+        <AlertDescription>No se encontro el personaje.</AlertDescription>
+      </Alert>
+    </div>
+  )
 
   const personalityList = character.personality
     ? character.personality.split(',').map(item => item.trim()).filter(Boolean)
@@ -36,12 +50,9 @@ export default function CharacterDetailPage() {
     <div className="max-w-3xl mx-auto mt-8 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-extrabold text-purple-800">{character.name}</h2>
-        <Link
-          to={worldId ? `/worlds/${worldId}` : '/worlds'}
-          className="text-sm font-semibold text-purple-700 hover:text-purple-900"
-        >
-          Volver al mundo
-        </Link>
+        <Button variant="secondary" size="sm" asChild>
+          <Link to={worldId ? `/worlds/${worldId}` : '/worlds'}>Volver al mundo</Link>
+        </Button>
       </div>
 
       <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200 space-y-6">

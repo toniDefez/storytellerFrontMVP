@@ -2,25 +2,28 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import EmailInput from '../../components/EmailInput'
 import PasswordInput from '../../components/PasswordInput'
-import ErrorModal from '../../components/ErrorModal'
 import { login } from '../../services/api'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
     try {
       const data = await login(email, password)
       localStorage.setItem('token', data.token)
       navigate('/worlds')
     } catch {
-      setShowErrorModal(true)
-      setError('Credenciales incorrectas')
+      toast.error('Error de inicio de sesion', { description: 'Credenciales incorrectas' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -41,11 +44,7 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="relative bg-white/90 shadow-2xl rounded-2xl px-10 pt-10 pb-8 w-full max-w-md border border-gray-200 backdrop-blur-md"
       >
-        <h2 className="text-3xl font-extrabold mb-8 text-center text-gray-800 tracking-tight drop-shadow">Iniciar sesión</h2>
-
-        {error && (
-          <p className="mb-4 text-red-600 text-sm text-center font-semibold">{error}</p>
-        )}
+        <h2 className="text-3xl font-extrabold mb-8 text-center text-gray-800 tracking-tight drop-shadow">Iniciar sesion</h2>
 
         <EmailInput
           value={email}
@@ -56,28 +55,17 @@ export default function LoginPage() {
           onChange={setPassword}
         />
 
-        <button
-          type="submit"
-          className="bg-gradient-to-r from-blue-500 to-pink-500 hover:from-blue-600 hover:to-pink-600 text-white font-bold py-2 px-4 w-full rounded-lg shadow-lg transition-all duration-200 text-lg tracking-wide"
-        >
-          Entrar
-        </button>
+        <Button type="submit" size="lg" className="w-full" disabled={loading}>
+          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Entrando...</> : 'Entrar'}
+        </Button>
 
         <p className="text-center text-sm mt-6 text-gray-700">
-          ¿No tienes cuenta?{' '}
+          No tienes cuenta?{' '}
           <Link to="/register" className="text-pink-600 hover:underline font-semibold">
-            Regístrate aquí
+            Registrate aqui
           </Link>
         </p>
       </form>
-
-      <ErrorModal
-        open={showErrorModal}
-        title="Error de inicio de sesión"
-        message={error || 'No se pudo iniciar sesión. Inténtalo de nuevo.'}
-        buttonText="Cerrar"
-        onClose={() => setShowErrorModal(false)}
-      />
     </div>
   )
 }

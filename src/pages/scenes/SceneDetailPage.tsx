@@ -11,6 +11,10 @@ import {
 import type { SceneDetail, Character, Event as StoryEvent } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
+import ConfirmModal from '../../components/ConfirmModal'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function SceneDetailPage() {
   const { worldId, sceneId } = useParams()
@@ -35,6 +39,7 @@ export default function SceneDetailPage() {
   const [generatingNarrative, setGeneratingNarrative] = useState(false)
 
   const { hasInstallation, checked: installationChecked } = useInstallation()
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
 
   useEffect(() => {
     if (!sceneId || !worldId) return
@@ -57,7 +62,6 @@ export default function SceneDetailPage() {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm('¿Seguro que quieres borrar esta escena?')) return
     try {
       await deleteScene(Number(sceneId))
       navigate(`/worlds/${worldId}`)
@@ -75,7 +79,7 @@ export default function SceneDetailPage() {
       setSelectedCharId(null)
       loadData()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo añadir el personaje.')
+      setError(err instanceof Error ? err.message : 'No se pudo anadir el personaje.')
     } finally {
       setAddingChar(false)
     }
@@ -115,7 +119,13 @@ export default function SceneDetailPage() {
   }
 
   if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando escena...</div>
-  if (error && !detail) return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
+  if (error && !detail) return (
+    <div className="flex justify-center items-center h-96">
+      <Alert variant="destructive" className="max-w-md">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    </div>
+  )
   if (!detail) return null
 
   const { scene, characters, events } = detail
@@ -125,13 +135,28 @@ export default function SceneDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 mt-8">
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
+      <ConfirmModal
+        open={showConfirmDelete}
+        title="Borrar esta escena?"
+        message={`Esto eliminara "${scene.title}" y todos sus eventos de forma permanente. Esta accion no se puede deshacer.`}
+        confirmText="Borrar escena"
+        cancelText="Cancelar"
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirmDelete(false)}
+      />
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Scene Info */}
       <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-extrabold text-purple-800">{scene.title}</h2>
-          <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold">Borrar</button>
+          <Button variant="destructive" size="sm" onClick={() => setShowConfirmDelete(true)}>Borrar</Button>
         </div>
         <div className="flex flex-wrap gap-3 mb-4">
           <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-medium">{scene.location}</span>
@@ -146,9 +171,9 @@ export default function SceneDetailPage() {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-purple-700">Personajes en escena ({characters?.length || 0})</h3>
           {availableCharacters.length > 0 && (
-            <button onClick={() => setShowAddChar(!showAddChar)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">
-              + Añadir personaje
-            </button>
+            <Button variant="secondary" size="sm" onClick={() => setShowAddChar(!showAddChar)}>
+              + Anadir personaje
+            </Button>
           )}
         </div>
 
@@ -167,13 +192,9 @@ export default function SceneDetailPage() {
                 ))}
               </select>
             </div>
-            <button
-              onClick={handleAddCharacter}
-              disabled={!selectedCharId || addingChar}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-60"
-            >
-              {addingChar ? 'Añadiendo...' : 'Añadir'}
-            </button>
+            <Button variant="secondary" size="sm" onClick={handleAddCharacter} disabled={!selectedCharId || addingChar}>
+              {addingChar ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Anadiendo...</> : 'Anadir'}
+            </Button>
           </div>
         )}
 
@@ -220,18 +241,18 @@ export default function SceneDetailPage() {
               value={eventDesc}
               onChange={e => setEventDesc(e.target.value)}
               className="w-full border rounded-lg px-3 py-2 min-h-[60px]"
-              placeholder="Describe qué debería pasar..."
+              placeholder="Describe que deberia pasar..."
               required
             />
           </div>
           <div className="flex gap-3 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Número de eventos</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Numero de eventos</label>
               <input type="number" min={1} max={5} value={numEvents} onChange={e => setNumEvents(Number(e.target.value))} className="border rounded-lg px-3 py-2 w-20" />
             </div>
-            <button type="submit" disabled={generatingEvents} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow transition-all disabled:opacity-60">
-              {generatingEvents ? 'Generando...' : 'Generar eventos'}
-            </button>
+            <Button type="submit" size="lg" disabled={generatingEvents}>
+              {generatingEvents ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar eventos'}
+            </Button>
           </div>
         </form>
       </div>
@@ -240,13 +261,9 @@ export default function SceneDetailPage() {
       <div className="bg-white/90 shadow-xl rounded-2xl p-8 border border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-purple-700">Narrativa</h3>
-          <button
-            onClick={handleGenerateNarrative}
-            disabled={generatingNarrative}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-2 px-6 rounded-lg shadow transition-all disabled:opacity-60"
-          >
-            {generatingNarrative ? 'Generando narrativa...' : 'Generar narrativa'}
-          </button>
+          <Button variant="secondary" size="sm" onClick={handleGenerateNarrative} disabled={generatingNarrative}>
+            {generatingNarrative ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando narrativa...</> : 'Generar narrativa'}
+          </Button>
         </div>
         {narrative ? (
           <div className="prose max-w-none bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl border border-purple-200 whitespace-pre-wrap text-gray-800 leading-relaxed">

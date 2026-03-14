@@ -9,30 +9,33 @@ import { FieldGroup } from '@/components/form/FieldGroup'
 import { SectionDivider } from '@/components/form/SectionDivider'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
-const TIME_OPTIONS = ['Amanecer', 'Mañana', 'Mediodía', 'Tarde', 'Anochecer', 'Noche', 'Medianoche']
+const TIME_OPTIONS = ['Amanecer', 'Manana', 'Mediodia', 'Tarde', 'Anochecer', 'Noche', 'Medianoche']
 const TIME_DESC: Record<string, string> = {
   Amanecer: 'La primera luz rompe la oscuridad. El momento de las promesas y los nuevos comienzos.',
-  Mañana: 'El día en plena actividad, el mundo despierto, el bullicio en marcha.',
-  Mediodía: 'Sol en lo alto, calor y el momento de máxima claridad y exposición.',
+  Manana: 'El dia en plena actividad, el mundo despierto, el bullicio en marcha.',
+  Mediodia: 'Sol en lo alto, calor y el momento de maxima claridad y exposicion.',
   Tarde: 'Las sombras se alargan, el ritmo baja y las confidencias empiezan a emerger.',
-  Anochecer: 'El crepúsculo tiñe el cielo. La frontera entre el día y la noche.',
+  Anochecer: 'El crepusculo tine el cielo. La frontera entre el dia y la noche.',
   Noche: 'Oscuridad y misterio. La ciudad cambia de cara cuando caen las estrellas.',
-  Medianoche: 'La hora más profunda. Secretos, rituales y lo que nadie debería ver.',
+  Medianoche: 'La hora mas profunda. Secretos, rituales y lo que nadie deberia ver.',
 }
 
-const TONE_OPTIONS = ['Épico', 'Misterioso', 'Sombrío', 'Romántico', 'Tenso', 'Cómico', 'Trágico', 'Pacífico', 'Ominoso', 'Íntimo']
+const TONE_OPTIONS = ['Epico', 'Misterioso', 'Sombrio', 'Romantico', 'Tenso', 'Comico', 'Tragico', 'Pacifico', 'Ominoso', 'Intimo']
 const TONE_DESC: Record<string, string> = {
-  Épico: 'Gestas legendarias, sacrificios heroicos y el peso del destino en cada acción.',
-  Misterioso: 'Preguntas sin respuesta, sombras entre líneas y una tensión que no cesa.',
-  Sombrío: 'La oscuridad tiene protagonismo. Pérdida, duda y una atmósfera opresiva.',
-  Romántico: 'El corazón guía las acciones. Pasión, deseo y vínculos que trascienden.',
+  Epico: 'Gestas legendarias, sacrificios heroicos y el peso del destino en cada accion.',
+  Misterioso: 'Preguntas sin respuesta, sombras entre lineas y una tension que no cesa.',
+  Sombrio: 'La oscuridad tiene protagonismo. Perdida, duda y una atmosfera opresiva.',
+  Romantico: 'El corazon guia las acciones. Pasion, deseo y vinculos que trascienden.',
   Tenso: 'Cada palabra importa. El peligro acecha y cualquier error tiene consecuencias.',
-  Cómico: 'La ligereza como arma. Humor, ironía y momentos que alivian la carga.',
-  Trágico: 'El final ya está escrito. La belleza inevitable de lo que no tiene remedio.',
-  Pacífico: 'Sin conflicto aparente. Espacio para el detalle, la contemplación y el respiro.',
+  Comico: 'La ligereza como arma. Humor, ironia y momentos que alivian la carga.',
+  Tragico: 'El final ya esta escrito. La belleza inevitable de lo que no tiene remedio.',
+  Pacifico: 'Sin conflicto aparente. Espacio para el detalle, la contemplacion y el respiro.',
   Ominoso: 'Algo malo se aproxima. Una amenaza latente que impregna cada momento.',
-  Íntimo: 'A puerta cerrada, los personajes se revelan. Vulnerabilidad y conexión real.',
+  Intimo: 'A puerta cerrada, los personajes se revelan. Vulnerabilidad y conexion real.',
 }
 
 export default function CreateScenePage() {
@@ -56,7 +59,7 @@ export default function CreateScenePage() {
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!time || !tone) {
-      setError('Por favor selecciona el momento del día y el tono de la escena.')
+      setError('Por favor selecciona el momento del dia y el tono de la escena.')
       return
     }
     setLoading(true)
@@ -115,7 +118,7 @@ export default function CreateScenePage() {
 
           <div className="px-10 pt-8 pb-9">
             <h2 className="text-2xl font-bold mb-1 text-gray-800 tracking-tight">Crear escena</h2>
-            <p className="text-sm text-gray-400 mb-7">Define el momento que impulsará la narrativa.</p>
+            <p className="text-sm text-gray-400 mb-7">Define el momento que impulsara la narrativa.</p>
 
             <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-8 w-fit">
               <button onClick={() => setMode('manual')} type="button" className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'manual' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Manual</button>
@@ -123,22 +126,24 @@ export default function CreateScenePage() {
             </div>
 
             {error && (
-              <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
+              <Alert variant="destructive" className="mb-5">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {mode === 'manual' && (
               <form onSubmit={handleManualSubmit}>
-                <FieldGroup label="Título">
-                  <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder="El título de la escena..." />
+                <FieldGroup label="Titulo">
+                  <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder="El titulo de la escena..." />
                 </FieldGroup>
 
-                <FieldGroup label="Ubicación">
+                <FieldGroup label="Ubicacion">
                   <Input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full" required placeholder="Ej: Taberna del puerto, Bosque encantado, Castillo en ruinas..." />
                 </FieldGroup>
 
-                <SectionDivider label="Atmósfera" />
+                <SectionDivider label="Atmosfera" />
 
-                <FieldGroup label="Momento del día">
+                <FieldGroup label="Momento del dia">
                   <PillSelect options={TIME_OPTIONS} value={time} onChange={setTime} descriptions={TIME_DESC} />
                 </FieldGroup>
 
@@ -149,12 +154,12 @@ export default function CreateScenePage() {
                 <SectionDivider label="Narrativa" />
 
                 <FieldGroup label="Contexto">
-                  <Textarea value={context} onChange={e => setContext(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Describe qué está pasando en esta escena..." />
+                  <Textarea value={context} onChange={e => setContext(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Describe que esta pasando en esta escena..." />
                 </FieldGroup>
 
-                <button type="submit" disabled={loading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50">
-                  {loading ? 'Creando escena...' : 'Crear escena'}
-                </button>
+                <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creando escena...</> : 'Crear escena'}
+                </Button>
               </form>
             )}
 
@@ -163,11 +168,11 @@ export default function CreateScenePage() {
                 {installationChecked && !hasInstallation && <NoInstallationBanner />}
                 <form onSubmit={handleAIGenerate}>
                   <FieldGroup label="Describe la escena que quieres crear">
-                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Una noche lluviosa en un callejón oscuro donde dos viejos rivales se encuentran..." required />
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Una noche lluviosa en un callejon oscuro donde dos viejos rivales se encuentran..." required />
                   </FieldGroup>
-                  <button type="submit" disabled={aiLoading || !hasInstallation} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
-                    {aiLoading ? 'Generando...' : 'Generar escena con IA'}
-                  </button>
+                  <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
+                    {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar escena con IA'}
+                  </Button>
                 </form>
 
                 {aiScene && (
@@ -188,9 +193,9 @@ export default function CreateScenePage() {
                       ))}
                     </div>
                     <div className="px-5 py-3 bg-white border-t border-violet-100">
-                      <button onClick={handleAISave} disabled={loading} className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50">
-                        {loading ? 'Guardando...' : 'Guardar esta escena'}
-                      </button>
+                      <Button size="lg" className="w-full" onClick={handleAISave} disabled={loading}>
+                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : 'Guardar esta escena'}
+                      </Button>
                     </div>
                   </div>
                 )}

@@ -9,41 +9,44 @@ import { FieldGroup } from '@/components/form/FieldGroup'
 import { SectionDivider } from '@/components/form/SectionDivider'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
-const ERA_OPTIONS = ['Medieval', 'Antigua', 'Futurista', 'Moderna', 'Fantástica', 'Post-apocalíptica', 'Victoriana', 'Espacial']
+const ERA_OPTIONS = ['Medieval', 'Antigua', 'Futurista', 'Moderna', 'Fantastica', 'Post-apocaliptica', 'Victoriana', 'Espacial']
 const ERA_DESC: Record<string, string> = {
   Medieval: 'Caballeros, castillos y gremios. La era de la espada y la fe.',
   Antigua: 'Imperios de piedra, dioses caprichosos y civilizaciones en auge.',
-  Futurista: 'Tecnología avanzada, corporaciones omnipotentes y mundos interconectados.',
+  Futurista: 'Tecnologia avanzada, corporaciones omnipotentes y mundos interconectados.',
   Moderna: 'El mundo tal y como lo conocemos, con sus luces y sombras.',
-  Fantástica: 'Magia entretejida en la realidad, criaturas míticas y reinos imposibles.',
-  'Post-apocalíptica': 'Las ruinas del ayer como escenario. Supervivencia y renacimiento.',
+  Fantastica: 'Magia entretejida en la realidad, criaturas miticas y reinos imposibles.',
+  'Post-apocaliptica': 'Las ruinas del ayer como escenario. Supervivencia y renacimiento.',
   Victoriana: 'Vapor, engranajes y una sociedad en plena efervescencia industrial.',
-  Espacial: 'La inmensidad del cosmos como lienzo. Naves, alienígenas y lo desconocido.',
+  Espacial: 'La inmensidad del cosmos como lienzo. Naves, alienigenas y lo desconocido.',
 }
 
-const CLIMATE_OPTIONS = ['Templado', 'Ártico', 'Tropical', 'Desértico', 'Volcánico', 'Oceánico', 'Montañoso', 'Tóxico']
+const CLIMATE_OPTIONS = ['Templado', 'Artico', 'Tropical', 'Desertico', 'Volcanico', 'Oceanico', 'Montanoso', 'Toxico']
 const CLIMATE_DESC: Record<string, string> = {
-  Templado: 'Cuatro estaciones bien definidas, lluvias moderadas y abundante vegetación.',
-  Ártico: 'Hielo eterno, ventiscas demoledoras y noches que duran meses.',
-  Tropical: 'Calor húmedo, selvas densas y vida desbordante en cada rincón.',
-  Desértico: 'Arenas infinitas, sol implacable y oasis como tesoros preciados.',
-  Volcánico: 'Tierra viva, erupciones constantes y paisajes de fuego y ceniza.',
-  Oceánico: 'Dominado por el mar, con islas dispersas y tormentas legendarias.',
-  Montañoso: 'Cimas nevadas, valles profundos y rutas de paso que marcan el destino.',
-  Tóxico: 'Atmósfera venenosa, mutaciones y ecosistemas retorcidos por el caos.',
+  Templado: 'Cuatro estaciones bien definidas, lluvias moderadas y abundante vegetacion.',
+  Artico: 'Hielo eterno, ventiscas demoledoras y noches que duran meses.',
+  Tropical: 'Calor humedo, selvas densas y vida desbordante en cada rincon.',
+  Desertico: 'Arenas infinitas, sol implacable y oasis como tesoros preciados.',
+  Volcanico: 'Tierra viva, erupciones constantes y paisajes de fuego y ceniza.',
+  Oceanico: 'Dominado por el mar, con islas dispersas y tormentas legendarias.',
+  Montanoso: 'Cimas nevadas, valles profundos y rutas de paso que marcan el destino.',
+  Toxico: 'Atmosfera venenosa, mutaciones y ecosistemas retorcidos por el caos.',
 }
 
-const POLITICS_OPTIONS = ['Monarquía', 'Imperio', 'República', 'Teocracia', 'Anarquía', 'Oligarquía', 'Tribu', 'Dictadura']
+const POLITICS_OPTIONS = ['Monarquia', 'Imperio', 'Republica', 'Teocracia', 'Anarquia', 'Oligarquia', 'Tribu', 'Dictadura']
 const POLITICS_DESC: Record<string, string> = {
-  Monarquía: 'Un linaje gobierna por sangre. La corona es ley y la nobleza, su sombra eterna.',
-  Imperio: 'Un poder central domina vastos territorios con mano de hierro y ejércitos leales.',
-  República: 'Representantes elegidos deliberan el futuro de la nación en nombre del pueblo.',
-  Teocracia: 'Los dioses gobiernan a través de sus sacerdotes. La fe es la constitución.',
-  Anarquía: 'Sin autoridad central. Comunidades autónomas y pactos frágiles entre facciones.',
-  Oligarquía: 'Un grupo selecto de familias o gremios controla el poder real desde las sombras.',
-  Tribu: 'Clanes y linajes donde la tradición oral y los ancianos dictan el camino.',
-  Dictadura: 'Un solo líder concentra todo el poder. Lealtad o destierro, no hay término medio.',
+  Monarquia: 'Un linaje gobierna por sangre. La corona es ley y la nobleza, su sombra eterna.',
+  Imperio: 'Un poder central domina vastos territorios con mano de hierro y ejercitos leales.',
+  Republica: 'Representantes elegidos deliberan el futuro de la nacion en nombre del pueblo.',
+  Teocracia: 'Los dioses gobiernan a traves de sus sacerdotes. La fe es la constitucion.',
+  Anarquia: 'Sin autoridad central. Comunidades autonomas y pactos fragiles entre facciones.',
+  Oligarquia: 'Un grupo selecto de familias o gremios controla el poder real desde las sombras.',
+  Tribu: 'Clanes y linajes donde la tradicion oral y los ancianos dictan el camino.',
+  Dictadura: 'Un solo lider concentra todo el poder. Lealtad o destierro, no hay termino medio.',
 }
 
 export default function CreateWorldPage() {
@@ -71,7 +74,7 @@ export default function CreateWorldPage() {
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!era || !climate || !politics) {
-      setError('Por favor selecciona era, clima y sistema político.')
+      setError('Por favor selecciona era, clima y sistema politico.')
       return
     }
     setLoading(true)
@@ -132,7 +135,7 @@ export default function CreateWorldPage() {
 
           <div className="px-10 pt-8 pb-9">
             <h2 className="text-2xl font-bold mb-1 text-gray-800 tracking-tight">Crear nuevo mundo</h2>
-            <p className="text-sm text-gray-400 mb-7">Define el escenario donde tu historia tomará vida.</p>
+            <p className="text-sm text-gray-400 mb-7">Define el escenario donde tu historia tomara vida.</p>
 
             {/* Mode tabs */}
             <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-8 w-fit">
@@ -141,16 +144,18 @@ export default function CreateWorldPage() {
             </div>
 
             {error && (
-              <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
+              <Alert variant="destructive" className="mb-5">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {mode === 'manual' && (
               <form onSubmit={handleManualSubmit}>
                 <FieldGroup label="Nombre del mundo">
-                  <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder="Ej: Aethermoor, El Vacío Dorado..." />
+                  <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder="Ej: Aethermoor, El Vacio Dorado..." />
                 </FieldGroup>
 
-                <SectionDivider label="Ambientación" />
+                <SectionDivider label="Ambientacion" />
 
                 <FieldGroup label="Era">
                   <PillSelect options={ERA_OPTIONS} value={era} onChange={setEra} descriptions={ERA_DESC} />
@@ -160,7 +165,7 @@ export default function CreateWorldPage() {
                   <PillSelect options={CLIMATE_OPTIONS} value={climate} onChange={setClimate} descriptions={CLIMATE_DESC} />
                 </FieldGroup>
 
-                <FieldGroup label="Sistema político">
+                <FieldGroup label="Sistema politico">
                   <PillSelect options={POLITICS_OPTIONS} value={politics} onChange={setPolitics} descriptions={POLITICS_DESC} />
                 </FieldGroup>
 
@@ -170,7 +175,7 @@ export default function CreateWorldPage() {
                   <Input type="text" value={culture} onChange={e => setCulture(e.target.value)} className="w-full" required placeholder="Ej: Guerrera y honorable, mercantil y cosmopolita..." />
                 </FieldGroup>
 
-                <FieldGroup label="Descripción">
+                <FieldGroup label="Descripcion">
                   <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Describe brevemente la esencia de tu mundo..." />
                 </FieldGroup>
 
@@ -178,18 +183,18 @@ export default function CreateWorldPage() {
                   <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Facciones</label>
                   {factions.map((f, idx) => (
                     <div key={idx} className="flex gap-2 mb-2">
-                      <Input type="text" value={f} onChange={e => handleFactionChange(idx, e.target.value)} className="w-full" placeholder={`Facción #${idx + 1}`} />
+                      <Input type="text" value={f} onChange={e => handleFactionChange(idx, e.target.value)} className="w-full" placeholder={`Faccion #${idx + 1}`} />
                       {factions.length > 1 && (
                         <button type="button" onClick={() => removeFaction(idx)} className="text-gray-300 hover:text-red-400 font-bold px-2 transition text-lg">✕</button>
                       )}
                     </div>
                   ))}
-                  <button type="button" onClick={addFaction} className="text-violet-500 hover:text-violet-700 text-xs font-semibold mt-1 transition">+ Añadir facción</button>
+                  <button type="button" onClick={addFaction} className="text-violet-500 hover:text-violet-700 text-xs font-semibold mt-1 transition">+ Anadir faccion</button>
                 </div>
 
-                <button type="submit" disabled={loading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50">
-                  {loading ? 'Creando mundo...' : 'Crear mundo'}
-                </button>
+                <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creando mundo...</> : 'Crear mundo'}
+                </Button>
               </form>
             )}
 
@@ -198,11 +203,11 @@ export default function CreateWorldPage() {
                 {installationChecked && !hasInstallation && <NoInstallationBanner />}
                 <form onSubmit={handleAIGenerate}>
                   <FieldGroup label="Describe el mundo que quieres crear">
-                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Un mundo tóxico postapocalíptico donde las ciudades flotan sobre nubes de veneno..." required />
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Un mundo toxico postapocaliptico donde las ciudades flotan sobre nubes de veneno..." required />
                   </FieldGroup>
-                  <button type="submit" disabled={aiLoading || !hasInstallation} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
-                    {aiLoading ? 'Generando...' : 'Generar mundo con IA'}
-                  </button>
+                  <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
+                    {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar mundo con IA'}
+                  </Button>
                 </form>
 
                 {aiWorld && (
@@ -214,7 +219,7 @@ export default function CreateWorldPage() {
                       {[
                         { label: 'Era', value: aiWorld.era },
                         { label: 'Clima', value: aiWorld.climate },
-                        { label: 'Política', value: aiWorld.politics },
+                        { label: 'Politica', value: aiWorld.politics },
                         { label: 'Cultura', value: aiWorld.culture },
                         ...(aiWorld.factions?.length ? [{ label: 'Facciones', value: aiWorld.factions.join(', ') }] : []),
                       ].map(({ label, value }) => (
@@ -225,9 +230,9 @@ export default function CreateWorldPage() {
                       ))}
                     </div>
                     <div className="px-5 py-3 bg-white border-t border-violet-100">
-                      <button onClick={handleAISubmit} disabled={loading} className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50">
-                        {loading ? 'Guardando...' : 'Guardar este mundo'}
-                      </button>
+                      <Button size="lg" className="w-full" onClick={handleAISubmit} disabled={loading}>
+                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : 'Guardar este mundo'}
+                      </Button>
                     </div>
                   </div>
                 )}

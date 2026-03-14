@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { getLinkingToken } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -55,13 +57,9 @@ function TokenGenerator() {
 
   return (
     <div>
-      <button
-        onClick={handleGenerate}
-        disabled={loading}
-        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-200 text-lg w-full disabled:opacity-60"
-      >
-        {loading ? 'Generando...' : 'Generar token de vinculacion'}
-      </button>
+      <Button size="lg" className="w-full" onClick={handleGenerate} disabled={loading}>
+        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar token de vinculacion'}
+      </Button>
 
       {error && <p className="mt-4 text-red-600 text-sm text-center font-semibold">{error}</p>}
 
@@ -69,12 +67,9 @@ function TokenGenerator() {
         <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
           <div className="flex justify-between items-center mb-2">
             <span className="font-semibold text-gray-700">Token de vinculacion:</span>
-            <button
-              onClick={handleCopy}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-semibold"
-            >
+            <Button variant="secondary" size="sm" onClick={handleCopy}>
               {copied ? 'Copiado!' : 'Copiar'}
-            </button>
+            </Button>
           </div>
           <div className="bg-gray-900 text-green-400 p-3 rounded font-mono text-xs break-all overflow-auto max-h-32">
             {token}
@@ -154,6 +149,7 @@ export default function InstallationPage() {
     <div className="max-w-2xl mx-auto mt-8">
       <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
         <h2 className="text-3xl font-extrabold text-purple-800 mb-6">Configurar generador local</h2>
+
         <SetupInstructions />
         <TokenGenerator />
       </div>

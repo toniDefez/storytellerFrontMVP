@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import SuccessModal from '../../components/SuccessModal'
 import { validateEmail, validatePassword } from '../../utils/validation'
 import EmailInput from '../../components/EmailInput'
 import PasswordInput from '../../components/PasswordInput'
 import { register } from '../../services/api'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const navigate = useNavigate()
@@ -39,25 +41,20 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
     if (!validate()) return
+    setLoading(true)
     try {
       await register(email, password)
-      setShowSuccess(true)
+      toast.success('Registro exitoso!', { description: 'Tu cuenta ha sido creada.' })
+      setTimeout(() => navigate('/'), 1500)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al registrar usuario')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-200 via-blue-200 to-pink-200">
-      {/* Modal de éxito */}
-      <SuccessModal
-        open={showSuccess}
-        title="¡Registro exitoso!"
-        message="Tu cuenta ha sido creada correctamente."
-        buttonText="Ir a iniciar sesión"
-        onClose={() => navigate('/login')}
-      />
-      {/* Fin modal */}
       <div className="absolute inset-0 flex items-center justify-center -z-10">
         <svg width="700" height="700" viewBox="0 0 700 700" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-30">
           <circle cx="350" cy="350" r="300" fill="url(#paint0_radial_reg)" />
@@ -90,17 +87,14 @@ export default function RegisterPage() {
           externalError={passwordError}
         />
 
-        <button
-          type="submit"
-          className="bg-gradient-to-r from-green-400 to-blue-500 hover:from-green-500 hover:to-blue-600 text-white font-bold py-2 px-4 w-full rounded-lg shadow-lg transition-all duration-200 text-lg tracking-wide"
-        >
-          Registrarse
-        </button>
+        <Button type="submit" size="lg" className="w-full" disabled={loading}>
+          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Registrando...</> : 'Registrarse'}
+        </Button>
 
         <p className="text-center text-sm mt-6 text-gray-700">
-          ¿Ya tienes una cuenta?{' '}
+          Ya tienes una cuenta?{' '}
           <Link to="/login" className="text-blue-600 hover:underline font-semibold">
-            Inicia sesión
+            Inicia sesion
           </Link>
         </p>
       </form>

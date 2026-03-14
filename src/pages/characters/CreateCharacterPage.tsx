@@ -9,35 +9,38 @@ import { FieldGroup } from '@/components/form/FieldGroup'
 import { SectionDivider } from '@/components/form/SectionDivider'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
-const ROLE_OPTIONS = ['Guerrero', 'Mago', 'Pícaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano']
+const ROLE_OPTIONS = ['Guerrero', 'Mago', 'Picaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano']
 const ROLE_DESC: Record<string, string> = {
   Guerrero: 'Forjado en batalla, experto en armas y estrategia de combate.',
-  Mago: 'Domina las artes arcanas, estudiando fuerzas más allá de lo mortal.',
-  Pícaro: 'Sombras como aliadas, hábil en el engaño, el robo y el sigilo.',
-  Explorador: 'Cartógrafo de lo desconocido, superviviente nato en tierras ignotas.',
+  Mago: 'Domina las artes arcanas, estudiando fuerzas mas alla de lo mortal.',
+  Picaro: 'Sombras como aliadas, habil en el engano, el robo y el sigilo.',
+  Explorador: 'Cartografo de lo desconocido, superviviente nato en tierras ignotas.',
   Sanador: 'Canaliza el poder de la vida, alivia el sufrimiento y combate la muerte.',
-  Mercader: 'El oro mueve el mundo. Sabe cuándo comprar, vender... y traicionar.',
+  Mercader: 'El oro mueve el mundo. Sabe cuando comprar, vender... y traicionar.',
   Noble: 'Nacido entre privilegios, navega las intrigas de la corte como pez en el agua.',
-  Sacerdote: 'Voz de su dios en el mundo mortal, árbitro de lo sagrado y lo profano.',
-  Villano: 'Fuerzas oscuras lo impulsan. Sus motivos, aunque retorcidos, tienen lógica.',
-  Artesano: 'Crea con sus manos lo que otros solo sueñan. Maestro de un oficio único.',
+  Sacerdote: 'Voz de su dios en el mundo mortal, arbitro de lo sagrado y lo profano.',
+  Villano: 'Fuerzas oscuras lo impulsan. Sus motivos, aunque retorcidos, tienen logica.',
+  Artesano: 'Crea con sus manos lo que otros solo suenan. Maestro de un oficio unico.',
 }
 
 const PERSONALITY_OPTIONS = ['Valiente', 'Astuto', 'Compasivo', 'Arrogante', 'Misterioso', 'Leal', 'Vengativo', 'Ingenuo', 'Sabio', 'Impulsivo', 'Reservado', 'Temerario']
 const PERSONALITY_DESC: Record<string, string> = {
   Valiente: 'Enfrenta el miedo de frente, a veces sin pensar en las consecuencias.',
-  Astuto: 'Siempre tres pasos adelante. Ve ángulos donde otros solo ven muros.',
-  Compasivo: 'El sufrimiento ajeno le afecta genuinamente. Actúa desde el corazón.',
+  Astuto: 'Siempre tres pasos adelante. Ve angulos donde otros solo ven muros.',
+  Compasivo: 'El sufrimiento ajeno le afecta genuinamente. Actua desde el corazon.',
   Arrogante: 'Convencido de su superioridad, lo que le abre puertas... y enemistades.',
   Misterioso: 'Guarda sus cartas. Su pasado, sus motivos, sus lealtades: todo en duda.',
   Leal: 'Hasta el final. Su palabra dada es un pacto de sangre que nunca rompe.',
   Vengativo: 'Las deudas se pagan. No olvida, no perdona, solo espera su momento.',
   Ingenuo: 'Ve el bien en todos. Una inocencia que puede ser su mayor fortaleza o ruina.',
-  Sabio: 'Ha vivido lo suficiente para saber cuándo hablar y cuándo callar.',
-  Impulsivo: 'Actúa antes de pensar. Su instinto es veloz, sus remordimientos, lentos.',
-  Reservado: 'Pocas palabras, mucha observación. Lo que no dice pesa más que lo que dice.',
-  Temerario: 'El riesgo le atrae. Vive más en el filo que en la comodidad.',
+  Sabio: 'Ha vivido lo suficiente para saber cuando hablar y cuando callar.',
+  Impulsivo: 'Actua antes de pensar. Su instinto es veloz, sus remordimientos, lentos.',
+  Reservado: 'Pocas palabras, mucha observacion. Lo que no dice pesa mas que lo que dice.',
+  Temerario: 'El riesgo le atrae. Vive mas en el filo que en la comodidad.',
 }
 
 export default function CreateCharacterPage() {
@@ -135,7 +138,7 @@ export default function CreateCharacterPage() {
 
           <div className="px-10 pt-8 pb-9">
             <h2 className="text-2xl font-bold mb-1 text-gray-800 tracking-tight">Crear personaje</h2>
-            <p className="text-sm text-gray-400 mb-7">Da vida a quien habitará tu mundo.</p>
+            <p className="text-sm text-gray-400 mb-7">Da vida a quien habitara tu mundo.</p>
 
             <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-8 w-fit">
               <button onClick={() => setMode('manual')} type="button" className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'manual' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Manual</button>
@@ -143,7 +146,9 @@ export default function CreateCharacterPage() {
             </div>
 
             {error && (
-              <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
+              <Alert variant="destructive" className="mb-5">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {mode === 'manual' && (
@@ -178,12 +183,12 @@ export default function CreateCharacterPage() {
                       )}
                     </div>
                   ))}
-                  <button type="button" onClick={addGoal} className="text-violet-500 hover:text-violet-700 text-xs font-semibold mt-1 transition">+ Añadir objetivo</button>
+                  <button type="button" onClick={addGoal} className="text-violet-500 hover:text-violet-700 text-xs font-semibold mt-1 transition">+ Anadir objetivo</button>
                 </div>
 
-                <button type="submit" disabled={loading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50">
-                  {loading ? 'Creando personaje...' : 'Crear personaje'}
-                </button>
+                <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creando personaje...</> : 'Crear personaje'}
+                </Button>
               </form>
             )}
 
@@ -192,11 +197,11 @@ export default function CreateCharacterPage() {
                 {installationChecked && !hasInstallation && <NoInstallationBanner />}
                 <form onSubmit={handleAIGenerate}>
                   <FieldGroup label="Describe el personaje que quieres crear">
-                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Un guerrero noble con un pasado trágico y una lealtad inquebrantable..." required />
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Un guerrero noble con un pasado tragico y una lealtad inquebrantable..." required />
                   </FieldGroup>
-                  <button type="submit" disabled={aiLoading || !hasInstallation} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
-                    {aiLoading ? 'Generando...' : 'Generar personaje con IA'}
-                  </button>
+                  <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
+                    {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar personaje con IA'}
+                  </Button>
                 </form>
 
                 {aiCharacter && (
@@ -218,9 +223,9 @@ export default function CreateCharacterPage() {
                       ))}
                     </div>
                     <div className="px-5 py-3 bg-white border-t border-violet-100">
-                      <button onClick={handleAISave} disabled={loading} className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50">
-                        {loading ? 'Guardando...' : 'Guardar este personaje'}
-                      </button>
+                      <Button size="lg" className="w-full" onClick={handleAISave} disabled={loading}>
+                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : 'Guardar este personaje'}
+                      </Button>
                     </div>
                   </div>
                 )}

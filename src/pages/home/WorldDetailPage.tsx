@@ -2,6 +2,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { getWorldDetail, deleteWorld } from '../../services/api'
 import type { WorldDetail, World } from '../../services/api'
+import ConfirmModal from '../../components/ConfirmModal'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function WorldDetailPage() {
   const { id } = useParams()
@@ -9,11 +12,12 @@ export default function WorldDetailPage() {
   const [detail, setDetail] = useState<WorldDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
 
   useEffect(() => {
     const worldId = Number(id)
     if (!id || Number.isNaN(worldId)) {
-      setError('ID de mundo inválido.')
+      setError('ID de mundo invalido.')
       setLoading(false)
       return
     }
@@ -21,14 +25,14 @@ export default function WorldDetailPage() {
     getWorldDetail(worldId)
       .then(data => {
         if (!data || typeof data !== 'object') {
-          throw new Error('No se encontró el mundo solicitado.')
+          throw new Error('No se encontro el mundo solicitado.')
         }
 
         // Current backend shape:
         // { id, name, era, climate, politics, culture, factions, summary, characters, scenes }
         const raw = data as unknown as Record<string, unknown>
         if (!raw.name) {
-          throw new Error('No se encontró el mundo solicitado.')
+          throw new Error('No se encontro el mundo solicitado.')
         }
 
         const normalizedWorld: World = {
@@ -53,7 +57,6 @@ export default function WorldDetailPage() {
   }, [id])
 
   const handleDelete = async () => {
-    if (!window.confirm('¿Seguro que quieres borrar este mundo?')) return
     setLoading(true)
     try {
       await deleteWorld(Number(id))
@@ -65,29 +68,52 @@ export default function WorldDetailPage() {
   }
 
   if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando mundo...</div>
-  if (error) return <div className="flex justify-center items-center h-96 text-lg text-red-500">{error}</div>
+  if (error) return (
+    <div className="flex justify-center items-center h-96">
+      <Alert variant="destructive" className="max-w-md">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    </div>
+  )
   if (!detail?.world) {
-    return <div className="flex justify-center items-center h-96 text-lg text-red-500">No se encontró el mundo solicitado.</div>
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertDescription>No se encontro el mundo solicitado.</AlertDescription>
+        </Alert>
+      </div>
+    )
   }
 
   const { world, characters, scenes } = detail
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 mt-8">
+      <ConfirmModal
+        open={showConfirmDelete}
+        title="Borrar este mundo?"
+        message={`Esto eliminara "${world.name}" y todo su contenido de forma permanente. Esta accion no se puede deshacer.`}
+        confirmText="Borrar mundo"
+        cancelText="Cancelar"
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirmDelete(false)}
+      />
+
       {/* World Info */}
       <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-extrabold text-purple-800">{world.name}</h2>
-          <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold">Borrar</button>
+          <Button variant="destructive" size="sm" onClick={() => setShowConfirmDelete(true)}>Borrar</Button>
         </div>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div><span className="font-semibold text-gray-700">Era:</span> {world.era}</div>
           <div><span className="font-semibold text-gray-700">Clima:</span> {world.climate}</div>
-          <div><span className="font-semibold text-gray-700">Política:</span> {world.politics}</div>
+          <div><span className="font-semibold text-gray-700">Politica:</span> {world.politics}</div>
           <div><span className="font-semibold text-gray-700">Cultura:</span> {world.culture}</div>
         </div>
         {world.description && (
-          <div className="mb-4"><span className="font-semibold text-gray-700">Descripción:</span> {world.description}</div>
+          <div className="mb-4"><span className="font-semibold text-gray-700">Descripcion:</span> {world.description}</div>
         )}
         {world.factions && world.factions.length > 0 && (
           <div>
@@ -105,15 +131,12 @@ export default function WorldDetailPage() {
       <div className="bg-white/90 shadow-xl rounded-2xl p-8 border border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-purple-700">Personajes ({characters?.length || 0})</h3>
-          <Link
-            to={`/worlds/${id}/characters/create`}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm"
-          >
-            + Crear personaje
-          </Link>
+          <Button variant="secondary" size="sm" asChild>
+            <Link to={`/worlds/${id}/characters/create`}>+ Crear personaje</Link>
+          </Button>
         </div>
         {!characters || characters.length === 0 ? (
-          <p className="text-gray-500 italic">Aún no hay personajes en este mundo.</p>
+          <p className="text-gray-500 italic">Aun no hay personajes en este mundo.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {characters.map(c => (
@@ -142,15 +165,12 @@ export default function WorldDetailPage() {
       <div className="bg-white/90 shadow-xl rounded-2xl p-8 border border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-purple-700">Escenas ({scenes?.length || 0})</h3>
-          <Link
-            to={`/worlds/${id}/scenes/create`}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold text-sm"
-          >
-            + Crear escena
-          </Link>
+          <Button variant="secondary" size="sm" asChild>
+            <Link to={`/worlds/${id}/scenes/create`}>+ Crear escena</Link>
+          </Button>
         </div>
         {!scenes || scenes.length === 0 ? (
-          <p className="text-gray-500 italic">Aún no hay escenas en este mundo.</p>
+          <p className="text-gray-500 italic">Aun no hay escenas en este mundo.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {scenes.map(s => (
