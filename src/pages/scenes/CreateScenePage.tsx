@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { createScene, generateScene } from '../../services/api'
 import type { Scene } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -12,38 +13,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Clapperboard } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 
-const TIME_OPTIONS = ['Amanecer', 'Manana', 'Mediodia', 'Tarde', 'Anochecer', 'Noche', 'Medianoche']
-const TIME_DESC: Record<string, string> = {
-  Amanecer: 'La primera luz rompe la oscuridad. El momento de las promesas y los nuevos comienzos.',
-  Manana: 'El dia en plena actividad, el mundo despierto, el bullicio en marcha.',
-  Mediodia: 'Sol en lo alto, calor y el momento de maxima claridad y exposicion.',
-  Tarde: 'Las sombras se alargan, el ritmo baja y las confidencias empiezan a emerger.',
-  Anochecer: 'El crepusculo tine el cielo. La frontera entre el dia y la noche.',
-  Noche: 'Oscuridad y misterio. La ciudad cambia de cara cuando caen las estrellas.',
-  Medianoche: 'La hora mas profunda. Secretos, rituales y lo que nadie deberia ver.',
-}
-
-const TONE_OPTIONS = ['Epico', 'Misterioso', 'Sombrio', 'Romantico', 'Tenso', 'Comico', 'Tragico', 'Pacifico', 'Ominoso', 'Intimo']
-const TONE_DESC: Record<string, string> = {
-  Epico: 'Gestas legendarias, sacrificios heroicos y el peso del destino en cada accion.',
-  Misterioso: 'Preguntas sin respuesta, sombras entre lineas y una tension que no cesa.',
-  Sombrio: 'La oscuridad tiene protagonismo. Perdida, duda y una atmosfera opresiva.',
-  Romantico: 'El corazon guia las acciones. Pasion, deseo y vinculos que trascienden.',
-  Tenso: 'Cada palabra importa. El peligro acecha y cualquier error tiene consecuencias.',
-  Comico: 'La ligereza como arma. Humor, ironia y momentos que alivian la carga.',
-  Tragico: 'El final ya esta escrito. La belleza inevitable de lo que no tiene remedio.',
-  Pacifico: 'Sin conflicto aparente. Espacio para el detalle, la contemplacion y el respiro.',
-  Ominoso: 'Algo malo se aproxima. Una amenaza latente que impregna cada momento.',
-  Intimo: 'A puerta cerrada, los personajes se revelan. Vulnerabilidad y conexion real.',
-}
+const TIME_VALUES = ['Amanecer', 'Manana', 'Mediodia', 'Tarde', 'Anochecer', 'Noche', 'Medianoche']
+const TONE_VALUES = ['Epico', 'Misterioso', 'Sombrio', 'Romantico', 'Tenso', 'Comico', 'Tragico', 'Pacifico', 'Ominoso', 'Intimo']
 
 export default function CreateScenePage() {
   const { id: worldId } = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [, setMode] = useState<'manual' | 'ai'>('manual')
 
   const [title, setTitle] = useState('')
@@ -51,7 +31,7 @@ export default function CreateScenePage() {
   const [time, setTime] = useState('')
   const [tone, setTone] = useState('')
   const [context, setContext] = useState('')
-  const [description, setDescription] = useState('')
+  const [aiPrompt, setAiPrompt] = useState('')
 
   const [aiLoading, setAiLoading] = useState(false)
   const [aiScene, setAiScene] = useState<Scene | null>(null)
@@ -59,10 +39,16 @@ export default function CreateScenePage() {
   const [error, setError] = useState('')
   const { hasInstallation, checked: installationChecked } = useInstallation()
 
+  const timeOptions = TIME_VALUES.map(v => ({ value: v, label: t(`scene.times.${v}`) }))
+  const timeDescriptions = Object.fromEntries(TIME_VALUES.map(v => [v, t(`scene.times.${v}Desc`)]))
+
+  const toneOptions = TONE_VALUES.map(v => ({ value: v, label: t(`scene.tones.${v}`) }))
+  const toneDescriptions = Object.fromEntries(TONE_VALUES.map(v => [v, t(`scene.tones.${v}Desc`)]))
+
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!time || !tone) {
-      setError('Por favor selecciona el momento del dia y el tono de la escena.')
+      setError(t('scene.create.validationError'))
       return
     }
     setLoading(true)
@@ -71,7 +57,7 @@ export default function CreateScenePage() {
       await createScene({ title, location, time, tone, context, world_id: Number(worldId) })
       navigate(`/worlds/${worldId}`)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear la escena.')
+      setError(err instanceof Error ? err.message : t('scene.create.error'))
     } finally {
       setLoading(false)
     }
@@ -83,10 +69,10 @@ export default function CreateScenePage() {
     setError('')
     setAiScene(null)
     try {
-      const scene = await generateScene(Number(worldId), description)
+      const scene = await generateScene(Number(worldId), aiPrompt)
       setAiScene(scene)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo generar la escena.')
+      setError(err instanceof Error ? err.message : t('scene.create.aiError'))
     } finally {
       setAiLoading(false)
     }
@@ -98,7 +84,7 @@ export default function CreateScenePage() {
     setError('')
     try {
       await createScene({
-        title: aiScene.title || 'Escena generada',
+        title: aiScene.title || t('scene.create.aiDefaultTitle'),
         location: aiScene.location || '',
         time: aiScene.time || '',
         tone: aiScene.tone || '',
@@ -107,7 +93,7 @@ export default function CreateScenePage() {
       })
       navigate(`/worlds/${worldId}`)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar la escena.')
+      setError(err instanceof Error ? err.message : t('scene.create.error'))
     } finally {
       setLoading(false)
     }
@@ -116,14 +102,20 @@ export default function CreateScenePage() {
   return (
     <div className="flex justify-center items-start min-h-[80vh] py-4">
       <div className="w-full max-w-2xl mx-auto">
-        <PageBreadcrumb items={[{label: 'Mundos', href: '/worlds'}, {label: 'Mundo', href: '/worlds/' + worldId}, {label: 'Crear escena'}]} />
+        <PageBreadcrumb items={[{label: t('nav.worlds'), href: '/worlds'}, {label: t('nav.worlds'), href: '/worlds/' + worldId}, {label: t('scene.create.title')}]} />
         <Card className="overflow-hidden">
-          <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
-          <CardHeader>
-            <CardTitle>Crear escena</CardTitle>
-            <CardDescription>Define el momento que impulsara la narrativa.</CardDescription>
+          <CardHeader className="border-b border-sky-100 bg-entity-scene-light/50">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-entity-scene/10 flex items-center justify-center">
+                <Clapperboard className="w-4.5 h-4.5 text-entity-scene" />
+              </div>
+              <div>
+                <CardTitle className="font-[var(--font-display)]">{t('scene.create.title')}</CardTitle>
+                <CardDescription>{t('scene.create.subtitle')}</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {error && (
               <Alert variant="destructive" className="mb-5">
                 <AlertDescription>{error}</AlertDescription>
@@ -132,38 +124,38 @@ export default function CreateScenePage() {
 
             <Tabs defaultValue="manual" onValueChange={v => setMode(v as 'manual' | 'ai')}>
               <TabsList className="mb-6">
-                <TabsTrigger value="manual">Manual</TabsTrigger>
-                <TabsTrigger value="ai">Generar con IA</TabsTrigger>
+                <TabsTrigger value="manual">{t('scene.create.manualTab')}</TabsTrigger>
+                <TabsTrigger value="ai">{t('scene.create.aiTab')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="manual">
                 <form onSubmit={handleManualSubmit}>
-                  <FieldGroup label="Titulo">
-                    <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder="El titulo de la escena..." />
+                  <FieldGroup label={t('scene.create.titleLabel')}>
+                    <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder={t('scene.create.titlePlaceholder')} />
                   </FieldGroup>
 
-                  <FieldGroup label="Ubicacion">
-                    <Input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full" required placeholder="Ej: Taberna del puerto, Bosque encantado, Castillo en ruinas..." />
+                  <FieldGroup label={t('scene.create.locationLabel')}>
+                    <Input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full" required placeholder={t('scene.create.locationPlaceholder')} />
                   </FieldGroup>
 
-                  <SectionDivider label="Atmosfera" />
+                  <SectionDivider label={t('scene.create.atmosphereSection')} />
 
-                  <FieldGroup label="Momento del dia">
-                    <PillSelect options={TIME_OPTIONS} value={time} onChange={setTime} descriptions={TIME_DESC} />
+                  <FieldGroup label={t('scene.create.timeLabel')}>
+                    <PillSelect options={timeOptions} value={time} onChange={setTime} descriptions={timeDescriptions} />
                   </FieldGroup>
 
-                  <FieldGroup label="Tono">
-                    <PillSelect options={TONE_OPTIONS} value={tone} onChange={setTone} descriptions={TONE_DESC} />
+                  <FieldGroup label={t('scene.create.toneLabel')}>
+                    <PillSelect options={toneOptions} value={tone} onChange={setTone} descriptions={toneDescriptions} />
                   </FieldGroup>
 
-                  <SectionDivider label="Narrativa" />
+                  <SectionDivider label={t('scene.create.narrativeSection')} />
 
-                  <FieldGroup label="Contexto">
-                    <Textarea value={context} onChange={e => setContext(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Describe que esta pasando en esta escena..." />
+                  <FieldGroup label={t('scene.create.contextLabel')}>
+                    <Textarea value={context} onChange={e => setContext(e.target.value)} className="min-h-[90px] resize-none" required placeholder={t('scene.create.contextPlaceholder')} />
                   </FieldGroup>
 
                   <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creando escena...</> : 'Crear escena'}
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('scene.create.submitting')}</> : t('scene.create.submitButton')}
                   </Button>
                 </form>
               </TabsContent>
@@ -172,34 +164,34 @@ export default function CreateScenePage() {
                 <div>
                   {installationChecked && !hasInstallation && <NoInstallationBanner />}
                   <form onSubmit={handleAIGenerate}>
-                    <FieldGroup label="Describe la escena que quieres crear">
-                      <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Una noche lluviosa en un callejon oscuro donde dos viejos rivales se encuentran..." required />
+                    <FieldGroup label={t('scene.create.aiPromptLabel')}>
+                      <Textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="min-h-[90px] resize-none" placeholder={t('scene.create.aiPromptPlaceholder')} required />
                     </FieldGroup>
                     <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
-                      {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar escena con IA'}
+                      {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('scene.create.aiGenerating')}</> : t('scene.create.aiSubmitButton')}
                     </Button>
                   </form>
 
                   {aiScene && (
-                    <div className="mt-2 rounded-xl border border-violet-200 overflow-hidden">
-                      <div className="px-5 py-3 bg-violet-600">
-                        <h3 className="text-sm font-bold text-white">{aiScene.title}</h3>
-                        <p className="text-xs text-violet-200">{aiScene.location} · {aiScene.time}</p>
+                    <div className="mt-2 rounded-xl border border-sky-200 overflow-hidden">
+                      <div className="px-5 py-3 bg-entity-scene">
+                        <h3 className="text-sm font-bold text-white font-[var(--font-display)]">{aiScene.title}</h3>
+                        <p className="text-xs text-white/70">{aiScene.location} · {aiScene.time}</p>
                       </div>
-                      <div className="p-5 bg-violet-50 space-y-2">
+                      <div className="p-5 bg-entity-scene-light space-y-2">
                         {[
-                          { label: 'Tono', value: aiScene.tone },
-                          { label: 'Contexto', value: aiScene.context },
+                          { label: t('scene.create.aiPreviewTone'), value: aiScene.tone },
+                          { label: t('scene.create.aiPreviewContext'), value: aiScene.context },
                         ].map(({ label, value }) => (
                           <div key={label} className="flex gap-3 text-sm">
-                            <span className="text-violet-400 font-semibold w-20 shrink-0">{label}</span>
-                            <span className="text-gray-700">{value}</span>
+                            <span className="text-entity-scene-muted font-semibold w-20 shrink-0">{label}</span>
+                            <span className="text-foreground">{value}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="px-5 py-3 bg-white border-t border-violet-100">
+                      <div className="px-5 py-3 bg-card border-t border-sky-100">
                         <Button size="lg" className="w-full" onClick={handleAISave} disabled={loading}>
-                          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : 'Guardar esta escena'}
+                          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('scene.create.aiSaving')}</> : t('scene.create.aiSaveButton')}
                         </Button>
                       </div>
                     </div>
