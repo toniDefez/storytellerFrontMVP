@@ -1,5 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 
@@ -28,6 +29,7 @@ const CLIMATE_HEADER: Record<string, string> = {
 const DEFAULT_HEADER = 'from-violet-500 to-purple-600'
 
 const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics, culture, factions, description }) => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const headerGradient = CLIMATE_HEADER[climate] ?? DEFAULT_HEADER
 
@@ -40,7 +42,7 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics,
       onClick={() => navigate(`/worlds/${id}`)}
     >
       <div className={`bg-gradient-to-br ${headerGradient} px-5 pt-5 pb-7 relative`}>
-        <h3 className="text-lg font-bold text-white leading-tight drop-shadow-sm">{name}</h3>
+        <h3 className="text-lg font-bold text-white leading-tight drop-shadow-sm font-[var(--font-display)]">{name}</h3>
         <p className="text-xs text-white/70 mt-0.5">{era}</p>
         <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-b from-transparent to-white/10" />
       </div>
@@ -58,7 +60,7 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics,
 
         {factions.length > 0 && (
           <div className="border-t border-gray-100 pt-3">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Facciones</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t('world.factionsLabel')}</p>
             <div className="flex flex-wrap gap-1">
               {factions.slice(0, 3).map(f => (
                 <Badge key={f} variant="outline">{f}</Badge>

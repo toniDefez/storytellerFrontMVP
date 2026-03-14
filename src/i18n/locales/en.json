@@ -32,6 +32,38 @@
     "languageEs": "Español",
     "languageEn": "English"
   },
+  "auth": {
+    "welcomeTitle": "Welcome",
+    "welcomeSubtitle": "Sign in to continue your story",
+    "loginButton": "Sign in",
+    "loggingIn": "Signing in...",
+    "noAccount": "Don't have an account?",
+    "registerLink": "Register here",
+    "loginErrorTitle": "Login error",
+    "loginErrorDesc": "Invalid credentials",
+    "createAccountTitle": "Create account",
+    "createAccountSubtitle": "Start building your worlds and stories",
+    "registerButton": "Register",
+    "registering": "Registering...",
+    "hasAccount": "Already have an account?",
+    "loginLink": "Sign in",
+    "registerSuccessTitle": "Registration successful!",
+    "registerSuccessDesc": "Your account has been created.",
+    "username": "Username",
+    "password": "Password"
+  },
+  "home": {
+    "title": "My worlds",
+    "worldCount_one": "{{count}} world created",
+    "worldCount_other": "{{count}} worlds created",
+    "createButton": "New world",
+    "emptyTitle": "You don't have any worlds yet",
+    "emptyDescription": "Create your first world and start building your story. You can do it manually or let AI surprise you.",
+    "createFirstButton": "Create my first world"
+  },
+  "world": {
+    "factionsLabel": "Factions"
+  },
   "installation": {
     "setupTitle": "Set up local generator",
     "setupDesc": "To generate AI content you need a generator running on your machine.",

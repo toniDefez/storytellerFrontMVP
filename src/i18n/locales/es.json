@@ -32,6 +32,38 @@
     "languageEs": "Español",
     "languageEn": "English"
   },
+  "auth": {
+    "welcomeTitle": "Bienvenido",
+    "welcomeSubtitle": "Inicia sesión para continuar tu historia",
+    "loginButton": "Entrar",
+    "loggingIn": "Entrando...",
+    "noAccount": "¿No tienes cuenta?",
+    "registerLink": "Regístrate aquí",
+    "loginErrorTitle": "Error de inicio de sesión",
+    "loginErrorDesc": "Credenciales incorrectas",
+    "createAccountTitle": "Crear cuenta",
+    "createAccountSubtitle": "Empieza a construir tus mundos e historias",
+    "registerButton": "Registrarse",
+    "registering": "Registrando...",
+    "hasAccount": "¿Ya tienes una cuenta?",
+    "loginLink": "Inicia sesión",
+    "registerSuccessTitle": "¡Registro exitoso!",
+    "registerSuccessDesc": "Tu cuenta ha sido creada.",
+    "username": "Usuario",
+    "password": "Contraseña"
+  },
+  "home": {
+    "title": "Mis mundos",
+    "worldCount_one": "{{count}} mundo creado",
+    "worldCount_other": "{{count}} mundos creados",
+    "createButton": "Nuevo mundo",
+    "emptyTitle": "Aún no tienes mundos",
+    "emptyDescription": "Crea tu primer mundo y empieza a construir tu historia. Puedes hacerlo manualmente o dejar que la IA te sorprenda.",
+    "createFirstButton": "Crear mi primer mundo"
+  },
+  "world": {
+    "factionsLabel": "Facciones"
+  },
   "installation": {
     "setupTitle": "Configurar generador local",
     "setupDesc": "Para generar contenido con IA necesitas un generador ejecutándose en tu máquina.",

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import WorldCard from '../../components/WorldCard'
 import { getWorlds } from '../../services/api'
@@ -7,6 +8,7 @@ import type { World } from '../../services/api'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { WorldCardSkeleton } from '@/components/skeletons/WorldCardSkeleton'
+import { Plus, Globe } from 'lucide-react'
 
 const container = {
   hidden: {},
@@ -19,6 +21,7 @@ const cardVariant = {
 }
 
 export default function HomePage() {
+  const { t } = useTranslation()
   const [worlds, setWorlds] = useState<World[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -59,20 +62,19 @@ export default function HomePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
-        <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center mb-6">
-          <svg className="w-8 h-8 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <circle cx="12" cy="12" r="10" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
-          </svg>
+        <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center mb-6">
+          <Globe className="w-7 h-7 text-primary" />
         </div>
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Aun no tienes mundos</h2>
-        <p className="text-sm text-gray-400 mb-8 text-center max-w-xs">Crea tu primer mundo y empieza a construir tu historia.</p>
-        <Button size="lg" onClick={() => navigate('/worlds/create')}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Crear mi primer mundo
-        </Button>
+        <h2 className="font-[var(--font-display)] text-2xl font-bold text-foreground mb-2">{t('home.emptyTitle')}</h2>
+        <p className="text-sm text-muted-foreground mb-8 text-center max-w-xs leading-relaxed">
+          {t('home.emptyDescription')}
+        </p>
+        <div className="flex gap-3">
+          <Button size="lg" onClick={() => navigate('/worlds/create')}>
+            <Plus className="w-4 h-4" />
+            {t('home.createFirstButton')}
+          </Button>
+        </div>
       </motion.div>
     )
   }
@@ -85,14 +87,12 @@ export default function HomePage() {
     >
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mis mundos</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{worlds.length} {worlds.length === 1 ? 'mundo creado' : 'mundos creados'}</p>
+          <h1 className="font-[var(--font-display)] text-2xl font-bold text-foreground">{t('home.title')}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t('home.worldCount', { count: worlds.length })}</p>
         </div>
         <Button onClick={() => navigate('/worlds/create')}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo mundo
+          <Plus className="w-4 h-4" />
+          {t('home.createButton')}
         </Button>
       </div>
 
