@@ -1,71 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { createWorld, generateWorld } from '../../services/api'
 import type { World } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
 import { PillSelect } from '../../components/PillSelect'
-
-const ERA_OPTIONS = ['Medieval', 'Antigua', 'Futurista', 'Moderna', 'Fantástica', 'Post-apocalíptica', 'Victoriana', 'Espacial']
-const ERA_DESC: Record<string, string> = {
-  Medieval: 'Caballeros, castillos y gremios. La era de la espada y la fe.',
-  Antigua: 'Imperios de piedra, dioses caprichosos y civilizaciones en auge.',
-  Futurista: 'Tecnología avanzada, corporaciones omnipotentes y mundos interconectados.',
-  Moderna: 'El mundo tal y como lo conocemos, con sus luces y sombras.',
-  Fantástica: 'Magia entretejida en la realidad, criaturas míticas y reinos imposibles.',
-  'Post-apocalíptica': 'Las ruinas del ayer como escenario. Supervivencia y renacimiento.',
-  Victoriana: 'Vapor, engranajes y una sociedad en plena efervescencia industrial.',
-  Espacial: 'La inmensidad del cosmos como lienzo. Naves, alienígenas y lo desconocido.',
-}
-
-const CLIMATE_OPTIONS = ['Templado', 'Ártico', 'Tropical', 'Desértico', 'Volcánico', 'Oceánico', 'Montañoso', 'Tóxico']
-const CLIMATE_DESC: Record<string, string> = {
-  Templado: 'Cuatro estaciones bien definidas, lluvias moderadas y abundante vegetación.',
-  Ártico: 'Hielo eterno, ventiscas demoledoras y noches que duran meses.',
-  Tropical: 'Calor húmedo, selvas densas y vida desbordante en cada rincón.',
-  Desértico: 'Arenas infinitas, sol implacable y oasis como tesoros preciados.',
-  Volcánico: 'Tierra viva, erupciones constantes y paisajes de fuego y ceniza.',
-  Oceánico: 'Dominado por el mar, con islas dispersas y tormentas legendarias.',
-  Montañoso: 'Cimas nevadas, valles profundos y rutas de paso que marcan el destino.',
-  Tóxico: 'Atmósfera venenosa, mutaciones y ecosistemas retorcidos por el caos.',
-}
-
-const POLITICS_OPTIONS = ['Monarquía', 'Imperio', 'República', 'Teocracia', 'Anarquía', 'Oligarquía', 'Tribu', 'Dictadura']
-const POLITICS_DESC: Record<string, string> = {
-  Monarquía: 'Un linaje gobierna por sangre. La corona es ley y la nobleza, su sombra eterna.',
-  Imperio: 'Un poder central domina vastos territorios con mano de hierro y ejércitos leales.',
-  República: 'Representantes elegidos deliberan el futuro de la nación en nombre del pueblo.',
-  Teocracia: 'Los dioses gobiernan a través de sus sacerdotes. La fe es la constitución.',
-  Anarquía: 'Sin autoridad central. Comunidades autónomas y pactos frágiles entre facciones.',
-  Oligarquía: 'Un grupo selecto de familias o gremios controla el poder real desde las sombras.',
-  Tribu: 'Clanes y linajes donde la tradición oral y los ancianos dictan el camino.',
-  Dictadura: 'Un solo líder concentra todo el poder. Lealtad o destierro, no hay término medio.',
-}
-
-function SectionDivider({ label }: { label: string }) {
-  return (
-    <div className="relative my-6 flex items-center gap-3">
-      <div className="flex-1 border-t border-gray-100" />
-      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.18em]">{label}</span>
-      <div className="flex-1 border-t border-gray-100" />
-    </div>
-  )
-}
-
-function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-5">
-      <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-const inputClass = 'w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 transition'
-const textareaClass = `${inputClass} min-h-[90px] resize-none`
+import { FieldGroup } from '@/components/form/FieldGroup'
+import { SectionDivider } from '@/components/form/SectionDivider'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Loader2, Globe, X } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 
 export default function CreateWorldPage() {
-  const [mode, setMode] = useState<'manual' | 'ai'>('manual')
+  const { t, i18n } = useTranslation()
+  const [, setMode] = useState<'manual' | 'ai'>('manual')
+
+  useEffect(() => {
+    document.title = `${t('pageTitle.createWorld')} — StoryTeller`
+  }, [t, i18n.language])
   const [name, setName] = useState('')
   const [era, setEra] = useState('')
   const [climate, setClimate] = useState('')
@@ -73,12 +31,76 @@ export default function CreateWorldPage() {
   const [culture, setCulture] = useState('')
   const [factions, setFactions] = useState<string[]>([''])
   const [description, setDescription] = useState('')
+  const [aiPrompt, setAiPrompt] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiWorld, setAiWorld] = useState<World | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
   const { hasInstallation, checked: installationChecked } = useInstallation()
+
+  const eraOptions = [
+    { value: 'Medieval', label: t('world.eras.medieval') },
+    { value: 'Antigua', label: t('world.eras.ancient') },
+    { value: 'Futurista', label: t('world.eras.futuristic') },
+    { value: 'Moderna', label: t('world.eras.modern') },
+    { value: 'Fantastica', label: t('world.eras.fantasy') },
+    { value: 'Post-apocaliptica', label: t('world.eras.postApocalyptic') },
+    { value: 'Victoriana', label: t('world.eras.victorian') },
+    { value: 'Espacial', label: t('world.eras.space') },
+  ]
+  const eraDescriptions: Record<string, string> = {
+    Medieval: t('world.eras.medievalDesc'),
+    Antigua: t('world.eras.ancientDesc'),
+    Futurista: t('world.eras.futuristicDesc'),
+    Moderna: t('world.eras.modernDesc'),
+    Fantastica: t('world.eras.fantasyDesc'),
+    'Post-apocaliptica': t('world.eras.postApocalypticDesc'),
+    Victoriana: t('world.eras.victorianDesc'),
+    Espacial: t('world.eras.spaceDesc'),
+  }
+
+  const climateOptions = [
+    { value: 'Templado', label: t('world.climates.temperate') },
+    { value: 'Artico', label: t('world.climates.arctic') },
+    { value: 'Tropical', label: t('world.climates.tropical') },
+    { value: 'Desertico', label: t('world.climates.desert') },
+    { value: 'Volcanico', label: t('world.climates.volcanic') },
+    { value: 'Oceanico', label: t('world.climates.oceanic') },
+    { value: 'Montanoso', label: t('world.climates.mountainous') },
+    { value: 'Toxico', label: t('world.climates.toxic') },
+  ]
+  const climateDescriptions: Record<string, string> = {
+    Templado: t('world.climates.temperateDesc'),
+    Artico: t('world.climates.arcticDesc'),
+    Tropical: t('world.climates.tropicalDesc'),
+    Desertico: t('world.climates.desertDesc'),
+    Volcanico: t('world.climates.volcanicDesc'),
+    Oceanico: t('world.climates.oceanicDesc'),
+    Montanoso: t('world.climates.mountainousDesc'),
+    Toxico: t('world.climates.toxicDesc'),
+  }
+
+  const politicsOptions = [
+    { value: 'Monarquia', label: t('world.politics.monarchy') },
+    { value: 'Imperio', label: t('world.politics.empire') },
+    { value: 'Republica', label: t('world.politics.republic') },
+    { value: 'Teocracia', label: t('world.politics.theocracy') },
+    { value: 'Anarquia', label: t('world.politics.anarchy') },
+    { value: 'Oligarquia', label: t('world.politics.oligarchy') },
+    { value: 'Tribu', label: t('world.politics.tribe') },
+    { value: 'Dictadura', label: t('world.politics.dictatorship') },
+  ]
+  const politicsDescriptions: Record<string, string> = {
+    Monarquia: t('world.politics.monarchyDesc'),
+    Imperio: t('world.politics.empireDesc'),
+    Republica: t('world.politics.republicDesc'),
+    Teocracia: t('world.politics.theocracyDesc'),
+    Anarquia: t('world.politics.anarchyDesc'),
+    Oligarquia: t('world.politics.oligarchyDesc'),
+    Tribu: t('world.politics.tribeDesc'),
+    Dictadura: t('world.politics.dictatorshipDesc'),
+  }
 
   const handleFactionChange = (idx: number, value: string) => {
     setFactions(factions.map((f, i) => (i === idx ? value : f)))
@@ -89,7 +111,7 @@ export default function CreateWorldPage() {
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!era || !climate || !politics) {
-      setError('Por favor selecciona era, clima y sistema político.')
+      setError(t('world.create.validationError'))
       return
     }
     setLoading(true)
@@ -98,7 +120,7 @@ export default function CreateWorldPage() {
       await createWorld({ name, era, climate, politics, culture, factions: factions.filter(f => f.trim()), description })
       navigate('/worlds')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear el mundo.')
+      setError(err instanceof Error ? err.message : t('world.create.error'))
     } finally {
       setLoading(false)
     }
@@ -110,10 +132,10 @@ export default function CreateWorldPage() {
     setError('')
     setAiWorld(null)
     try {
-      const world = await generateWorld(description)
+      const world = await generateWorld(aiPrompt)
       setAiWorld(world)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo generar el mundo.')
+      setError(err instanceof Error ? err.message : t('world.create.aiError'))
     } finally {
       setAiLoading(false)
     }
@@ -135,7 +157,7 @@ export default function CreateWorldPage() {
       })
       navigate('/worlds')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear el mundo.')
+      setError(err instanceof Error ? err.message : t('world.create.error'))
     } finally {
       setLoading(false)
     }
@@ -144,115 +166,126 @@ export default function CreateWorldPage() {
   return (
     <div className="flex justify-center items-start min-h-[80vh] py-4">
       <div className="w-full max-w-2xl mx-auto">
-        <div className="relative bg-white shadow-xl shadow-violet-100/60 rounded-2xl border border-gray-100 overflow-hidden">
-          {/* Accent bar */}
-          <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
-
-          <div className="px-10 pt-8 pb-9">
-            <h2 className="text-2xl font-bold mb-1 text-gray-800 tracking-tight">Crear nuevo mundo</h2>
-            <p className="text-sm text-gray-400 mb-7">Define el escenario donde tu historia tomará vida.</p>
-
-            {/* Mode tabs */}
-            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-8 w-fit">
-              <button onClick={() => setMode('manual')} type="button" className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'manual' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Manual</button>
-              <button onClick={() => setMode('ai')} type="button" className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'ai' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Generar con IA</button>
-            </div>
-
-            {error && (
-              <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
-            )}
-
-            {mode === 'manual' && (
-              <form onSubmit={handleManualSubmit}>
-                <FieldGroup label="Nombre del mundo">
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} className={inputClass} required placeholder="Ej: Aethermoor, El Vacío Dorado..." />
-                </FieldGroup>
-
-                <SectionDivider label="Ambientación" />
-
-                <FieldGroup label="Era">
-                  <PillSelect options={ERA_OPTIONS} value={era} onChange={setEra} descriptions={ERA_DESC} />
-                </FieldGroup>
-
-                <FieldGroup label="Clima">
-                  <PillSelect options={CLIMATE_OPTIONS} value={climate} onChange={setClimate} descriptions={CLIMATE_DESC} />
-                </FieldGroup>
-
-                <FieldGroup label="Sistema político">
-                  <PillSelect options={POLITICS_OPTIONS} value={politics} onChange={setPolitics} descriptions={POLITICS_DESC} />
-                </FieldGroup>
-
-                <SectionDivider label="Identidad" />
-
-                <FieldGroup label="Cultura">
-                  <input type="text" value={culture} onChange={e => setCulture(e.target.value)} className={inputClass} required placeholder="Ej: Guerrera y honorable, mercantil y cosmopolita..." />
-                </FieldGroup>
-
-                <FieldGroup label="Descripción">
-                  <textarea value={description} onChange={e => setDescription(e.target.value)} className={textareaClass} required placeholder="Describe brevemente la esencia de tu mundo..." />
-                </FieldGroup>
-
-                <div className="mb-7">
-                  <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Facciones</label>
-                  {factions.map((f, idx) => (
-                    <div key={idx} className="flex gap-2 mb-2">
-                      <input type="text" value={f} onChange={e => handleFactionChange(idx, e.target.value)} className={inputClass} placeholder={`Facción #${idx + 1}`} />
-                      {factions.length > 1 && (
-                        <button type="button" onClick={() => removeFaction(idx)} className="text-gray-300 hover:text-red-400 font-bold px-2 transition text-lg">✕</button>
-                      )}
-                    </div>
-                  ))}
-                  <button type="button" onClick={addFaction} className="text-violet-500 hover:text-violet-700 text-xs font-semibold mt-1 transition">+ Añadir facción</button>
-                </div>
-
-                <button type="submit" disabled={loading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50">
-                  {loading ? 'Creando mundo...' : 'Crear mundo'}
-                </button>
-              </form>
-            )}
-
-            {mode === 'ai' && (
-              <div>
-                {installationChecked && !hasInstallation && <NoInstallationBanner />}
-                <form onSubmit={handleAIGenerate}>
-                  <FieldGroup label="Describe el mundo que quieres crear">
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} className={textareaClass} placeholder="Ej: Un mundo tóxico postapocalíptico donde las ciudades flotan sobre nubes de veneno..." required />
-                  </FieldGroup>
-                  <button type="submit" disabled={aiLoading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
-                    {aiLoading ? 'Generando...' : 'Generar mundo con IA'}
-                  </button>
-                </form>
-
-                {aiWorld && (
-                  <div className="mt-2 rounded-xl border border-violet-200 overflow-hidden">
-                    <div className="px-5 py-3 bg-violet-600">
-                      <h3 className="text-sm font-bold text-white">{aiWorld.name}</h3>
-                    </div>
-                    <div className="p-5 bg-violet-50 space-y-2">
-                      {[
-                        { label: 'Era', value: aiWorld.era },
-                        { label: 'Clima', value: aiWorld.climate },
-                        { label: 'Política', value: aiWorld.politics },
-                        { label: 'Cultura', value: aiWorld.culture },
-                        ...(aiWorld.factions?.length ? [{ label: 'Facciones', value: aiWorld.factions.join(', ') }] : []),
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex gap-3 text-sm">
-                          <span className="text-violet-400 font-semibold w-20 shrink-0">{label}</span>
-                          <span className="text-gray-700">{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="px-5 py-3 bg-white border-t border-violet-100">
-                      <button onClick={handleAISubmit} disabled={loading} className="w-full py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50">
-                        {loading ? 'Guardando...' : 'Guardar este mundo'}
-                      </button>
-                    </div>
-                  </div>
-                )}
+        <PageBreadcrumb items={[{label: t('nav.worlds'), href: '/worlds'}, {label: t('world.create.submitButton')}]} />
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-border/50 bg-accent/30">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Globe className="w-4.5 h-4.5 text-primary" />
               </div>
+              <div>
+                <CardTitle className="font-[var(--font-display)]">{t('world.create.title')}</CardTitle>
+                <CardDescription>{t('world.create.subtitle')}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {error && (
+              <Alert variant="destructive" className="mb-5">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-          </div>
-        </div>
+
+            <Tabs defaultValue="manual" onValueChange={v => setMode(v as 'manual' | 'ai')}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="manual">{t('world.create.manualTab')}</TabsTrigger>
+                <TabsTrigger value="ai">{t('world.create.aiTab')}</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="manual">
+                <form onSubmit={handleManualSubmit}>
+                  <FieldGroup label={t('world.create.nameLabel')}>
+                    <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder={t('world.create.namePlaceholder')} />
+                  </FieldGroup>
+
+                  <SectionDivider label={t('world.create.settingSection')} />
+
+                  <FieldGroup label={t('world.create.eraLabel')}>
+                    <PillSelect options={eraOptions} value={era} onChange={setEra} descriptions={eraDescriptions} />
+                  </FieldGroup>
+
+                  <FieldGroup label={t('world.create.climateLabel')}>
+                    <PillSelect options={climateOptions} value={climate} onChange={setClimate} descriptions={climateDescriptions} />
+                  </FieldGroup>
+
+                  <FieldGroup label={t('world.create.politicsLabel')}>
+                    <PillSelect options={politicsOptions} value={politics} onChange={setPolitics} descriptions={politicsDescriptions} />
+                  </FieldGroup>
+
+                  <SectionDivider label={t('world.create.identitySection')} />
+
+                  <FieldGroup label={t('world.create.cultureLabel')}>
+                    <Input type="text" value={culture} onChange={e => setCulture(e.target.value)} className="w-full" required placeholder={t('world.create.culturePlaceholder')} />
+                  </FieldGroup>
+
+                  <FieldGroup label={t('world.create.descriptionLabel')}>
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" required placeholder={t('world.create.descriptionPlaceholder')} />
+                  </FieldGroup>
+
+                  <div className="mb-7">
+                    <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t('world.create.factionsLabel')}</label>
+                    {factions.map((f, idx) => (
+                      <div key={idx} className="flex gap-2 mb-2">
+                        <Input type="text" value={f} onChange={e => handleFactionChange(idx, e.target.value)} className="w-full" placeholder={t('world.create.factionPlaceholder', { index: idx + 1 })} />
+                        {factions.length > 1 && (
+                          <button type="button" onClick={() => removeFaction(idx)} className="text-muted-foreground/40 hover:text-destructive transition p-1">
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button type="button" onClick={addFaction} className="text-primary hover:text-primary/80 text-xs font-semibold mt-1 transition">{t('world.create.addFaction')}</button>
+                  </div>
+
+                  <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('world.create.submitting')}</> : t('world.create.submitButton')}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="ai">
+                <div>
+                  {installationChecked && !hasInstallation && <NoInstallationBanner />}
+                  <form onSubmit={handleAIGenerate}>
+                    <FieldGroup label={t('world.create.aiPromptLabel')}>
+                      <Textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="min-h-[90px] resize-none" placeholder={t('world.create.aiPromptPlaceholder')} required />
+                    </FieldGroup>
+                    <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
+                      {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('world.create.aiGenerating')}</> : t('world.create.aiSubmitButton')}
+                    </Button>
+                  </form>
+
+                  {aiWorld && (
+                    <div className="mt-2 rounded-xl border border-primary/20 overflow-hidden">
+                      <div className="px-5 py-3 bg-primary">
+                        <h3 className="text-sm font-bold text-white font-[var(--font-display)]">{aiWorld.name}</h3>
+                      </div>
+                      <div className="p-5 bg-accent space-y-2">
+                        {[
+                          { label: t('world.create.eraLabel'), value: aiWorld.era },
+                          { label: t('world.create.climateLabel'), value: aiWorld.climate },
+                          { label: t('world.create.politicsLabel'), value: aiWorld.politics },
+                          { label: t('world.create.cultureLabel'), value: aiWorld.culture },
+                          ...(aiWorld.factions?.length ? [{ label: t('world.create.factionsLabel'), value: aiWorld.factions.join(', ') }] : []),
+                        ].map(({ label, value }) => (
+                          <div key={label} className="flex gap-3 text-sm">
+                            <span className="text-primary/60 font-semibold w-20 shrink-0">{label}</span>
+                            <span className="text-foreground">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="px-5 py-3 bg-card border-t border-primary/10">
+                        <Button size="lg" className="w-full" onClick={handleAISubmit} disabled={loading}>
+                          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('world.create.aiSaving')}</> : t('world.create.aiSaveButton')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

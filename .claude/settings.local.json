@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(npm run:*)",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(xargs grep -l \"HandleFunc\\\\|Route\\\\|Method\")",
+      "Bash(claude mcp:*)",
+      "Bash(cd:*)",
+      "Bash(gh auth:*)",
+      "Bash(gh project:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh issue:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(npx:*)",
+      "Bash(git commit:*)",
+      "Bash(node:*)"
     ]
   }
 }

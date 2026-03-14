@@ -75,6 +75,13 @@ export function generateWorld(description: string) {
   })
 }
 
+export function updateWorld(id: number, world: Omit<World, 'id'>) {
+  return request<World>(`/world/update?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(world),
+  })
+}
+
 export function deleteWorld(id: number) {
   return request<{ status: string }>(`/world/delete?id=${id}`, {
     method: 'DELETE',
@@ -134,6 +141,19 @@ export function getCharacterById(id: number) {
   return request<Character>(`/character/get?id=${id}`)
 }
 
+export function updateCharacter(id: number, character: Omit<Character, 'id'>) {
+  return request<Character>(`/character/update?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(character),
+  })
+}
+
+export function deleteCharacter(id: number) {
+  return request<{ status: string }>(`/character/delete?id=${id}`, {
+    method: 'DELETE',
+  })
+}
+
 // --- Scenes ---
 
 export function createScene(scene: Omit<Scene, 'id'>) {
@@ -152,6 +172,13 @@ export function generateScene(worldId: number, description: string) {
 
 export function getSceneById(id: number) {
   return request<Scene>(`/scene/get?id=${id}`)
+}
+
+export function updateScene(id: number, scene: Omit<Scene, 'id'>) {
+  return request<Scene>(`/scene/update?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(scene),
+  })
 }
 
 export function deleteScene(id: number) {
@@ -205,6 +232,12 @@ export function generateEvents(sceneId: number, characterIds: number[], descript
   return request<{ events: Event[] }>('/event/generate', {
     method: 'POST',
     body: JSON.stringify({ scene_id: sceneId, character_ids: characterIds, description, num_events: numEvents }),
+  })
+}
+
+export function deleteEvent(id: number) {
+  return request<{ status: string }>(`/event/delete?id=${id}`, {
+    method: 'DELETE',
   })
 }
 

@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import LoginPage from './pages/login/LoginPage'
 import MainLayout from './layouts/MainLayout'
 import RegisterPage from './pages/register/RegisterPage'
@@ -11,7 +11,10 @@ import CreateCharacterPage from './pages/characters/CreateCharacterPage'
 import CharacterDetailPage from './pages/characters/CharacterDetailPage'
 import CreateScenePage from './pages/scenes/CreateScenePage'
 import SceneDetailPage from './pages/scenes/SceneDetailPage'
-import InstallationPage from './pages/settings/InstallationPage'
+import EditWorldPage from './pages/home/EditWorldPage'
+import EditCharacterPage from './pages/characters/EditCharacterPage'
+import EditScenePage from './pages/scenes/EditScenePage'
+import SettingsPage from './pages/settings/SettingsPage'
 
 function App() {
   return (
@@ -26,11 +29,15 @@ function App() {
           <Route path="worlds" element={<HomePage />} />
           <Route path="worlds/create" element={<CreateWorldPage />} />
           <Route path="worlds/:id" element={<WorldDetailPage />} />
+          <Route path="worlds/:id/edit" element={<EditWorldPage />} />
           <Route path="worlds/:id/characters/create" element={<CreateCharacterPage />} />
           <Route path="worlds/:worldId/characters/:characterId" element={<CharacterDetailPage />} />
+          <Route path="worlds/:worldId/characters/:characterId/edit" element={<EditCharacterPage />} />
           <Route path="worlds/:id/scenes/create" element={<CreateScenePage />} />
           <Route path="worlds/:worldId/scenes/:sceneId" element={<SceneDetailPage />} />
-          <Route path="settings/installation" element={<InstallationPage />} />
+          <Route path="worlds/:worldId/scenes/:sceneId/edit" element={<EditScenePage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/installation" element={<Navigate to="/settings?tab=installation" replace />} />
         </Route>
       </Route>
 
