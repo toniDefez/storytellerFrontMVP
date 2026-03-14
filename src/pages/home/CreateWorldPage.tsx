@@ -5,6 +5,10 @@ import type { World } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
 import { PillSelect } from '../../components/PillSelect'
+import { FieldGroup } from '@/components/form/FieldGroup'
+import { SectionDivider } from '@/components/form/SectionDivider'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 const ERA_OPTIONS = ['Medieval', 'Antigua', 'Futurista', 'Moderna', 'Fantástica', 'Post-apocalíptica', 'Victoriana', 'Espacial']
 const ERA_DESC: Record<string, string> = {
@@ -41,28 +45,6 @@ const POLITICS_DESC: Record<string, string> = {
   Tribu: 'Clanes y linajes donde la tradición oral y los ancianos dictan el camino.',
   Dictadura: 'Un solo líder concentra todo el poder. Lealtad o destierro, no hay término medio.',
 }
-
-function SectionDivider({ label }: { label: string }) {
-  return (
-    <div className="relative my-6 flex items-center gap-3">
-      <div className="flex-1 border-t border-gray-100" />
-      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.18em]">{label}</span>
-      <div className="flex-1 border-t border-gray-100" />
-    </div>
-  )
-}
-
-function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-5">
-      <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-const inputClass = 'w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 transition'
-const textareaClass = `${inputClass} min-h-[90px] resize-none`
 
 export default function CreateWorldPage() {
   const [mode, setMode] = useState<'manual' | 'ai'>('manual')
@@ -165,7 +147,7 @@ export default function CreateWorldPage() {
             {mode === 'manual' && (
               <form onSubmit={handleManualSubmit}>
                 <FieldGroup label="Nombre del mundo">
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} className={inputClass} required placeholder="Ej: Aethermoor, El Vacío Dorado..." />
+                  <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder="Ej: Aethermoor, El Vacío Dorado..." />
                 </FieldGroup>
 
                 <SectionDivider label="Ambientación" />
@@ -185,18 +167,18 @@ export default function CreateWorldPage() {
                 <SectionDivider label="Identidad" />
 
                 <FieldGroup label="Cultura">
-                  <input type="text" value={culture} onChange={e => setCulture(e.target.value)} className={inputClass} required placeholder="Ej: Guerrera y honorable, mercantil y cosmopolita..." />
+                  <Input type="text" value={culture} onChange={e => setCulture(e.target.value)} className="w-full" required placeholder="Ej: Guerrera y honorable, mercantil y cosmopolita..." />
                 </FieldGroup>
 
                 <FieldGroup label="Descripción">
-                  <textarea value={description} onChange={e => setDescription(e.target.value)} className={textareaClass} required placeholder="Describe brevemente la esencia de tu mundo..." />
+                  <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Describe brevemente la esencia de tu mundo..." />
                 </FieldGroup>
 
                 <div className="mb-7">
                   <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Facciones</label>
                   {factions.map((f, idx) => (
                     <div key={idx} className="flex gap-2 mb-2">
-                      <input type="text" value={f} onChange={e => handleFactionChange(idx, e.target.value)} className={inputClass} placeholder={`Facción #${idx + 1}`} />
+                      <Input type="text" value={f} onChange={e => handleFactionChange(idx, e.target.value)} className="w-full" placeholder={`Facción #${idx + 1}`} />
                       {factions.length > 1 && (
                         <button type="button" onClick={() => removeFaction(idx)} className="text-gray-300 hover:text-red-400 font-bold px-2 transition text-lg">✕</button>
                       )}
@@ -216,9 +198,9 @@ export default function CreateWorldPage() {
                 {installationChecked && !hasInstallation && <NoInstallationBanner />}
                 <form onSubmit={handleAIGenerate}>
                   <FieldGroup label="Describe el mundo que quieres crear">
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} className={textareaClass} placeholder="Ej: Un mundo tóxico postapocalíptico donde las ciudades flotan sobre nubes de veneno..." required />
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Un mundo tóxico postapocalíptico donde las ciudades flotan sobre nubes de veneno..." required />
                   </FieldGroup>
-                  <button type="submit" disabled={aiLoading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
+                  <button type="submit" disabled={aiLoading || !hasInstallation} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
                     {aiLoading ? 'Generando...' : 'Generar mundo con IA'}
                   </button>
                 </form>

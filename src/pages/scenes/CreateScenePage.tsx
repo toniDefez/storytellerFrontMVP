@@ -5,6 +5,10 @@ import type { Scene } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
 import { PillSelect } from '../../components/PillSelect'
+import { FieldGroup } from '@/components/form/FieldGroup'
+import { SectionDivider } from '@/components/form/SectionDivider'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 const TIME_OPTIONS = ['Amanecer', 'Mañana', 'Mediodía', 'Tarde', 'Anochecer', 'Noche', 'Medianoche']
 const TIME_DESC: Record<string, string> = {
@@ -30,28 +34,6 @@ const TONE_DESC: Record<string, string> = {
   Ominoso: 'Algo malo se aproxima. Una amenaza latente que impregna cada momento.',
   Íntimo: 'A puerta cerrada, los personajes se revelan. Vulnerabilidad y conexión real.',
 }
-
-function SectionDivider({ label }: { label: string }) {
-  return (
-    <div className="relative my-6 flex items-center gap-3">
-      <div className="flex-1 border-t border-gray-100" />
-      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.18em]">{label}</span>
-      <div className="flex-1 border-t border-gray-100" />
-    </div>
-  )
-}
-
-function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-5">
-      <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-const inputClass = 'w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 transition'
-const textareaClass = `${inputClass} min-h-[90px] resize-none`
 
 export default function CreateScenePage() {
   const { id: worldId } = useParams()
@@ -147,11 +129,11 @@ export default function CreateScenePage() {
             {mode === 'manual' && (
               <form onSubmit={handleManualSubmit}>
                 <FieldGroup label="Título">
-                  <input type="text" value={title} onChange={e => setTitle(e.target.value)} className={inputClass} required placeholder="El título de la escena..." />
+                  <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder="El título de la escena..." />
                 </FieldGroup>
 
                 <FieldGroup label="Ubicación">
-                  <input type="text" value={location} onChange={e => setLocation(e.target.value)} className={inputClass} required placeholder="Ej: Taberna del puerto, Bosque encantado, Castillo en ruinas..." />
+                  <Input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full" required placeholder="Ej: Taberna del puerto, Bosque encantado, Castillo en ruinas..." />
                 </FieldGroup>
 
                 <SectionDivider label="Atmósfera" />
@@ -167,7 +149,7 @@ export default function CreateScenePage() {
                 <SectionDivider label="Narrativa" />
 
                 <FieldGroup label="Contexto">
-                  <textarea value={context} onChange={e => setContext(e.target.value)} className={textareaClass} required placeholder="Describe qué está pasando en esta escena..." />
+                  <Textarea value={context} onChange={e => setContext(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Describe qué está pasando en esta escena..." />
                 </FieldGroup>
 
                 <button type="submit" disabled={loading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50">
@@ -181,9 +163,9 @@ export default function CreateScenePage() {
                 {installationChecked && !hasInstallation && <NoInstallationBanner />}
                 <form onSubmit={handleAIGenerate}>
                   <FieldGroup label="Describe la escena que quieres crear">
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} className={textareaClass} placeholder="Ej: Una noche lluviosa en un callejón oscuro donde dos viejos rivales se encuentran..." required />
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Una noche lluviosa en un callejón oscuro donde dos viejos rivales se encuentran..." required />
                   </FieldGroup>
-                  <button type="submit" disabled={aiLoading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
+                  <button type="submit" disabled={aiLoading || !hasInstallation} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
                     {aiLoading ? 'Generando...' : 'Generar escena con IA'}
                   </button>
                 </form>

@@ -5,6 +5,10 @@ import type { Character } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
 import { PillSelect, MultiPillSelect } from '../../components/PillSelect'
+import { FieldGroup } from '@/components/form/FieldGroup'
+import { SectionDivider } from '@/components/form/SectionDivider'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 const ROLE_OPTIONS = ['Guerrero', 'Mago', 'Pícaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano']
 const ROLE_DESC: Record<string, string> = {
@@ -35,31 +39,6 @@ const PERSONALITY_DESC: Record<string, string> = {
   Reservado: 'Pocas palabras, mucha observación. Lo que no dice pesa más que lo que dice.',
   Temerario: 'El riesgo le atrae. Vive más en el filo que en la comodidad.',
 }
-
-function SectionDivider({ label }: { label: string }) {
-  return (
-    <div className="relative my-6 flex items-center gap-3">
-      <div className="flex-1 border-t border-gray-100" />
-      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.18em]">{label}</span>
-      <div className="flex-1 border-t border-gray-100" />
-    </div>
-  )
-}
-
-function FieldGroup({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-5">
-      <div className="flex items-baseline gap-2 mb-2">
-        <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{label}</label>
-        {hint && <span className="text-[10px] text-gray-300 italic">{hint}</span>}
-      </div>
-      {children}
-    </div>
-  )
-}
-
-const inputClass = 'w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 transition'
-const textareaClass = `${inputClass} min-h-[90px] resize-none`
 
 export default function CreateCharacterPage() {
   const { id: worldId } = useParams()
@@ -170,7 +149,7 @@ export default function CreateCharacterPage() {
             {mode === 'manual' && (
               <form onSubmit={handleManualSubmit}>
                 <FieldGroup label="Nombre">
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} className={inputClass} required placeholder="El nombre del personaje..." />
+                  <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder="El nombre del personaje..." />
                 </FieldGroup>
 
                 <SectionDivider label="Identidad" />
@@ -186,14 +165,14 @@ export default function CreateCharacterPage() {
                 <SectionDivider label="Historia" />
 
                 <FieldGroup label="Trasfondo">
-                  <textarea value={background} onChange={e => setBackground(e.target.value)} className={textareaClass} required placeholder="Historia de vida, origen, eventos que lo marcaron..." />
+                  <Textarea value={background} onChange={e => setBackground(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Historia de vida, origen, eventos que lo marcaron..." />
                 </FieldGroup>
 
                 <div className="mb-7">
                   <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Objetivos</label>
                   {goals.map((g, idx) => (
                     <div key={idx} className="flex gap-2 mb-2">
-                      <input type="text" value={g} onChange={e => handleGoalChange(idx, e.target.value)} className={inputClass} placeholder={`Objetivo #${idx + 1}`} />
+                      <Input type="text" value={g} onChange={e => handleGoalChange(idx, e.target.value)} className="w-full" placeholder={`Objetivo #${idx + 1}`} />
                       {goals.length > 1 && (
                         <button type="button" onClick={() => removeGoal(idx)} className="text-gray-300 hover:text-red-400 font-bold px-2 transition text-lg">✕</button>
                       )}
@@ -213,9 +192,9 @@ export default function CreateCharacterPage() {
                 {installationChecked && !hasInstallation && <NoInstallationBanner />}
                 <form onSubmit={handleAIGenerate}>
                   <FieldGroup label="Describe el personaje que quieres crear">
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} className={textareaClass} placeholder="Ej: Un guerrero noble con un pasado trágico y una lealtad inquebrantable..." required />
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Un guerrero noble con un pasado trágico y una lealtad inquebrantable..." required />
                   </FieldGroup>
-                  <button type="submit" disabled={aiLoading} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
+                  <button type="submit" disabled={aiLoading || !hasInstallation} className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg shadow-violet-200 transition-all duration-200 text-sm tracking-wide disabled:opacity-50 mb-4">
                     {aiLoading ? 'Generando...' : 'Generar personaje con IA'}
                   </button>
                 </form>
