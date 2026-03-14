@@ -40,6 +40,13 @@ export function register(username: string, password: string) {
   })
 }
 
+export function validateToken() {
+  return request<{ status: string }>('/validate-token', {
+    method: 'POST',
+    body: JSON.stringify({ token: getToken() }),
+  })
+}
+
 // --- Worlds ---
 
 export interface World {
@@ -85,6 +92,13 @@ export function updateWorld(id: number, world: Omit<World, 'id'>) {
 export function deleteWorld(id: number) {
   return request<{ status: string }>(`/world/delete?id=${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function updateWorld(id: number, input: Partial<Omit<World, 'id'>>) {
+  return request<World>(`/world/update?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
   })
 }
 
@@ -184,6 +198,13 @@ export function updateScene(id: number, scene: Omit<Scene, 'id'>) {
 export function deleteScene(id: number) {
   return request<{ status: string }>(`/scene/delete?id=${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function updateScene(id: number, input: Partial<Omit<Scene, 'id' | 'world_id'>>) {
+  return request<Scene>(`/scene/update?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
   })
 }
 

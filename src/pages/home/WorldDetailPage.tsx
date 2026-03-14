@@ -28,6 +28,7 @@ export default function WorldDetailPage() {
   const { t, i18n } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const [detail, setDetail] = useState<WorldDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -83,6 +84,7 @@ export default function WorldDetailPage() {
     setLoading(true)
     try {
       await deleteWorld(Number(id))
+      addToast('Mundo eliminado correctamente.', 'success')
       navigate('/worlds')
     } catch {
       setError(t('world.detail.deleteError'))

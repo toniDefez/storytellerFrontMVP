@@ -8,6 +8,7 @@ import {
   generateEvents,
   getSceneNarrative,
   getWorldDetail,
+  deleteEvent,
 } from '../../services/api'
 import type { SceneDetail, Character, Event as StoryEvent } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -76,6 +77,7 @@ export default function SceneDetailPage() {
   const handleDelete = async () => {
     try {
       await deleteScene(Number(sceneId))
+      addToast('Escena eliminada correctamente.', 'success')
       navigate(`/worlds/${worldId}`)
     } catch {
       setError(t('scene.detail.deleteError'))
@@ -89,6 +91,7 @@ export default function SceneDetailPage() {
       await addCharacterToScene(Number(sceneId), selectedCharId)
       setShowAddChar(false)
       setSelectedCharId(null)
+      addToast('Personaje añadido a la escena.', 'success')
       loadData()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('scene.detail.addCharacterError'))
