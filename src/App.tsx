@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import LoginPage from './pages/login/LoginPage'
 import MainLayout from './layouts/MainLayout'
 import RegisterPage from './pages/register/RegisterPage'
@@ -11,7 +11,7 @@ import CreateCharacterPage from './pages/characters/CreateCharacterPage'
 import CharacterDetailPage from './pages/characters/CharacterDetailPage'
 import CreateScenePage from './pages/scenes/CreateScenePage'
 import SceneDetailPage from './pages/scenes/SceneDetailPage'
-import InstallationPage from './pages/settings/InstallationPage'
+import SettingsPage from './pages/settings/SettingsPage'
 
 function App() {
   return (
@@ -30,7 +30,8 @@ function App() {
           <Route path="worlds/:worldId/characters/:characterId" element={<CharacterDetailPage />} />
           <Route path="worlds/:id/scenes/create" element={<CreateScenePage />} />
           <Route path="worlds/:worldId/scenes/:sceneId" element={<SceneDetailPage />} />
-          <Route path="settings/installation" element={<InstallationPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/installation" element={<Navigate to="/settings?tab=installation" replace />} />
         </Route>
       </Route>
 
