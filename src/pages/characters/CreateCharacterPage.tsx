@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { createCharacter, generateCharacter } from '../../services/api'
 import type { Character } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -12,43 +13,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Loader2 } from 'lucide-react'
+import { Loader2, User, X } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 
-const ROLE_OPTIONS = ['Guerrero', 'Mago', 'Picaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano']
-const ROLE_DESC: Record<string, string> = {
-  Guerrero: 'Forjado en batalla, experto en armas y estrategia de combate.',
-  Mago: 'Domina las artes arcanas, estudiando fuerzas mas alla de lo mortal.',
-  Picaro: 'Sombras como aliadas, habil en el engano, el robo y el sigilo.',
-  Explorador: 'Cartografo de lo desconocido, superviviente nato en tierras ignotas.',
-  Sanador: 'Canaliza el poder de la vida, alivia el sufrimiento y combate la muerte.',
-  Mercader: 'El oro mueve el mundo. Sabe cuando comprar, vender... y traicionar.',
-  Noble: 'Nacido entre privilegios, navega las intrigas de la corte como pez en el agua.',
-  Sacerdote: 'Voz de su dios en el mundo mortal, arbitro de lo sagrado y lo profano.',
-  Villano: 'Fuerzas oscuras lo impulsan. Sus motivos, aunque retorcidos, tienen logica.',
-  Artesano: 'Crea con sus manos lo que otros solo suenan. Maestro de un oficio unico.',
-}
-
-const PERSONALITY_OPTIONS = ['Valiente', 'Astuto', 'Compasivo', 'Arrogante', 'Misterioso', 'Leal', 'Vengativo', 'Ingenuo', 'Sabio', 'Impulsivo', 'Reservado', 'Temerario']
-const PERSONALITY_DESC: Record<string, string> = {
-  Valiente: 'Enfrenta el miedo de frente, a veces sin pensar en las consecuencias.',
-  Astuto: 'Siempre tres pasos adelante. Ve angulos donde otros solo ven muros.',
-  Compasivo: 'El sufrimiento ajeno le afecta genuinamente. Actua desde el corazon.',
-  Arrogante: 'Convencido de su superioridad, lo que le abre puertas... y enemistades.',
-  Misterioso: 'Guarda sus cartas. Su pasado, sus motivos, sus lealtades: todo en duda.',
-  Leal: 'Hasta el final. Su palabra dada es un pacto de sangre que nunca rompe.',
-  Vengativo: 'Las deudas se pagan. No olvida, no perdona, solo espera su momento.',
-  Ingenuo: 'Ve el bien en todos. Una inocencia que puede ser su mayor fortaleza o ruina.',
-  Sabio: 'Ha vivido lo suficiente para saber cuando hablar y cuando callar.',
-  Impulsivo: 'Actua antes de pensar. Su instinto es veloz, sus remordimientos, lentos.',
-  Reservado: 'Pocas palabras, mucha observacion. Lo que no dice pesa mas que lo que dice.',
-  Temerario: 'El riesgo le atrae. Vive mas en el filo que en la comodidad.',
-}
+const ROLE_VALUES = ['Guerrero', 'Mago', 'Picaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano'] as const
+const PERSONALITY_VALUES = ['Valiente', 'Astuto', 'Compasivo', 'Arrogante', 'Misterioso', 'Leal', 'Vengativo', 'Ingenuo', 'Sabio', 'Impulsivo', 'Reservado', 'Temerario'] as const
 
 export default function CreateCharacterPage() {
   const { id: worldId } = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [, setMode] = useState<'manual' | 'ai'>('manual')
 
   const [name, setName] = useState('')
@@ -56,13 +31,24 @@ export default function CreateCharacterPage() {
   const [personalityTags, setPersonalityTags] = useState<string[]>([])
   const [background, setBackground] = useState('')
   const [goals, setGoals] = useState<string[]>([''])
-  const [description, setDescription] = useState('')
+  const [aiPrompt, setAiPrompt] = useState('')
 
   const [aiLoading, setAiLoading] = useState(false)
   const [aiCharacter, setAiCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { hasInstallation, checked: installationChecked } = useInstallation()
+
+  // Build pill options: value = Spanish backend string, label = translated display
+  const roleOptions = ROLE_VALUES.map(v => ({ value: v, label: t(`character.roles.${v}`) }))
+  const roleDesc: Record<string, string> = Object.fromEntries(
+    ROLE_VALUES.map(v => [v, t(`character.roles.${v}Desc`)])
+  )
+
+  const personalityOptions = PERSONALITY_VALUES.map(v => ({ value: v, label: t(`character.personalities.${v}`) }))
+  const personalityDesc: Record<string, string> = Object.fromEntries(
+    PERSONALITY_VALUES.map(v => [v, t(`character.personalities.${v}Desc`)])
+  )
 
   const handleGoalChange = (idx: number, value: string) => {
     setGoals(goals.map((g, i) => (i === idx ? value : g)))
@@ -73,7 +59,7 @@ export default function CreateCharacterPage() {
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!role) {
-      setError('Por favor selecciona un rol.')
+      setError(t('character.create.validationError'))
       return
     }
     setLoading(true)
@@ -90,7 +76,7 @@ export default function CreateCharacterPage() {
       })
       navigate(`/worlds/${worldId}`)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear el personaje.')
+      setError(err instanceof Error ? err.message : t('character.create.error'))
     } finally {
       setLoading(false)
     }
@@ -102,10 +88,10 @@ export default function CreateCharacterPage() {
     setError('')
     setAiCharacter(null)
     try {
-      const character = await generateCharacter(Number(worldId), description)
+      const character = await generateCharacter(Number(worldId), aiPrompt)
       setAiCharacter(character)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo generar el personaje.')
+      setError(err instanceof Error ? err.message : t('character.create.aiError'))
     } finally {
       setAiLoading(false)
     }
@@ -127,7 +113,7 @@ export default function CreateCharacterPage() {
       })
       navigate(`/worlds/${worldId}`)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el personaje.')
+      setError(err instanceof Error ? err.message : t('character.create.error'))
     } finally {
       setLoading(false)
     }
@@ -136,14 +122,20 @@ export default function CreateCharacterPage() {
   return (
     <div className="flex justify-center items-start min-h-[80vh] py-4">
       <div className="w-full max-w-2xl mx-auto">
-        <PageBreadcrumb items={[{label: 'Mundos', href: '/worlds'}, {label: 'Mundo', href: '/worlds/' + worldId}, {label: 'Crear personaje'}]} />
+        <PageBreadcrumb items={[{label: t('nav.worlds'), href: '/worlds'}, {label: 'Mundo', href: '/worlds/' + worldId}, {label: t('character.create.title')}]} />
         <Card className="overflow-hidden">
-          <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
-          <CardHeader>
-            <CardTitle>Crear personaje</CardTitle>
-            <CardDescription>Da vida a quien habitara tu mundo.</CardDescription>
+          <CardHeader className="border-b border-amber-100 bg-entity-character-light/50">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-entity-character/10 flex items-center justify-center">
+                <User className="w-4.5 h-4.5 text-entity-character" />
+              </div>
+              <div>
+                <CardTitle className="font-[var(--font-display)]">{t('character.create.title')}</CardTitle>
+                <CardDescription>{t('character.create.subtitle')}</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {error && (
               <Alert variant="destructive" className="mb-5">
                 <AlertDescription>{error}</AlertDescription>
@@ -152,47 +144,49 @@ export default function CreateCharacterPage() {
 
             <Tabs defaultValue="manual" onValueChange={v => setMode(v as 'manual' | 'ai')}>
               <TabsList className="mb-6">
-                <TabsTrigger value="manual">Manual</TabsTrigger>
-                <TabsTrigger value="ai">Generar con IA</TabsTrigger>
+                <TabsTrigger value="manual">{t('character.create.manualTab')}</TabsTrigger>
+                <TabsTrigger value="ai">{t('character.create.aiTab')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="manual">
                 <form onSubmit={handleManualSubmit}>
-                  <FieldGroup label="Nombre">
-                    <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder="El nombre del personaje..." />
+                  <FieldGroup label={t('character.create.nameLabel')}>
+                    <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder={t('character.create.namePlaceholder')} />
                   </FieldGroup>
 
-                  <SectionDivider label="Identidad" />
+                  <SectionDivider label={t('character.create.identitySection')} />
 
-                  <FieldGroup label="Rol">
-                    <PillSelect options={ROLE_OPTIONS} value={role} onChange={setRole} descriptions={ROLE_DESC} />
+                  <FieldGroup label={t('character.create.roleLabel')}>
+                    <PillSelect options={roleOptions} value={role} onChange={setRole} descriptions={roleDesc} />
                   </FieldGroup>
 
-                  <FieldGroup label="Personalidad" hint="selecciona los rasgos que lo definen">
-                    <MultiPillSelect options={PERSONALITY_OPTIONS} value={personalityTags} onChange={setPersonalityTags} descriptions={PERSONALITY_DESC} />
+                  <FieldGroup label={t('character.create.personalityLabel')} hint={t('character.create.personalityHint')}>
+                    <MultiPillSelect options={personalityOptions} value={personalityTags} onChange={setPersonalityTags} descriptions={personalityDesc} />
                   </FieldGroup>
 
-                  <SectionDivider label="Historia" />
+                  <SectionDivider label={t('character.create.historySection')} />
 
-                  <FieldGroup label="Trasfondo">
-                    <Textarea value={background} onChange={e => setBackground(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Historia de vida, origen, eventos que lo marcaron..." />
+                  <FieldGroup label={t('character.create.backgroundLabel')}>
+                    <Textarea value={background} onChange={e => setBackground(e.target.value)} className="min-h-[90px] resize-none" required placeholder={t('character.create.backgroundPlaceholder')} />
                   </FieldGroup>
 
                   <div className="mb-7">
-                    <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Objetivos</label>
+                    <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t('character.create.goalsLabel')}</label>
                     {goals.map((g, idx) => (
                       <div key={idx} className="flex gap-2 mb-2">
-                        <Input type="text" value={g} onChange={e => handleGoalChange(idx, e.target.value)} className="w-full" placeholder={`Objetivo #${idx + 1}`} />
+                        <Input type="text" value={g} onChange={e => handleGoalChange(idx, e.target.value)} className="w-full" placeholder={t('character.create.goalPlaceholder', { index: idx + 1 })} />
                         {goals.length > 1 && (
-                          <button type="button" onClick={() => removeGoal(idx)} className="text-gray-300 hover:text-red-400 font-bold px-2 transition text-lg">✕</button>
+                          <button type="button" onClick={() => removeGoal(idx)} className="text-muted-foreground/40 hover:text-destructive transition p-1">
+                            <X className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
                     ))}
-                    <button type="button" onClick={addGoal} className="text-violet-500 hover:text-violet-700 text-xs font-semibold mt-1 transition">+ Anadir objetivo</button>
+                    <button type="button" onClick={addGoal} className="text-entity-character hover:text-entity-character-muted text-xs font-semibold mt-1 transition">{t('character.create.addGoal')}</button>
                   </div>
 
                   <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creando personaje...</> : 'Crear personaje'}
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('character.create.submitting')}</> : t('character.create.submitButton')}
                   </Button>
                 </form>
               </TabsContent>
@@ -201,35 +195,35 @@ export default function CreateCharacterPage() {
                 <div>
                   {installationChecked && !hasInstallation && <NoInstallationBanner />}
                   <form onSubmit={handleAIGenerate}>
-                    <FieldGroup label="Describe el personaje que quieres crear">
-                      <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Un guerrero noble con un pasado tragico y una lealtad inquebrantable..." required />
+                    <FieldGroup label={t('character.create.aiPromptLabel')}>
+                      <Textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="min-h-[90px] resize-none" placeholder={t('character.create.aiPromptPlaceholder')} required />
                     </FieldGroup>
                     <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
-                      {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar personaje con IA'}
+                      {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('character.create.aiGenerating')}</> : t('character.create.aiSubmitButton')}
                     </Button>
                   </form>
 
                   {aiCharacter && (
-                    <div className="mt-2 rounded-xl border border-violet-200 overflow-hidden">
-                      <div className="px-5 py-3 bg-violet-600">
-                        <h3 className="text-sm font-bold text-white">{aiCharacter.name}</h3>
-                        <p className="text-xs text-violet-200">{aiCharacter.role}</p>
+                    <div className="mt-2 rounded-xl border border-amber-200 overflow-hidden">
+                      <div className="px-5 py-3 bg-entity-character">
+                        <h3 className="text-sm font-bold text-white font-[var(--font-display)]">{aiCharacter.name}</h3>
+                        <p className="text-xs text-white/70">{aiCharacter.role}</p>
                       </div>
-                      <div className="p-5 bg-violet-50 space-y-2">
+                      <div className="p-5 bg-entity-character-light space-y-2">
                         {[
-                          { label: 'Personalidad', value: aiCharacter.personality },
-                          { label: 'Trasfondo', value: aiCharacter.background },
-                          ...(aiCharacter.goals?.length ? [{ label: 'Objetivos', value: aiCharacter.goals.join(', ') }] : []),
+                          { label: t('character.create.aiPreviewPersonality'), value: aiCharacter.personality },
+                          { label: t('character.create.aiPreviewBackground'), value: aiCharacter.background },
+                          ...(aiCharacter.goals?.length ? [{ label: t('character.create.aiPreviewGoals'), value: aiCharacter.goals.join(', ') }] : []),
                         ].map(({ label, value }) => (
                           <div key={label} className="flex gap-3 text-sm">
-                            <span className="text-violet-400 font-semibold w-24 shrink-0">{label}</span>
-                            <span className="text-gray-700">{value}</span>
+                            <span className="text-entity-character-muted font-semibold w-24 shrink-0">{label}</span>
+                            <span className="text-foreground">{value}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="px-5 py-3 bg-white border-t border-violet-100">
+                      <div className="px-5 py-3 bg-card border-t border-amber-100">
                         <Button size="lg" className="w-full" onClick={handleAISave} disabled={loading}>
-                          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : 'Guardar este personaje'}
+                          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('character.create.aiSaving')}</> : t('character.create.aiSaveButton')}
                         </Button>
                       </div>
                     </div>
