@@ -8,7 +8,6 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import './index.css'
 
 import App from './App.tsx'
-import { ToastProvider } from './components/Toast.tsx'
 
 const queryClient = new QueryClient()
 
