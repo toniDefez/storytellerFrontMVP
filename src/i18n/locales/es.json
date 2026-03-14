@@ -16,6 +16,13 @@
     "settings": "Configuración",
     "logout": "Cerrar sesión"
   },
+  "a11y": {
+    "skipToContent": "Saltar al contenido principal",
+    "sidebarNav": "Navegación",
+    "sidebar": "Barra lateral",
+    "mainContent": "Contenido principal",
+    "openNavMenu": "Abrir menú de navegación"
+  },
   "settings": {
     "title": "Configuración",
     "tabGeneral": "General",

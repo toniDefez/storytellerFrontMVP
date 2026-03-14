@@ -1,15 +1,17 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Globe, Settings, LogOut, Menu } from 'lucide-react'
 
-const NAV_ITEMS = [
-  { to: '/worlds', label: 'Mundos', Icon: Globe },
-  { to: '/settings', label: 'Configuración', Icon: Settings },
+const NAV_ITEM_DEFS = [
+  { to: '/worlds', labelKey: 'nav.worlds', Icon: Globe },
+  { to: '/settings', labelKey: 'nav.settings', Icon: Settings },
 ]
 
-function NavItem({ to, label, Icon }: { to: string; label: string; Icon: React.FC<{ className?: string }> }) {
+function NavItem({ to, labelKey, Icon }: { to: string; labelKey: string; Icon: React.FC<{ className?: string }> }) {
+  const { t } = useTranslation()
   const location = useLocation()
   const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
 
@@ -24,14 +26,16 @@ function NavItem({ to, label, Icon }: { to: string; label: string; Icon: React.F
       aria-current={isActive ? 'page' : undefined}
     >
       <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-violet-400' : ''}`} />
-      {label}
+      {t(labelKey)}
     </Link>
   )
 }
 
 function Sidebar({ onLogout }: { onLogout: () => void }) {
+  const { t } = useTranslation()
+
   return (
-    <aside aria-label="Barra lateral" className="flex flex-col h-full bg-slate-950 border-r border-slate-800/60 w-60">
+    <aside aria-label={t('a11y.sidebar')} className="flex flex-col h-full bg-slate-950 border-r border-slate-800/60 w-60">
       {/* Logo */}
       <div className="px-5 pt-7 pb-6">
         <div className="flex items-center gap-2.5">
@@ -45,9 +49,9 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {/* Nav */}
-      <nav aria-label="Navegacion principal" className="flex-1 px-3 space-y-1">
-        <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-4 mb-3">Navegacion</p>
-        {NAV_ITEMS.map(item => (
+      <nav aria-label={t('a11y.sidebarNav')} className="flex-1 px-3 space-y-1">
+        <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-4 mb-3">{t('a11y.sidebarNav')}</p>
+        {NAV_ITEM_DEFS.map(item => (
           <NavItem key={item.to} {...item} />
         ))}
       </nav>
@@ -59,7 +63,7 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
           className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 rounded-lg transition-all duration-150"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          Cerrar sesion
+          {t('nav.logout')}
         </button>
       </div>
     </aside>
@@ -67,6 +71,7 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
 }
 
 export default function MainLayout() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -83,7 +88,7 @@ export default function MainLayout() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-violet-700 focus:px-4 focus:py-2 focus:rounded-lg focus:font-semibold focus:shadow-lg"
       >
-        Saltar al contenido principal
+        {t('a11y.skipToContent')}
       </a>
 
       {/* Sidebar desktop */}
@@ -94,19 +99,19 @@ export default function MainLayout() {
       {/* Sidebar mobile */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-60">
-          <SheetTitle className="sr-only">Navegacion</SheetTitle>
+          <SheetTitle className="sr-only">{t('a11y.sidebarNav')}</SheetTitle>
           <Sidebar onLogout={handleLogout} />
         </SheetContent>
       </Sheet>
 
       {/* Main */}
-      <main id="main-content" aria-label="Contenido principal" className="flex-1 md:ml-60 min-h-screen">
+      <main id="main-content" aria-label={t('a11y.mainContent')} className="flex-1 md:ml-60 min-h-screen">
         {/* Mobile topbar */}
         <div className="md:hidden flex items-center gap-4 bg-slate-950 border-b border-slate-800 px-4 py-3 sticky top-0 z-20">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-slate-400 hover:text-white transition"
-            aria-label="Abrir menu de navegacion"
+            aria-label={t('a11y.openNavMenu')}
             aria-expanded={sidebarOpen}
           >
             <Menu className="h-5 w-5" />
