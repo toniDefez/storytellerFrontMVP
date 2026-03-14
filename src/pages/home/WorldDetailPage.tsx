@@ -5,6 +5,10 @@ import type { WorldDetail, World } from '../../services/api'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Card, CardHeader, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { PageBreadcrumb } from '@/components/PageBreadcrumb'
+import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 
 export default function WorldDetailPage() {
   const { id } = useParams()
@@ -67,7 +71,7 @@ export default function WorldDetailPage() {
     }
   }
 
-  if (loading) return <div className="flex justify-center items-center h-96 text-lg text-gray-500">Cargando mundo...</div>
+  if (loading) return <DetailSkeleton />
   if (error) return (
     <div className="flex justify-center items-center h-96">
       <Alert variant="destructive" className="max-w-md">
@@ -89,6 +93,8 @@ export default function WorldDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 mt-8">
+      <PageBreadcrumb items={[{label: 'Mundos', href: '/worlds'}, {label: world.name}]} />
+
       <ConfirmModal
         open={showConfirmDelete}
         title="Borrar este mundo?"
@@ -101,96 +107,108 @@ export default function WorldDetailPage() {
       />
 
       {/* World Info */}
-      <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-extrabold text-purple-800">{world.name}</h2>
-          <Button variant="destructive" size="sm" onClick={() => setShowConfirmDelete(true)}>Borrar</Button>
-        </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div><span className="font-semibold text-gray-700">Era:</span> {world.era}</div>
-          <div><span className="font-semibold text-gray-700">Clima:</span> {world.climate}</div>
-          <div><span className="font-semibold text-gray-700">Politica:</span> {world.politics}</div>
-          <div><span className="font-semibold text-gray-700">Cultura:</span> {world.culture}</div>
-        </div>
-        {world.description && (
-          <div className="mb-4"><span className="font-semibold text-gray-700">Descripcion:</span> {world.description}</div>
-        )}
-        {world.factions && world.factions.length > 0 && (
-          <div>
-            <span className="font-semibold text-gray-700">Facciones:</span>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {world.factions.map(f => (
-                <span key={f} className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">{f}</span>
-              ))}
-            </div>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <h2 className="text-3xl font-extrabold text-purple-800">{world.name}</h2>
+            <Button variant="destructive" size="sm" onClick={() => setShowConfirmDelete(true)}>Borrar</Button>
           </div>
-        )}
-      </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div><span className="font-semibold text-gray-700">Era:</span> {world.era}</div>
+            <div><span className="font-semibold text-gray-700">Clima:</span> {world.climate}</div>
+            <div><span className="font-semibold text-gray-700">Politica:</span> {world.politics}</div>
+            <div><span className="font-semibold text-gray-700">Cultura:</span> {world.culture}</div>
+          </div>
+          {world.description && (
+            <div className="mb-4"><span className="font-semibold text-gray-700">Descripcion:</span> {world.description}</div>
+          )}
+          {world.factions && world.factions.length > 0 && (
+            <div>
+              <span className="font-semibold text-gray-700">Facciones:</span>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {world.factions.map(f => (
+                  <Badge key={f} variant="outline">{f}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Characters Section */}
-      <div className="bg-white/90 shadow-xl rounded-2xl p-8 border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-purple-700">Personajes ({characters?.length || 0})</h3>
-          <Button variant="secondary" size="sm" asChild>
-            <Link to={`/worlds/${id}/characters/create`}>+ Crear personaje</Link>
-          </Button>
-        </div>
-        {!characters || characters.length === 0 ? (
-          <p className="text-gray-500 italic">Aun no hay personajes en este mundo.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {characters.map(c => (
-              <Link
-                key={c.id}
-                to={`/worlds/${id}/characters/${c.id}`}
-                className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition block"
-              >
-                <h4 className="font-bold text-gray-800">{c.name}</h4>
-                <p className="text-sm text-purple-600">{c.role}</p>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{c.personality}</p>
-                {c.goals && c.goals.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {c.goals.slice(0, 2).map((g, i) => (
-                      <span key={i} className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs">{g}</span>
-                    ))}
-                  </div>
-                )}
-              </Link>
-            ))}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-purple-700">Personajes ({characters?.length || 0})</h3>
+            <Button variant="secondary" size="sm" asChild>
+              <Link to={`/worlds/${id}/characters/create`}>+ Crear personaje</Link>
+            </Button>
           </div>
-        )}
-      </div>
+        </CardHeader>
+        <CardContent>
+          {!characters || characters.length === 0 ? (
+            <p className="text-gray-500 italic">Aun no hay personajes en este mundo.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {characters.map(c => (
+                <Link
+                  key={c.id}
+                  to={`/worlds/${id}/characters/${c.id}`}
+                  className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition block"
+                >
+                  <h4 className="font-bold text-gray-800">{c.name}</h4>
+                  <p className="text-sm text-purple-600">{c.role}</p>
+                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{c.personality}</p>
+                  {c.goals && c.goals.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {c.goals.slice(0, 2).map((g, i) => (
+                        <Badge key={i} variant="secondary">{g}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Scenes Section */}
-      <div className="bg-white/90 shadow-xl rounded-2xl p-8 border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-purple-700">Escenas ({scenes?.length || 0})</h3>
-          <Button variant="secondary" size="sm" asChild>
-            <Link to={`/worlds/${id}/scenes/create`}>+ Crear escena</Link>
-          </Button>
-        </div>
-        {!scenes || scenes.length === 0 ? (
-          <p className="text-gray-500 italic">Aun no hay escenas en este mundo.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {scenes.map(s => (
-              <Link
-                key={s.id}
-                to={`/worlds/${id}/scenes/${s.id}`}
-                className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition block"
-              >
-                <h4 className="font-bold text-gray-800">{s.title}</h4>
-                <div className="flex flex-wrap gap-2 mt-1 text-sm">
-                  <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded">{s.location}</span>
-                  <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{s.time}</span>
-                  <span className="bg-pink-50 text-pink-700 px-2 py-0.5 rounded">{s.tone}</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-2 line-clamp-2">{s.context}</p>
-              </Link>
-            ))}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-purple-700">Escenas ({scenes?.length || 0})</h3>
+            <Button variant="secondary" size="sm" asChild>
+              <Link to={`/worlds/${id}/scenes/create`}>+ Crear escena</Link>
+            </Button>
           </div>
-        )}
-      </div>
+        </CardHeader>
+        <CardContent>
+          {!scenes || scenes.length === 0 ? (
+            <p className="text-gray-500 italic">Aun no hay escenas en este mundo.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {scenes.map(s => (
+                <Link
+                  key={s.id}
+                  to={`/worlds/${id}/scenes/${s.id}`}
+                  className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition block"
+                >
+                  <h4 className="font-bold text-gray-800">{s.title}</h4>
+                  <div className="flex flex-wrap gap-2 mt-1 text-sm">
+                    <Badge variant="secondary">{s.location}</Badge>
+                    <Badge variant="secondary">{s.time}</Badge>
+                    <Badge variant="secondary">{s.tone}</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2 line-clamp-2">{s.context}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

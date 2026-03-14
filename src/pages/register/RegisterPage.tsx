@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { validateEmail, validatePassword } from '../../utils/validation'
-import EmailInput from '../../components/EmailInput'
-import PasswordInput from '../../components/PasswordInput'
 import { register } from '../../services/api'
 import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [emailError, setEmailError] = useState('')
@@ -21,19 +24,10 @@ export default function RegisterPage() {
     let valid = true
     setEmailError('')
     setPasswordError('')
-
     const emailMsg = validateEmail(email)
-    if (emailMsg) {
-      setEmailError(emailMsg)
-      valid = false
-    }
-
+    if (emailMsg) { setEmailError(emailMsg); valid = false }
     const passwordMsg = validatePassword(password)
-    if (passwordMsg) {
-      setPasswordError(passwordMsg)
-      valid = false
-    }
-
+    if (passwordMsg) { setPasswordError(passwordMsg); valid = false }
     return valid
   }
 
@@ -54,50 +48,62 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-200 via-blue-200 to-pink-200">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="absolute inset-0 flex items-center justify-center -z-10">
-        <svg width="700" height="700" viewBox="0 0 700 700" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-30">
+        <svg width="700" height="700" viewBox="0 0 700 700" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-20">
           <circle cx="350" cy="350" r="300" fill="url(#paint0_radial_reg)" />
           <defs>
             <radialGradient id="paint0_radial_reg" cx="0" cy="0" r="1" gradientTransform="translate(350 350) scale(300)" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#6ee7b7" />
-              <stop offset="1" stopColor="#a5b4fc" stopOpacity="0.7" />
+              <stop stopColor="hsl(263 70% 50%)" />
+              <stop offset="1" stopColor="hsl(263 80% 95%)" stopOpacity="0.7" />
             </radialGradient>
           </defs>
         </svg>
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className="relative bg-white/90 shadow-2xl rounded-2xl px-10 pt-10 pb-8 w-full max-w-md border border-gray-200 backdrop-blur-md"
-      >
-        <h2 className="text-3xl font-extrabold mb-8 text-center text-gray-800 tracking-tight drop-shadow">Crear cuenta</h2>
-
-        {error && (
-          <p className="mb-4 text-red-600 text-sm text-center font-semibold">{error}</p>
-        )}
-
-        <EmailInput
-          value={email}
-          onChange={setEmail}
-          externalError={emailError}
-        />
-        <PasswordInput
-          value={password}
-          onChange={setPassword}
-          externalError={passwordError}
-        />
-
-        <Button type="submit" size="lg" className="w-full" disabled={loading}>
-          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Registrando...</> : 'Registrarse'}
-        </Button>
-
-        <p className="text-center text-sm mt-6 text-gray-700">
-          Ya tienes una cuenta?{' '}
-          <Link to="/login" className="text-blue-600 hover:underline font-semibold">
-            Inicia sesion
-          </Link>
-        </p>
-      </form>
+      <Card className="w-full max-w-md shadow-xl">
+        <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 rounded-t-lg" />
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center mb-4">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <svg className="w-5 h-5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+          </div>
+          <CardTitle className="text-2xl">Crear cuenta</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" required />
+              {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contrasena</Label>
+              <div className="relative">
+                <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Tu contrasena" required />
+                <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}>
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+            </div>
+            <Button type="submit" size="lg" className="w-full" disabled={loading}>
+              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Registrando...</> : 'Registrarse'}
+            </Button>
+          </form>
+          <p className="text-center text-sm mt-6 text-muted-foreground">
+            Ya tienes una cuenta?{' '}
+            <Link to="/" className="text-primary hover:underline font-semibold">Inicia sesion</Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

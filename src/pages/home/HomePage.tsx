@@ -6,6 +6,7 @@ import { getWorlds } from '../../services/api'
 import type { World } from '../../services/api'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { WorldCardSkeleton } from '@/components/skeletons/WorldCardSkeleton'
 
 const container = {
   hidden: {},
@@ -31,7 +32,13 @@ export default function HomePage() {
   }, [])
 
   if (loading) {
-    return <div className="flex justify-center items-center h-96 text-sm text-gray-400">Cargando mundos...</div>
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-8">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <WorldCardSkeleton key={i} />
+        ))}
+      </div>
+    )
   }
 
   if (error) {

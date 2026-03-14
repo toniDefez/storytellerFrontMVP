@@ -3,6 +3,8 @@ import { getLinkingToken } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
+import { Card, CardHeader, CardContent } from '@/components/ui/card'
+import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -109,50 +111,64 @@ export default function InstallationPage() {
   if (hasInstallation && installation) {
     return (
       <div className="max-w-2xl mx-auto mt-8 space-y-6">
-        <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-extrabold text-purple-800">Instalacion local</h2>
-            <StatusBadge status={installation.status} />
-          </div>
+        <PageBreadcrumb items={[{label: 'Configuracion'}, {label: 'Instalacion'}]} />
 
-          <div className="space-y-0">
-            <DetailRow label="Maquina" value={installation.machine_name} />
-            <DetailRow label="Sistema operativo" value={installation.os} />
-            <DetailRow label="Arquitectura" value={installation.arch} />
-            <DetailRow label="Version" value={installation.version} />
-            <DetailRow label="IP" value={installation.ip} />
-            <DetailRow label="Puerto" value={String(installation.port)} />
-            <DetailRow label="Ultima conexion" value={formatDate(installation.last_seen_at)} />
-            <DetailRow label="Vinculada desde" value={formatDate(installation.created_at)} />
-          </div>
-
-          <div className="mt-6 p-3 bg-gray-50 rounded-lg border">
-            <span className="text-gray-500 text-sm font-medium">Channel ID</span>
-            <div className="font-mono text-xs text-gray-700 break-all mt-1">
-              {installation.channel_id}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-extrabold text-purple-800">Instalacion local</h2>
+              <StatusBadge status={installation.status} />
             </div>
-          </div>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-0">
+              <DetailRow label="Maquina" value={installation.machine_name} />
+              <DetailRow label="Sistema operativo" value={installation.os} />
+              <DetailRow label="Arquitectura" value={installation.arch} />
+              <DetailRow label="Version" value={installation.version} />
+              <DetailRow label="IP" value={installation.ip} />
+              <DetailRow label="Puerto" value={String(installation.port)} />
+              <DetailRow label="Ultima conexion" value={formatDate(installation.last_seen_at)} />
+              <DetailRow label="Vinculada desde" value={formatDate(installation.created_at)} />
+            </div>
 
-        <div className="bg-white/90 shadow-xl rounded-2xl p-8 border border-gray-200">
-          <h3 className="text-xl font-bold text-purple-700 mb-4">Revincular instalacion</h3>
-          <p className="text-gray-600 text-sm mb-4">
-            Si necesitas vincular una nueva instalacion, genera un nuevo token.
-          </p>
-          <TokenGenerator />
-        </div>
+            <div className="mt-6 p-3 bg-gray-50 rounded-lg border">
+              <span className="text-gray-500 text-sm font-medium">Channel ID</span>
+              <div className="font-mono text-xs text-gray-700 break-all mt-1">
+                {installation.channel_id}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <h3 className="text-xl font-bold text-purple-700">Revincular instalacion</h3>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 text-sm mb-4">
+              Si necesitas vincular una nueva instalacion, genera un nuevo token.
+            </p>
+            <TokenGenerator />
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
     <div className="max-w-2xl mx-auto mt-8">
-      <div className="bg-white/90 shadow-2xl rounded-2xl p-8 border border-gray-200">
-        <h2 className="text-3xl font-extrabold text-purple-800 mb-6">Configurar generador local</h2>
+      <PageBreadcrumb items={[{label: 'Configuracion'}, {label: 'Instalacion'}]} />
 
-        <SetupInstructions />
-        <TokenGenerator />
-      </div>
+      <Card>
+        <CardHeader>
+          <h2 className="text-3xl font-extrabold text-purple-800">Configurar generador local</h2>
+        </CardHeader>
+        <CardContent>
+          <SetupInstructions />
+          <TokenGenerator />
+        </CardContent>
+      </Card>
     </div>
   )
 }

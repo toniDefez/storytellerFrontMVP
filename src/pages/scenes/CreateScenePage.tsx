@@ -10,8 +10,11 @@ import { SectionDivider } from '@/components/form/SectionDivider'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 
 const TIME_OPTIONS = ['Amanecer', 'Manana', 'Mediodia', 'Tarde', 'Anochecer', 'Noche', 'Medianoche']
 const TIME_DESC: Record<string, string> = {
@@ -41,7 +44,7 @@ const TONE_DESC: Record<string, string> = {
 export default function CreateScenePage() {
   const { id: worldId } = useParams()
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'manual' | 'ai'>('manual')
+  const [, setMode] = useState<'manual' | 'ai'>('manual')
 
   const [title, setTitle] = useState('')
   const [location, setLocation] = useState('')
@@ -113,96 +116,99 @@ export default function CreateScenePage() {
   return (
     <div className="flex justify-center items-start min-h-[80vh] py-4">
       <div className="w-full max-w-2xl mx-auto">
-        <div className="relative bg-white shadow-xl shadow-violet-100/60 rounded-2xl border border-gray-100 overflow-hidden">
+        <PageBreadcrumb items={[{label: 'Mundos', href: '/worlds'}, {label: 'Mundo', href: '/worlds/' + worldId}, {label: 'Crear escena'}]} />
+        <Card className="overflow-hidden">
           <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
-
-          <div className="px-10 pt-8 pb-9">
-            <h2 className="text-2xl font-bold mb-1 text-gray-800 tracking-tight">Crear escena</h2>
-            <p className="text-sm text-gray-400 mb-7">Define el momento que impulsara la narrativa.</p>
-
-            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-8 w-fit">
-              <button onClick={() => setMode('manual')} type="button" className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'manual' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Manual</button>
-              <button onClick={() => setMode('ai')} type="button" className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'ai' ? 'bg-white text-violet-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Generar con IA</button>
-            </div>
-
+          <CardHeader>
+            <CardTitle>Crear escena</CardTitle>
+            <CardDescription>Define el momento que impulsara la narrativa.</CardDescription>
+          </CardHeader>
+          <CardContent>
             {error && (
               <Alert variant="destructive" className="mb-5">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            {mode === 'manual' && (
-              <form onSubmit={handleManualSubmit}>
-                <FieldGroup label="Titulo">
-                  <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder="El titulo de la escena..." />
-                </FieldGroup>
+            <Tabs defaultValue="manual" onValueChange={v => setMode(v as 'manual' | 'ai')}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="manual">Manual</TabsTrigger>
+                <TabsTrigger value="ai">Generar con IA</TabsTrigger>
+              </TabsList>
 
-                <FieldGroup label="Ubicacion">
-                  <Input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full" required placeholder="Ej: Taberna del puerto, Bosque encantado, Castillo en ruinas..." />
-                </FieldGroup>
-
-                <SectionDivider label="Atmosfera" />
-
-                <FieldGroup label="Momento del dia">
-                  <PillSelect options={TIME_OPTIONS} value={time} onChange={setTime} descriptions={TIME_DESC} />
-                </FieldGroup>
-
-                <FieldGroup label="Tono">
-                  <PillSelect options={TONE_OPTIONS} value={tone} onChange={setTone} descriptions={TONE_DESC} />
-                </FieldGroup>
-
-                <SectionDivider label="Narrativa" />
-
-                <FieldGroup label="Contexto">
-                  <Textarea value={context} onChange={e => setContext(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Describe que esta pasando en esta escena..." />
-                </FieldGroup>
-
-                <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creando escena...</> : 'Crear escena'}
-                </Button>
-              </form>
-            )}
-
-            {mode === 'ai' && (
-              <div>
-                {installationChecked && !hasInstallation && <NoInstallationBanner />}
-                <form onSubmit={handleAIGenerate}>
-                  <FieldGroup label="Describe la escena que quieres crear">
-                    <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Una noche lluviosa en un callejon oscuro donde dos viejos rivales se encuentran..." required />
+              <TabsContent value="manual">
+                <form onSubmit={handleManualSubmit}>
+                  <FieldGroup label="Titulo">
+                    <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder="El titulo de la escena..." />
                   </FieldGroup>
-                  <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
-                    {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar escena con IA'}
+
+                  <FieldGroup label="Ubicacion">
+                    <Input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full" required placeholder="Ej: Taberna del puerto, Bosque encantado, Castillo en ruinas..." />
+                  </FieldGroup>
+
+                  <SectionDivider label="Atmosfera" />
+
+                  <FieldGroup label="Momento del dia">
+                    <PillSelect options={TIME_OPTIONS} value={time} onChange={setTime} descriptions={TIME_DESC} />
+                  </FieldGroup>
+
+                  <FieldGroup label="Tono">
+                    <PillSelect options={TONE_OPTIONS} value={tone} onChange={setTone} descriptions={TONE_DESC} />
+                  </FieldGroup>
+
+                  <SectionDivider label="Narrativa" />
+
+                  <FieldGroup label="Contexto">
+                    <Textarea value={context} onChange={e => setContext(e.target.value)} className="min-h-[90px] resize-none" required placeholder="Describe que esta pasando en esta escena..." />
+                  </FieldGroup>
+
+                  <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creando escena...</> : 'Crear escena'}
                   </Button>
                 </form>
+              </TabsContent>
 
-                {aiScene && (
-                  <div className="mt-2 rounded-xl border border-violet-200 overflow-hidden">
-                    <div className="px-5 py-3 bg-violet-600">
-                      <h3 className="text-sm font-bold text-white">{aiScene.title}</h3>
-                      <p className="text-xs text-violet-200">{aiScene.location} · {aiScene.time}</p>
+              <TabsContent value="ai">
+                <div>
+                  {installationChecked && !hasInstallation && <NoInstallationBanner />}
+                  <form onSubmit={handleAIGenerate}>
+                    <FieldGroup label="Describe la escena que quieres crear">
+                      <Textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-[90px] resize-none" placeholder="Ej: Una noche lluviosa en un callejon oscuro donde dos viejos rivales se encuentran..." required />
+                    </FieldGroup>
+                    <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
+                      {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</> : 'Generar escena con IA'}
+                    </Button>
+                  </form>
+
+                  {aiScene && (
+                    <div className="mt-2 rounded-xl border border-violet-200 overflow-hidden">
+                      <div className="px-5 py-3 bg-violet-600">
+                        <h3 className="text-sm font-bold text-white">{aiScene.title}</h3>
+                        <p className="text-xs text-violet-200">{aiScene.location} · {aiScene.time}</p>
+                      </div>
+                      <div className="p-5 bg-violet-50 space-y-2">
+                        {[
+                          { label: 'Tono', value: aiScene.tone },
+                          { label: 'Contexto', value: aiScene.context },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="flex gap-3 text-sm">
+                            <span className="text-violet-400 font-semibold w-20 shrink-0">{label}</span>
+                            <span className="text-gray-700">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="px-5 py-3 bg-white border-t border-violet-100">
+                        <Button size="lg" className="w-full" onClick={handleAISave} disabled={loading}>
+                          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : 'Guardar esta escena'}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="p-5 bg-violet-50 space-y-2">
-                      {[
-                        { label: 'Tono', value: aiScene.tone },
-                        { label: 'Contexto', value: aiScene.context },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex gap-3 text-sm">
-                          <span className="text-violet-400 font-semibold w-20 shrink-0">{label}</span>
-                          <span className="text-gray-700">{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="px-5 py-3 bg-white border-t border-violet-100">
-                      <Button size="lg" className="w-full" onClick={handleAISave} disabled={loading}>
-                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : 'Guardar esta escena'}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

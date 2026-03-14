@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { Badge } from '@/components/ui/badge'
 
 interface WorldCardProps {
   id: number
@@ -14,13 +15,13 @@ interface WorldCardProps {
 }
 
 const CLIMATE_HEADER: Record<string, string> = {
-  Ártico:    'from-cyan-400 to-blue-500',
+  Artico:    'from-cyan-400 to-blue-500',
   Tropical:  'from-emerald-400 to-teal-500',
-  Desértico: 'from-amber-400 to-orange-500',
-  Volcánico: 'from-red-500 to-rose-600',
-  Oceánico:  'from-blue-400 to-indigo-500',
-  Montañoso: 'from-slate-400 to-stone-500',
-  Tóxico:    'from-lime-400 to-green-600',
+  Desertico: 'from-amber-400 to-orange-500',
+  Volcanico: 'from-red-500 to-rose-600',
+  Oceanico:  'from-blue-400 to-indigo-500',
+  Montanoso: 'from-slate-400 to-stone-500',
+  Toxico:    'from-lime-400 to-green-600',
   Templado:  'from-violet-400 to-purple-500',
 }
 
@@ -50,9 +51,9 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics,
         )}
 
         <div className="flex flex-wrap gap-1.5 mb-3">
-          <span className="text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{climate}</span>
-          <span className="text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{politics}</span>
-          <span className="text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{culture}</span>
+          <Badge variant="secondary">{climate}</Badge>
+          <Badge variant="secondary">{politics}</Badge>
+          <Badge variant="secondary">{culture}</Badge>
         </div>
 
         {factions.length > 0 && (
@@ -60,7 +61,7 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics,
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Facciones</p>
             <div className="flex flex-wrap gap-1">
               {factions.slice(0, 3).map(f => (
-                <span key={f} className="text-[11px] text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full">{f}</span>
+                <Badge key={f} variant="outline">{f}</Badge>
               ))}
               {factions.length > 3 && (
                 <span className="text-[11px] text-gray-400 px-2 py-0.5">+{factions.length - 3}</span>

@@ -30,8 +30,8 @@ export function PillSelect({ options, value, onChange, descriptions }: PillSelec
             transition={pillTransition}
             className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
               value === opt
-                ? 'bg-violet-600 text-white border-violet-600 shadow-md shadow-violet-200'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-violet-400 hover:text-violet-700 hover:bg-violet-50'
+                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
+                : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
             }`}
           >
             {opt}
@@ -49,8 +49,8 @@ export function PillSelect({ options, value, onChange, descriptions }: PillSelec
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="overflow-hidden"
           >
-            <div className="mt-3 px-4 py-2 border-l-2 border-violet-400 bg-gradient-to-r from-violet-50 to-transparent rounded-r-lg">
-              <p className="text-[11px] text-violet-700 italic leading-relaxed">{activeDesc}</p>
+            <div className="mt-3 px-4 py-2 border-l-2 border-primary/40 bg-accent rounded-r-lg">
+              <p className="text-[11px] text-accent-foreground italic leading-relaxed">{activeDesc}</p>
             </div>
           </motion.div>
         )}
@@ -90,8 +90,8 @@ export function MultiPillSelect({ options, value, onChange, descriptions }: Mult
             transition={pillTransition}
             className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
               value.includes(opt)
-                ? 'bg-violet-600 text-white border-violet-600 shadow-md shadow-violet-200'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-violet-400 hover:text-violet-700 hover:bg-violet-50'
+                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
+                : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
             }`}
           >
             {opt}
@@ -109,8 +109,8 @@ export function MultiPillSelect({ options, value, onChange, descriptions }: Mult
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="overflow-hidden"
           >
-            <div className="mt-3 px-4 py-2 border-l-2 border-violet-400 bg-gradient-to-r from-violet-50 to-transparent rounded-r-lg">
-              <p className="text-[11px] text-violet-700 italic leading-relaxed">{activeDesc}</p>
+            <div className="mt-3 px-4 py-2 border-l-2 border-primary/40 bg-accent rounded-r-lg">
+              <p className="text-[11px] text-accent-foreground italic leading-relaxed">{activeDesc}</p>
             </div>
           </motion.div>
         )}
