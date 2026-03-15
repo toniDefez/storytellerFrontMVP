@@ -305,10 +305,6 @@ export default function CreateWorldPage() {
 
       await createWorld({
         name: name || 'Mundo sin nombre',
-        era: '',
-        climate: '',
-        politics: '',
-        culture: '',
         factions: [],
         description: '',
         core_axis: coreAxis,

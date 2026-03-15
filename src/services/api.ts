@@ -52,18 +52,14 @@ export function validateToken() {
 export interface World {
   id: number
   name: string
-  era: string
-  climate: string
-  politics: string
-  culture: string
   factions: string[]
   description: string
-  core_axis?: string
-  environment?: string
-  subsistence?: string
-  organization?: string
-  tensions?: string
-  tone?: string
+  core_axis: string
+  environment: string
+  subsistence: string
+  organization: string
+  tensions: string
+  tone: string
 }
 
 export function getWorlds() {
@@ -78,13 +74,6 @@ export function createWorld(world: Omit<World, 'id'>) {
   return request<World>('/world', {
     method: 'POST',
     body: JSON.stringify(world),
-  })
-}
-
-export function generateWorld(description: string) {
-  return request<World>('/world/generate', {
-    method: 'POST',
-    body: JSON.stringify({ description }),
   })
 }
 

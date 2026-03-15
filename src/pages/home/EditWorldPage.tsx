@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getWorldById, updateWorld } from '../../services/api'
-import { PillSelect } from '../../components/PillSelect'
 import { FieldGroup } from '@/components/form/FieldGroup'
-import { SectionDivider } from '@/components/form/SectionDivider'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -21,10 +19,6 @@ export default function EditWorldPage() {
   const { t, i18n } = useTranslation()
 
   const [name, setName] = useState('')
-  const [era, setEra] = useState('')
-  const [climate, setClimate] = useState('')
-  const [politics, setPolitics] = useState('')
-  const [culture, setCulture] = useState('')
   const [factions, setFactions] = useState<string[]>([''])
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
@@ -47,10 +41,6 @@ export default function EditWorldPage() {
     getWorldById(worldId)
       .then(data => {
         setName(data.name)
-        setEra(data.era)
-        setClimate(data.climate)
-        setPolitics(data.politics)
-        setCulture(data.culture)
         setFactions(data.factions?.length ? data.factions : [''])
         setDescription(data.description || '')
         setWorldName(data.name)
@@ -58,69 +48,6 @@ export default function EditWorldPage() {
       .catch(err => setError(err instanceof Error ? err.message : t('world.detail.notFound')))
       .finally(() => setFetching(false))
   }, [id, t])
-
-  const eraOptions = [
-    { value: 'Medieval', label: t('world.eras.medieval') },
-    { value: 'Antigua', label: t('world.eras.ancient') },
-    { value: 'Futurista', label: t('world.eras.futuristic') },
-    { value: 'Moderna', label: t('world.eras.modern') },
-    { value: 'Fantastica', label: t('world.eras.fantasy') },
-    { value: 'Post-apocaliptica', label: t('world.eras.postApocalyptic') },
-    { value: 'Victoriana', label: t('world.eras.victorian') },
-    { value: 'Espacial', label: t('world.eras.space') },
-  ]
-  const eraDescriptions: Record<string, string> = {
-    Medieval: t('world.eras.medievalDesc'),
-    Antigua: t('world.eras.ancientDesc'),
-    Futurista: t('world.eras.futuristicDesc'),
-    Moderna: t('world.eras.modernDesc'),
-    Fantastica: t('world.eras.fantasyDesc'),
-    'Post-apocaliptica': t('world.eras.postApocalypticDesc'),
-    Victoriana: t('world.eras.victorianDesc'),
-    Espacial: t('world.eras.spaceDesc'),
-  }
-
-  const climateOptions = [
-    { value: 'Templado', label: t('world.climates.temperate') },
-    { value: 'Artico', label: t('world.climates.arctic') },
-    { value: 'Tropical', label: t('world.climates.tropical') },
-    { value: 'Desertico', label: t('world.climates.desert') },
-    { value: 'Volcanico', label: t('world.climates.volcanic') },
-    { value: 'Oceanico', label: t('world.climates.oceanic') },
-    { value: 'Montanoso', label: t('world.climates.mountainous') },
-    { value: 'Toxico', label: t('world.climates.toxic') },
-  ]
-  const climateDescriptions: Record<string, string> = {
-    Templado: t('world.climates.temperateDesc'),
-    Artico: t('world.climates.arcticDesc'),
-    Tropical: t('world.climates.tropicalDesc'),
-    Desertico: t('world.climates.desertDesc'),
-    Volcanico: t('world.climates.volcanicDesc'),
-    Oceanico: t('world.climates.oceanicDesc'),
-    Montanoso: t('world.climates.mountainousDesc'),
-    Toxico: t('world.climates.toxicDesc'),
-  }
-
-  const politicsOptions = [
-    { value: 'Monarquia', label: t('world.politics.monarchy') },
-    { value: 'Imperio', label: t('world.politics.empire') },
-    { value: 'Republica', label: t('world.politics.republic') },
-    { value: 'Teocracia', label: t('world.politics.theocracy') },
-    { value: 'Anarquia', label: t('world.politics.anarchy') },
-    { value: 'Oligarquia', label: t('world.politics.oligarchy') },
-    { value: 'Tribu', label: t('world.politics.tribe') },
-    { value: 'Dictadura', label: t('world.politics.dictatorship') },
-  ]
-  const politicsDescriptions: Record<string, string> = {
-    Monarquia: t('world.politics.monarchyDesc'),
-    Imperio: t('world.politics.empireDesc'),
-    Republica: t('world.politics.republicDesc'),
-    Teocracia: t('world.politics.theocracyDesc'),
-    Anarquia: t('world.politics.anarchyDesc'),
-    Oligarquia: t('world.politics.oligarchyDesc'),
-    Tribu: t('world.politics.tribeDesc'),
-    Dictadura: t('world.politics.dictatorshipDesc'),
-  }
 
   const handleFactionChange = (idx: number, value: string) => {
     setFactions(factions.map((f, i) => (i === idx ? value : f)))
@@ -130,14 +57,10 @@ export default function EditWorldPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!era || !climate || !politics) {
-      setError(t('world.create.validationError'))
-      return
-    }
     setLoading(true)
     setError('')
     try {
-      await updateWorld(Number(id), { name, era, climate, politics, culture, factions: factions.filter(f => f.trim()), description })
+      await updateWorld(Number(id), { name, factions: factions.filter(f => f.trim()), description })
       toast.success(t('world.edit.successTitle'), { description: t('world.edit.successDesc') })
       navigate(`/worlds/${id}`)
     } catch (err: unknown) {
@@ -179,26 +102,6 @@ export default function EditWorldPage() {
             <form onSubmit={handleSubmit}>
               <FieldGroup label={t('world.create.nameLabel')}>
                 <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder={t('world.create.namePlaceholder')} />
-              </FieldGroup>
-
-              <SectionDivider label={t('world.create.settingSection')} />
-
-              <FieldGroup label={t('world.create.eraLabel')}>
-                <PillSelect options={eraOptions} value={era} onChange={setEra} descriptions={eraDescriptions} />
-              </FieldGroup>
-
-              <FieldGroup label={t('world.create.climateLabel')}>
-                <PillSelect options={climateOptions} value={climate} onChange={setClimate} descriptions={climateDescriptions} />
-              </FieldGroup>
-
-              <FieldGroup label={t('world.create.politicsLabel')}>
-                <PillSelect options={politicsOptions} value={politics} onChange={setPolitics} descriptions={politicsDescriptions} />
-              </FieldGroup>
-
-              <SectionDivider label={t('world.create.identitySection')} />
-
-              <FieldGroup label={t('world.create.cultureLabel')}>
-                <Input type="text" value={culture} onChange={e => setCulture(e.target.value)} className="w-full" required placeholder={t('world.create.culturePlaceholder')} />
               </FieldGroup>
 
               <FieldGroup label={t('world.create.descriptionLabel')}>

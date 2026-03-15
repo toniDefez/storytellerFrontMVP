@@ -291,7 +291,7 @@ function SetupSteps() {
             {t('installation.step4Desc')}
           </p>
           <div className={codeBlock}>
-            <span className="text-emerald-400">$</span> docker run --name storyteller-generator --network host -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=<span className="text-amber-300">{'<tu-token>'}</span>{' '}ghcr.io/tonidefez/storyteller-generator
+            <span className="text-emerald-400">$</span> docker run --name storyteller-generator -e <span className="text-sky-400">OLLAMA_BASE_URL</span>=<span className="text-amber-300">http://host.docker.internal:11434</span> -e <span className="text-sky-400">RABBIT_URL</span>=<span className="text-amber-300">amqp://guest:guest@host.docker.internal:5672</span> -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=<span className="text-amber-300">{'<tu-token>'}</span>{' '}ghcr.io/tonidefez/storyteller-generator
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             {t('installation.step4Hint')}

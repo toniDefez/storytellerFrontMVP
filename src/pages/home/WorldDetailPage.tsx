@@ -13,22 +13,9 @@ import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { Plus, Users, Clapperboard, Trash2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 
-const CLIMATE_GRADIENT: Record<string, string> = {
-  Artico:    'from-cyan-400 to-blue-600',
-  Tropical:  'from-emerald-400 to-teal-600',
-  Desertico: 'from-amber-400 to-orange-600',
-  Volcanico: 'from-red-500 to-rose-700',
-  Oceanico:  'from-blue-400 to-indigo-600',
-  Montanoso: 'from-slate-400 to-stone-600',
-  Toxico:    'from-lime-400 to-green-600',
-  Templado:  'from-violet-400 to-purple-600',
-}
 const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
 
 function inferGradient(world: World): string {
-  if (world.climate && CLIMATE_GRADIENT[world.climate]) {
-    return CLIMATE_GRADIENT[world.climate]
-  }
   const text = (world.core_axis || world.description || '').toLowerCase()
   if (/ceniza|volcan|fuego/.test(text)) return 'from-red-500 to-orange-600'
   if (/hielo|nieve|glaciar/.test(text)) return 'from-cyan-400 to-blue-600'
@@ -77,18 +64,14 @@ export default function WorldDetailPage() {
         const normalizedWorld: World = {
           id: Number(raw.id ?? worldId),
           name: String(raw.name ?? ''),
-          era: String(raw.era ?? ''),
-          climate: String(raw.climate ?? ''),
-          politics: String(raw.politics ?? ''),
-          culture: String(raw.culture ?? ''),
           factions: Array.isArray(raw.factions) ? (raw.factions as string[]) : [],
           description: String(raw.summary ?? ''),
-          core_axis: raw.core_axis ? String(raw.core_axis) : undefined,
-          environment: raw.environment ? String(raw.environment) : undefined,
-          subsistence: raw.subsistence ? String(raw.subsistence) : undefined,
-          organization: raw.organization ? String(raw.organization) : undefined,
-          tensions: raw.tensions ? String(raw.tensions) : undefined,
-          tone: raw.tone ? String(raw.tone) : undefined,
+          core_axis: String(raw.core_axis ?? ''),
+          environment: String(raw.environment ?? ''),
+          subsistence: String(raw.subsistence ?? ''),
+          organization: String(raw.organization ?? ''),
+          tensions: String(raw.tensions ?? ''),
+          tone: String(raw.tone ?? ''),
         }
 
         setDetail({
@@ -133,13 +116,6 @@ export default function WorldDetailPage() {
 
   const { world, characters, scenes } = detail
   const gradient = inferGradient(world)
-
-  const attributes = [
-    { label: t('world.detail.eraAttr'), value: world.era },
-    { label: t('world.detail.climateAttr'), value: world.climate },
-    { label: t('world.detail.politicsAttr'), value: world.politics },
-    { label: t('world.detail.cultureAttr'), value: world.culture },
-  ].filter(a => a.value)
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 mt-8">
@@ -192,20 +168,6 @@ export default function WorldDetailPage() {
         </div>
 
         <div className="bg-card border border-t-0 border-border rounded-b-xl px-8 py-5 space-y-4">
-          {attributes.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {attributes.map(a => (
-                <Badge
-                  key={a.label}
-                  variant="secondary"
-                  className="text-sm px-3 py-1"
-                >
-                  {a.label}: {a.value}
-                </Badge>
-              ))}
-            </div>
-          )}
-
           {world.factions && world.factions.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground">{t('world.detail.factionsInline')}</span>

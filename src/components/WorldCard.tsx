@@ -7,31 +7,29 @@ import { Badge } from '@/components/ui/badge'
 interface WorldCardProps {
   id: number
   name: string
-  era: string
-  climate: string
-  politics: string
-  culture: string
   factions: string[]
   description?: string
-}
-
-const CLIMATE_HEADER: Record<string, string> = {
-  Artico:    'from-cyan-400 to-blue-500',
-  Tropical:  'from-emerald-400 to-teal-500',
-  Desertico: 'from-amber-400 to-orange-500',
-  Volcanico: 'from-red-500 to-rose-600',
-  Oceanico:  'from-blue-400 to-indigo-500',
-  Montanoso: 'from-slate-400 to-stone-500',
-  Toxico:    'from-lime-400 to-green-600',
-  Templado:  'from-violet-400 to-purple-500',
+  core_axis?: string
 }
 
 const DEFAULT_HEADER = 'from-violet-500 to-purple-600'
 
-const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics, culture, factions, description }) => {
+function inferHeaderGradient(coreAxis?: string, description?: string): string {
+  const text = (coreAxis || description || '').toLowerCase()
+  if (/ceniza|volcan|fuego/.test(text)) return 'from-red-500 to-orange-500'
+  if (/hielo|nieve|glaciar/.test(text)) return 'from-cyan-400 to-blue-500'
+  if (/agua|oceano|lluvia/.test(text)) return 'from-blue-400 to-indigo-500'
+  if (/bosque|selva|verde/.test(text)) return 'from-emerald-400 to-teal-500'
+  if (/desierto|arena|sol/.test(text)) return 'from-amber-400 to-orange-500'
+  if (/oscuridad|sombra/.test(text)) return 'from-slate-500 to-gray-700'
+  if (/magia|hechizo/.test(text)) return 'from-violet-400 to-purple-500'
+  return DEFAULT_HEADER
+}
+
+const WorldCard: React.FC<WorldCardProps> = ({ id, name, factions, description, core_axis }) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const headerGradient = CLIMATE_HEADER[climate] ?? DEFAULT_HEADER
+  const headerGradient = inferHeaderGradient(core_axis, description)
 
   return (
     <motion.div
@@ -43,7 +41,6 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics,
     >
       <div className={`bg-gradient-to-br ${headerGradient} px-5 pt-5 pb-7 relative`}>
         <h3 className="text-lg font-bold text-white leading-tight drop-shadow-sm font-[var(--font-display)]">{name}</h3>
-        <p className="text-xs text-white/70 mt-0.5">{era}</p>
         <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-b from-transparent to-white/10" />
       </div>
 
@@ -51,12 +48,6 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, era, climate, politics,
         {description && (
           <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{description}</p>
         )}
-
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          <Badge variant="secondary">{climate}</Badge>
-          <Badge variant="secondary">{politics}</Badge>
-          <Badge variant="secondary">{culture}</Badge>
-        </div>
 
         {factions.length > 0 && (
           <div className="border-t border-gray-100 pt-3">

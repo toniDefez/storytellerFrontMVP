@@ -112,12 +112,9 @@ export default function HomePage() {
             <WorldCard
               id={world.id}
               name={world.name}
-              era={world.era}
-              climate={world.climate}
-              politics={world.politics}
-              culture={world.culture}
               factions={world.factions}
               description={world.description}
+              core_axis={world.core_axis}
             />
           </motion.div>
         ))}
