@@ -25,6 +25,21 @@ const CLIMATE_GRADIENT: Record<string, string> = {
 }
 const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
 
+function inferGradient(world: World): string {
+  if (world.climate && CLIMATE_GRADIENT[world.climate]) {
+    return CLIMATE_GRADIENT[world.climate]
+  }
+  const text = (world.core_axis || world.description || '').toLowerCase()
+  if (/ceniza|volcan|fuego/.test(text)) return 'from-red-500 to-orange-600'
+  if (/hielo|nieve|glaciar/.test(text)) return 'from-cyan-400 to-blue-600'
+  if (/agua|oceano|lluvia/.test(text)) return 'from-blue-400 to-indigo-600'
+  if (/bosque|selva|verde/.test(text)) return 'from-emerald-400 to-teal-600'
+  if (/desierto|arena|sol/.test(text)) return 'from-amber-400 to-orange-600'
+  if (/oscuridad|sombra/.test(text)) return 'from-slate-600 to-gray-800'
+  if (/magia|hechizo/.test(text)) return 'from-violet-500 to-purple-700'
+  return DEFAULT_GRADIENT
+}
+
 export default function WorldDetailPage() {
   const { t, i18n } = useTranslation()
   const { id } = useParams()
@@ -68,6 +83,12 @@ export default function WorldDetailPage() {
           culture: String(raw.culture ?? ''),
           factions: Array.isArray(raw.factions) ? (raw.factions as string[]) : [],
           description: String(raw.summary ?? ''),
+          core_axis: raw.core_axis ? String(raw.core_axis) : undefined,
+          environment: raw.environment ? String(raw.environment) : undefined,
+          subsistence: raw.subsistence ? String(raw.subsistence) : undefined,
+          organization: raw.organization ? String(raw.organization) : undefined,
+          tensions: raw.tensions ? String(raw.tensions) : undefined,
+          tone: raw.tone ? String(raw.tone) : undefined,
         }
 
         setDetail({
@@ -111,7 +132,7 @@ export default function WorldDetailPage() {
   }
 
   const { world, characters, scenes } = detail
-  const gradient = CLIMATE_GRADIENT[world.climate] ?? DEFAULT_GRADIENT
+  const gradient = inferGradient(world)
 
   const attributes = [
     { label: t('world.detail.eraAttr'), value: world.era },
@@ -193,6 +214,33 @@ export default function WorldDetailPage() {
                   {f}
                 </Badge>
               ))}
+            </div>
+          )}
+
+          {/* Sanderson layers */}
+          {world.core_axis && (
+            <div className="mt-6">
+              <p className="text-sm text-muted-foreground italic mb-3">
+                "{world.core_axis}"
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {([
+                  { key: 'environment' as const, label: t('world.create.layerEnvironment'), color: 'emerald' },
+                  { key: 'subsistence' as const, label: t('world.create.layerSubsistence'), color: 'amber' },
+                  { key: 'organization' as const, label: t('world.create.layerOrganization'), color: 'blue' },
+                  { key: 'tensions' as const, label: t('world.create.layerTensions'), color: 'rose' },
+                  { key: 'tone' as const, label: t('world.create.layerTone'), color: 'violet' },
+                ]).filter(l => world[l.key]).map(layer => (
+                  <div key={layer.key} className={`rounded-xl bg-white border border-gray-100 p-4 border-l-4 border-l-${layer.color}-500`}>
+                    <h4 className={`text-xs font-semibold uppercase tracking-widest text-${layer.color}-600 mb-1`}>
+                      {layer.label}
+                    </h4>
+                    <p className="text-sm text-foreground leading-relaxed line-clamp-4">
+                      {world[layer.key]}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

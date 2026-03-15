@@ -58,6 +58,12 @@ export interface World {
   culture: string
   factions: string[]
   description: string
+  core_axis?: string
+  environment?: string
+  subsistence?: string
+  organization?: string
+  tensions?: string
+  tone?: string
 }
 
 export function getWorlds() {
@@ -79,6 +85,25 @@ export function generateWorld(description: string) {
   return request<World>('/world/generate', {
     method: 'POST',
     body: JSON.stringify({ description }),
+  })
+}
+
+export interface DeriveWorldResult {
+  name: string
+  core_axis: string
+  environment: string
+  subsistence: string
+  organization: string
+  tensions: string
+  tone: string
+  factions: string[]
+  description: string
+}
+
+export function deriveWorld(coreAxis: string) {
+  return request<DeriveWorldResult>('/world/derive', {
+    method: 'POST',
+    body: JSON.stringify({ core_axis: coreAxis }),
   })
 }
 
