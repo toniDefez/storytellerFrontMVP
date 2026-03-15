@@ -457,8 +457,8 @@
     "step1Title": "Genera un token de vinculación",
     "step1Desc": "Usa el botón de abajo para generar un token. Cópialo al portapapeles.",
     "step2Title": "Arranca el generador con Docker",
-    "step2Desc": "Ejecuta la imagen del generador pasando tu token como variable de entorno:",
-    "step2Hint": "El generador se vinculará automáticamente con tu cuenta al arrancar.",
+    "step2Desc": "Descarga el compose y ejecútalo con tu token:",
+    "step2Hint": "Esto arranca Ollama con los modelos necesarios y el generador. Se vinculará automáticamente con tu cuenta.",
     "bannerTitle": "Instalación local no detectada",
     "bannerDesc": "Para generar contenido con IA necesitas tener una instalación local vinculada a tu cuenta.",
     "bannerLink": "Configurar instalación"

@@ -457,8 +457,8 @@
     "step1Title": "Generate a linking token",
     "step1Desc": "Use the button below to generate a token. Copy it to your clipboard.",
     "step2Title": "Start the generator with Docker",
-    "step2Desc": "Run the generator image passing your token as an environment variable:",
-    "step2Hint": "The generator will automatically link with your account on startup.",
+    "step2Desc": "Download the compose file and run it with your token:",
+    "step2Hint": "This starts Ollama with the required models and the generator. It will automatically link with your account.",
     "bannerTitle": "Local installation not detected",
     "bannerDesc": "To generate AI content you need a local installation linked to your account.",
     "bannerLink": "Set up installation"

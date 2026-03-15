@@ -230,6 +230,8 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
 function SetupSteps() {
   const { t } = useTranslation()
 
+  const codeBlock = "bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto"
+
   const steps = [
     {
       icon: Key,
@@ -248,8 +250,13 @@ function SetupSteps() {
           <p className="text-sm text-muted-foreground mb-2">
             {t('installation.step2Desc')}
           </p>
-          <div className="bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto">
-            <span className="text-emerald-400">$</span> docker run --network host -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=<span className="text-amber-300">{'<tu-token>'}</span> ghcr.io/tonidefez/storyteller-generator
+          <div className={codeBlock}>
+            <div className="mb-1">
+              <span className="text-emerald-400">$</span> curl -O https://raw.githubusercontent.com/toniDefez/storyteller-generator-v2/main/docker-compose.yml
+            </div>
+            <div>
+              <span className="text-emerald-400">$</span> <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=<span className="text-amber-300">{'<tu-token>'}</span> docker compose up
+            </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             {t('installation.step2Hint')}
