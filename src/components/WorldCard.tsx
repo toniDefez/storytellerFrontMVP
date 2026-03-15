@@ -41,11 +41,16 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, factions, description, 
     >
       <div className={`bg-gradient-to-br ${headerGradient} px-5 pt-5 pb-7 relative`}>
         <h3 className="text-lg font-bold text-white leading-tight drop-shadow-sm font-[var(--font-display)]">{name}</h3>
+        {core_axis && (
+          <p className="text-xs text-white/70 italic mt-1.5 line-clamp-2 leading-relaxed font-[var(--font-display)]">
+            "{core_axis}"
+          </p>
+        )}
         <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-b from-transparent to-white/10" />
       </div>
 
       <div className="px-5 pt-3 pb-5">
-        {description && (
+        {description && !core_axis && (
           <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{description}</p>
         )}
 

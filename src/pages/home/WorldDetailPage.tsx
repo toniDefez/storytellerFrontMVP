@@ -54,18 +54,17 @@ export default function WorldDetailPage() {
           throw new Error(t('world.detail.notFound'))
         }
 
-        // Current backend shape:
-        // { id, name, era, climate, politics, culture, factions, summary, characters, scenes }
         const raw = data as unknown as Record<string, unknown>
         if (!raw.name) {
           throw new Error(t('world.detail.notFound'))
         }
 
+        // world-detail/get returns `summary` instead of `description`
         const normalizedWorld: World = {
           id: Number(raw.id ?? worldId),
           name: String(raw.name ?? ''),
           factions: Array.isArray(raw.factions) ? (raw.factions as string[]) : [],
-          description: String(raw.summary ?? ''),
+          description: String(raw.summary ?? raw.description ?? ''),
           core_axis: String(raw.core_axis ?? ''),
           environment: String(raw.environment ?? ''),
           subsistence: String(raw.subsistence ?? ''),

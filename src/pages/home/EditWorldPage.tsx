@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getWorldById, updateWorld } from '../../services/api'
+import type { World } from '../../services/api'
 import { FieldGroup } from '@/components/form/FieldGroup'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,6 +14,14 @@ import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { toast } from 'sonner'
 
+const LAYER_META = [
+  { key: 'environment' as const, label: 'layerEnvironment', color: 'emerald' },
+  { key: 'subsistence' as const, label: 'layerSubsistence', color: 'amber' },
+  { key: 'organization' as const, label: 'layerOrganization', color: 'blue' },
+  { key: 'tensions' as const, label: 'layerTensions', color: 'rose' },
+  { key: 'tone' as const, label: 'layerTone', color: 'violet' },
+]
+
 export default function EditWorldPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -21,6 +30,7 @@ export default function EditWorldPage() {
   const [name, setName] = useState('')
   const [factions, setFactions] = useState<string[]>([''])
   const [description, setDescription] = useState('')
+  const [worldData, setWorldData] = useState<World | null>(null)
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState('')
@@ -44,6 +54,7 @@ export default function EditWorldPage() {
         setFactions(data.factions?.length ? data.factions : [''])
         setDescription(data.description || '')
         setWorldName(data.name)
+        setWorldData(data)
       })
       .catch(err => setError(err instanceof Error ? err.message : t('world.detail.notFound')))
       .finally(() => setFetching(false))
@@ -97,6 +108,30 @@ export default function EditWorldPage() {
               <Alert variant="destructive" className="mb-5">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+
+            {/* Sanderson layers (read-only context) */}
+            {worldData?.core_axis && (
+              <div className="mb-6 rounded-xl border border-border/50 bg-accent/20 p-4">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+                  {t('world.create.coreAxisLabel')}
+                </p>
+                <p className="text-sm text-foreground italic mb-4 leading-relaxed">
+                  "{worldData.core_axis}"
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {LAYER_META.filter(l => worldData[l.key]).map(layer => (
+                    <div key={layer.key} className={`rounded-lg bg-white/80 border border-gray-100 p-3 border-l-4 border-l-${layer.color}-500`}>
+                      <h4 className={`text-[10px] font-semibold uppercase tracking-widest text-${layer.color}-600 mb-0.5`}>
+                        {t(`world.create.${layer.label}`)}
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                        {worldData[layer.key]}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             <form onSubmit={handleSubmit}>
