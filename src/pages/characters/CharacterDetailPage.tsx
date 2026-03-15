@@ -18,7 +18,6 @@ export default function CharacterDetailPage() {
   const { t, i18n } = useTranslation()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
 

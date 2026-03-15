@@ -32,7 +32,6 @@ export default function EditScenePage() {
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState('')
   const [sceneTitle, setSceneTitle] = useState('')
-  const [originalWorldId, setOriginalWorldId] = useState<number>(0)
 
   useEffect(() => {
     document.title = `${t('pageTitle.editScene')} — StoryTeller`
@@ -54,7 +53,6 @@ export default function EditScenePage() {
         setTone(data.tone)
         setContext(data.context)
         setSceneTitle(data.title)
-        setOriginalWorldId(data.world_id)
       })
       .catch(err => setError(err instanceof Error ? err.message : t('scene.detail.deleteError')))
       .finally(() => setFetching(false))
@@ -81,7 +79,6 @@ export default function EditScenePage() {
         time,
         tone,
         context,
-        world_id: originalWorldId || Number(worldId),
       })
       toast.success(t('scene.edit.successTitle'), { description: t('scene.edit.successDesc') })
       navigate(`/worlds/${worldId}/scenes/${sceneId}`)

@@ -82,23 +82,16 @@ export function generateWorld(description: string) {
   })
 }
 
-export function updateWorld(id: number, world: Omit<World, 'id'>) {
+export function updateWorld(id: number, input: Partial<Omit<World, 'id'>>) {
   return request<World>(`/world/update?id=${id}`, {
     method: 'PUT',
-    body: JSON.stringify(world),
+    body: JSON.stringify(input),
   })
 }
 
 export function deleteWorld(id: number) {
   return request<{ status: string }>(`/world/delete?id=${id}`, {
     method: 'DELETE',
-  })
-}
-
-export function updateWorld(id: number, input: Partial<Omit<World, 'id'>>) {
-  return request<World>(`/world/update?id=${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(input),
   })
 }
 
@@ -188,23 +181,16 @@ export function getSceneById(id: number) {
   return request<Scene>(`/scene/get?id=${id}`)
 }
 
-export function updateScene(id: number, scene: Omit<Scene, 'id'>) {
+export function updateScene(id: number, input: Partial<Omit<Scene, 'id' | 'world_id'>>) {
   return request<Scene>(`/scene/update?id=${id}`, {
     method: 'PUT',
-    body: JSON.stringify(scene),
+    body: JSON.stringify(input),
   })
 }
 
 export function deleteScene(id: number) {
   return request<{ status: string }>(`/scene/delete?id=${id}`, {
     method: 'DELETE',
-  })
-}
-
-export function updateScene(id: number, input: Partial<Omit<Scene, 'id' | 'world_id'>>) {
-  return request<Scene>(`/scene/update?id=${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(input),
   })
 }
 

@@ -14,9 +14,6 @@ import CharacterDetailPage from './pages/characters/CharacterDetailPage'
 import CreateScenePage from './pages/scenes/CreateScenePage'
 import EditScenePage from './pages/scenes/EditScenePage'
 import SceneDetailPage from './pages/scenes/SceneDetailPage'
-import EditWorldPage from './pages/home/EditWorldPage'
-import EditCharacterPage from './pages/characters/EditCharacterPage'
-import EditScenePage from './pages/scenes/EditScenePage'
 import SettingsPage from './pages/settings/SettingsPage'
 
 function App() {

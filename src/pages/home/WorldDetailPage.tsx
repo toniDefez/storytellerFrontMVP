@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { Plus, Users, Clapperboard, Trash2, Pencil } from 'lucide-react'
+import { toast } from 'sonner'
 
 const CLIMATE_GRADIENT: Record<string, string> = {
   Artico:    'from-cyan-400 to-blue-600',
@@ -28,7 +29,6 @@ export default function WorldDetailPage() {
   const { t, i18n } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
-  const { addToast } = useToast()
   const [detail, setDetail] = useState<WorldDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -84,7 +84,7 @@ export default function WorldDetailPage() {
     setLoading(true)
     try {
       await deleteWorld(Number(id))
-      addToast('Mundo eliminado correctamente.', 'success')
+      toast.success('Mundo eliminado correctamente.')
       navigate('/worlds')
     } catch {
       setError(t('world.detail.deleteError'))

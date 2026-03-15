@@ -8,7 +8,6 @@ import {
   generateEvents,
   getSceneNarrative,
   getWorldDetail,
-  deleteEvent,
 } from '../../services/api'
 import type { SceneDetail, Character, Event as StoryEvent } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -18,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2, Pencil } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
@@ -77,7 +77,7 @@ export default function SceneDetailPage() {
   const handleDelete = async () => {
     try {
       await deleteScene(Number(sceneId))
-      addToast('Escena eliminada correctamente.', 'success')
+      toast.success('Escena eliminada correctamente.')
       navigate(`/worlds/${worldId}`)
     } catch {
       setError(t('scene.detail.deleteError'))
@@ -91,7 +91,7 @@ export default function SceneDetailPage() {
       await addCharacterToScene(Number(sceneId), selectedCharId)
       setShowAddChar(false)
       setSelectedCharId(null)
-      addToast('Personaje añadido a la escena.', 'success')
+      toast.success('Personaje añadido a la escena.')
       loadData()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('scene.detail.addCharacterError'))
