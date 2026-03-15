@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTranslation, Trans } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getLinkingToken } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -17,8 +17,6 @@ import {
   Clock,
   Link2,
   Server,
-  Terminal,
-  Download,
   Key,
   Play,
   RefreshCw,
@@ -232,55 +230,29 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
 function SetupSteps() {
   const { t } = useTranslation()
 
-  const codeClass = "bg-muted px-1.5 py-0.5 rounded text-xs font-mono"
-
   const steps = [
-    {
-      icon: Download,
-      color: 'text-violet-500',
-      bg: 'bg-violet-500',
-      title: t('installation.step1Title'),
-      description: t('installation.step1Desc'),
-    },
     {
       icon: Key,
       color: 'text-amber-500',
       bg: 'bg-amber-500',
-      title: t('installation.step2Title'),
-      description: t('installation.step2Desc'),
-    },
-    {
-      icon: Terminal,
-      color: 'text-sky-500',
-      bg: 'bg-sky-500',
-      title: t('installation.step3Title'),
-      content: (
-        <>
-          <p className="text-sm text-muted-foreground mb-2">
-            <Trans i18nKey="installation.step3Desc" components={{ code: <code className={codeClass} /> }} />
-          </p>
-          <div className="bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800">
-            <span className="text-sky-400">INSTALLATION_TOKEN</span>=
-            <span className="text-amber-300">{'<tu-token-aqui>'}</span>
-          </div>
-        </>
-      ),
+      title: t('installation.step1Title'),
+      description: t('installation.step1Desc'),
     },
     {
       icon: Play,
       color: 'text-emerald-500',
       bg: 'bg-emerald-500',
-      title: t('installation.step4Title'),
+      title: t('installation.step2Title'),
       content: (
         <>
           <p className="text-sm text-muted-foreground mb-2">
-            {t('installation.step4Desc')}
+            {t('installation.step2Desc')}
           </p>
-          <div className="bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800">
-            <span className="text-emerald-400">$</span> docker compose up
+          <div className="bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto">
+            <span className="text-emerald-400">$</span> docker run --network host -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=<span className="text-amber-300">{'<tu-token>'}</span> ghcr.io/tonidefez/storyteller-generator
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            <Trans i18nKey="installation.step4Auto" components={{ code: <code className={codeClass} /> }} />
+            {t('installation.step2Hint')}
           </p>
         </>
       ),
