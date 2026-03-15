@@ -22,6 +22,8 @@ import {
   RefreshCw,
   Zap,
   CheckCircle2,
+  Download,
+  Terminal,
 } from 'lucide-react'
 
 // --- Animation variants ---
@@ -234,16 +236,30 @@ function SetupSteps() {
 
   const steps = [
     {
-      icon: Key,
-      color: 'text-amber-500',
-      bg: 'bg-amber-500',
+      icon: Download,
+      color: 'text-violet-500',
+      bg: 'bg-violet-500',
       title: t('installation.step1Title'),
-      description: t('installation.step1Desc'),
+      content: (
+        <>
+          <p className="text-sm text-muted-foreground mb-2">
+            {t('installation.step1Desc')}
+          </p>
+          <a
+            href="https://ollama.com/download"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            ollama.com/download
+          </a>
+        </>
+      ),
     },
     {
-      icon: Play,
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-500',
+      icon: Terminal,
+      color: 'text-sky-500',
+      bg: 'bg-sky-500',
       title: t('installation.step2Title'),
       content: (
         <>
@@ -251,15 +267,34 @@ function SetupSteps() {
             {t('installation.step2Desc')}
           </p>
           <div className={codeBlock}>
-            <div className="mb-1">
-              <span className="text-emerald-400">$</span> curl -O https://raw.githubusercontent.com/toniDefez/storyteller-generator-v2/main/docker-compose.yml
-            </div>
-            <div>
-              <span className="text-emerald-400">$</span> <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=<span className="text-amber-300">{'<tu-token>'}</span> docker compose up
-            </div>
+            <div className="mb-1"><span className="text-emerald-400">$</span> ollama pull llama3.2</div>
+            <div><span className="text-emerald-400">$</span> ollama pull nomic-embed-text</div>
+          </div>
+        </>
+      ),
+    },
+    {
+      icon: Key,
+      color: 'text-amber-500',
+      bg: 'bg-amber-500',
+      title: t('installation.step3Title'),
+      description: t('installation.step3Desc'),
+    },
+    {
+      icon: Play,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-500',
+      title: t('installation.step4Title'),
+      content: (
+        <>
+          <p className="text-sm text-muted-foreground mb-2">
+            {t('installation.step4Desc')}
+          </p>
+          <div className={codeBlock}>
+            <span className="text-emerald-400">$</span> docker run --network host -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=<span className="text-amber-300">{'<tu-token>'}</span>{' '}ghcr.io/tonidefez/storyteller-generator
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            {t('installation.step2Hint')}
+            {t('installation.step4Hint')}
           </p>
         </>
       ),
