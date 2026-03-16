@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { LAYER_META, type LayerKey, type ExtendedChipStatus } from './DerivationLayer'
+import { LAYER_META, type ExtendedChipStatus } from './DerivationLayer'
 import type { ChipStatus } from './SuggestionChip'
 import { LAYER_DISPLAY } from '@/hooks/useLayeredDerivation'
 import type { WorldLayerType } from '@/services/api'
