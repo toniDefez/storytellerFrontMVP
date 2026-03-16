@@ -107,7 +107,21 @@
       "layerSubsistence": "Subsistencia",
       "layerOrganization": "Organización",
       "layerTensions": "Tensiones",
-      "layerTone": "Tono narrativo"
+      "layerTone": "Tono narrativo",
+      "richness0": "La IA interpretara libremente",
+      "richness1": "La IA tiene algo con lo que trabajar",
+      "richness2": "La IA tiene un mundo rico que derivar",
+      "deriveButtonEmpty": "Dejar que el mundo tome forma",
+      "deriveButtonFilled": "Dar forma a este mundo",
+      "surpriseMe": "Rellenar lo que falta con sugerencias",
+      "physicalSectionLabel": "Las reglas fisicas",
+      "physicalSectionHint": "Define las condiciones fundamentales de tu mundo. Puedes elegir algunas, todas o ninguna.",
+      "creativeTension": "Tension creativa: combinacion inesperada que enriquece tu mundo",
+      "generateNextLayer": "Generar siguiente capa",
+      "regenerateLayer": "Regenerar esta capa",
+      "staleWarning": "El contexto ha cambiado. Considera regenerar.",
+      "generatingLayer": "Generando capa...",
+      "layerProgress": "Capa {{current}} de {{total}}"
     },
     "edit": {
       "title": "Editar mundo",
@@ -420,5 +434,60 @@
     "bannerTitle": "Instalación local no detectada",
     "bannerDesc": "Para generar contenido con IA necesitas tener una instalación local vinculada a tu cuenta.",
     "bannerLink": "Configurar instalación"
+  },
+  "physical": {
+    "water": {
+      "label": "Agua",
+      "hint": "De donde viene el agua? Quien la controla?",
+      "underground": { "label": "Solo bajo tierra", "desc": "Pozos profundos, cenotes, rios ocultos. Quien excava, controla el poder." },
+      "scarce": { "label": "Escasa y disputada", "desc": "Los oasis son capitales, los pozos son fortalezas. El agua ES la politica." },
+      "perpetual_rain": { "label": "Lluvia perpetua", "desc": "Inundaciones, moho, peso emocional constante. El cielo nunca para." },
+      "ocean_world": { "label": "Oceano sin tierra", "desc": "Casi todo es mar. La tierra firme es riqueza y mito." },
+      "frozen": { "label": "Congelada", "desc": "Existe pero bloqueada en hielo. La energia para derretir vale tanto como el agua." },
+      "toxic": { "label": "Toxica", "desc": "Hay agua pero mata sin tratar. Purificar es poder." }
+    },
+    "light": {
+      "label": "Fuente de luz",
+      "hint": "Que ilumina este mundo? Como se mide el tiempo?",
+      "dying_sun": { "label": "Sol moribundo", "desc": "Una luz roja y debil. Cada generacion nota mas frio. Cuenta atras cosmica." },
+      "bioluminescence": { "label": "Bioluminiscencia", "desc": "Sin astro. La luz viene del suelo, las plantas, las criaturas." },
+      "twin_suns": { "label": "Soles gemelos", "desc": "Dias largos, noches breves e intensas. Sombras dobles." },
+      "eternal_twilight": { "label": "Crepusculo eterno", "desc": "Ni dia ni noche. Siempre amanecer. El tiempo se mide diferente." },
+      "erratic_cycles": { "label": "Ciclos erraticos", "desc": "La luz va y viene sin patron. Dias de semanas, noches impredecibles." },
+      "artificial": { "label": "Luz artificial", "desc": "Alguien controla la luz. Alguien controla la verdad." }
+    },
+    "climate": {
+      "label": "Clima",
+      "hint": "Contra que lucha la gente cada dia?",
+      "extreme_seasons": { "label": "Estaciones extremas", "desc": "Inviernos que matan, veranos que abrasan. La vida gira en prepararse." },
+      "chaotic": { "label": "Caos climatico", "desc": "Tormentas sin aviso, sequias sin patron. El clima es un personaje." },
+      "tidally_locked": { "label": "Mundo bloqueado", "desc": "Un lado siempre iluminado, otro siempre en sombra. La vida en la frontera." },
+      "generational": { "label": "Gran ciclo", "desc": "Las estaciones duran generaciones. Nadie vivo recuerda el ultimo verano." },
+      "toxic_zones": { "label": "Zonas toxicas", "desc": "Algunas zonas son mortales. La vida se concentra donde el aire es seguro." },
+      "ash_filled": { "label": "Ceniza en el aire", "desc": "Visibilidad reducida, cultura de mascaras, cielos de color ceniza." }
+    },
+    "terrain": {
+      "label": "Terreno",
+      "hint": "Que forma tiene la superficie? (maximo 2)",
+      "floating_islands": { "label": "Archipielago flotante", "desc": "Islas suspendidas en el vacio. Caer es morir. Los puentes son poder." },
+      "underground": { "label": "Subterraneo", "desc": "Tuneles, cavernas, ciudades talladas en roca. Sin cielo." },
+      "vertical": { "label": "Estructura vertical", "desc": "El mundo es una torre. Altitud = clase social. Literalmente." },
+      "infinite_plains": { "label": "Llanura infinita", "desc": "Horizonte en todas direcciones. Nada se esconde, nada bloquea el viento." },
+      "dense_jungle": { "label": "Selva densa", "desc": "Visibilidad cero. El camino se abre a machete. La vegetacion es el antagonista." },
+      "ancient_ruins": { "label": "Ruinas ancestrales", "desc": "El mundo es el cadaver de una civilizacion mayor. Que construyeron?" }
+    },
+    "gravity": {
+      "label": "Gravedad",
+      "hint": "Como se siente el peso en este mundo?",
+      "variable": { "label": "Caprichosa", "desc": "Cambia segun la zona. Regiones de piedra flotante junto a regiones aplastantes." },
+      "low": { "label": "Peso ligero", "desc": "Saltos largos, caidas lentas. Las criaturas pueden ser enormes." },
+      "crushing": { "label": "Peso aplastante", "desc": "Moverse cuesta. Estructuras bajas y robustas. El cielo se siente mas cerca." }
+    }
+  },
+  "preset": {
+    "dying_light": { "name": "La Luz Moribunda", "desc": "Un sol que se apaga sobre un mundo de ceniza" },
+    "floating_world": { "name": "El Mundo Flotante", "desc": "Islas luminosas suspendidas en un cielo sin fin" },
+    "deep_below": { "name": "Las Profundidades", "desc": "Civilizaciones bajo la roca, iluminadas por la vida misma" },
+    "endless_winter": { "name": "El Invierno Eterno", "desc": "Hielo hasta donde alcanza la vista y el recuerdo" }
   }
 }

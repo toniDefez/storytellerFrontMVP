@@ -107,7 +107,21 @@
       "layerSubsistence": "Subsistence",
       "layerOrganization": "Organization",
       "layerTensions": "Tensions",
-      "layerTone": "Narrative tone"
+      "layerTone": "Narrative tone",
+      "richness0": "AI will interpret freely",
+      "richness1": "AI has something to work with",
+      "richness2": "AI has a rich world to derive from",
+      "deriveButtonEmpty": "Let the world take shape",
+      "deriveButtonFilled": "Shape this world",
+      "surpriseMe": "Fill in the gaps with suggestions",
+      "physicalSectionLabel": "Physical rules",
+      "physicalSectionHint": "Define the fundamental conditions of your world. You can choose some, all, or none.",
+      "creativeTension": "Creative tension: unexpected combination that enriches your world",
+      "generateNextLayer": "Generate next layer",
+      "regenerateLayer": "Regenerate this layer",
+      "staleWarning": "Context has changed. Consider regenerating.",
+      "generatingLayer": "Generating layer...",
+      "layerProgress": "Layer {{current}} of {{total}}"
     },
     "edit": {
       "title": "Edit world",
@@ -420,5 +434,60 @@
     "bannerTitle": "Local installation not detected",
     "bannerDesc": "To generate AI content you need a local installation linked to your account.",
     "bannerLink": "Set up installation"
+  },
+  "physical": {
+    "water": {
+      "label": "Water",
+      "hint": "Where does water come from? Who controls it?",
+      "underground": { "label": "Underground only", "desc": "Deep wells, cenotes, hidden rivers. Whoever digs, holds power." },
+      "scarce": { "label": "Scarce and contested", "desc": "Oases are capitals, wells are fortresses. Water IS politics." },
+      "perpetual_rain": { "label": "Perpetual rain", "desc": "Floods, mold, constant emotional weight. The sky never stops." },
+      "ocean_world": { "label": "Ocean without land", "desc": "Almost everything is sea. Dry land is wealth and myth." },
+      "frozen": { "label": "Frozen", "desc": "It exists but is locked in ice. The energy to melt it is worth as much as the water." },
+      "toxic": { "label": "Toxic", "desc": "There is water but it kills untreated. To purify is to hold power." }
+    },
+    "light": {
+      "label": "Light source",
+      "hint": "What illuminates this world? How is time measured?",
+      "dying_sun": { "label": "Dying sun", "desc": "A weak red light. Each generation notices more cold. A cosmic countdown." },
+      "bioluminescence": { "label": "Bioluminescence", "desc": "No star. Light comes from the ground, the plants, the creatures." },
+      "twin_suns": { "label": "Twin suns", "desc": "Long days, brief and intense nights. Double shadows." },
+      "eternal_twilight": { "label": "Eternal twilight", "desc": "Neither day nor night. Always dawn. Time is measured differently." },
+      "erratic_cycles": { "label": "Erratic cycles", "desc": "Light comes and goes without pattern. Days lasting weeks, unpredictable nights." },
+      "artificial": { "label": "Artificial light", "desc": "Someone controls the light. Someone controls the truth." }
+    },
+    "climate": {
+      "label": "Climate",
+      "hint": "What do people struggle against every day?",
+      "extreme_seasons": { "label": "Extreme seasons", "desc": "Winters that kill, summers that scorch. Life revolves around preparation." },
+      "chaotic": { "label": "Climatic chaos", "desc": "Storms without warning, droughts without pattern. The climate is a character." },
+      "tidally_locked": { "label": "Tidally locked", "desc": "One side always lit, the other always in shadow. Life on the border." },
+      "generational": { "label": "Great cycle", "desc": "Seasons last generations. No one alive remembers the last summer." },
+      "toxic_zones": { "label": "Toxic zones", "desc": "Some zones are lethal. Life concentrates where the air is safe." },
+      "ash_filled": { "label": "Ash-filled air", "desc": "Reduced visibility, mask culture, ash-colored skies." }
+    },
+    "terrain": {
+      "label": "Terrain",
+      "hint": "What shape does the surface take? (max 2)",
+      "floating_islands": { "label": "Floating archipelago", "desc": "Islands suspended in the void. To fall is to die. Bridges are power." },
+      "underground": { "label": "Underground", "desc": "Tunnels, caverns, cities carved in rock. No sky." },
+      "vertical": { "label": "Vertical structure", "desc": "The world is a tower. Altitude = social class. Literally." },
+      "infinite_plains": { "label": "Infinite plains", "desc": "Horizon in every direction. Nothing hides, nothing blocks the wind." },
+      "dense_jungle": { "label": "Dense jungle", "desc": "Zero visibility. The path is cut by machete. Vegetation is the antagonist." },
+      "ancient_ruins": { "label": "Ancient ruins", "desc": "The world is the corpse of a greater civilization. What did they build?" }
+    },
+    "gravity": {
+      "label": "Gravity",
+      "hint": "How does weight feel in this world?",
+      "variable": { "label": "Capricious", "desc": "Changes by zone. Regions of floating stone next to crushing regions." },
+      "low": { "label": "Low gravity", "desc": "Long jumps, slow falls. Creatures can be enormous." },
+      "crushing": { "label": "Crushing gravity", "desc": "Moving is hard. Low, sturdy structures. The sky feels closer." }
+    }
+  },
+  "preset": {
+    "dying_light": { "name": "The Dying Light", "desc": "A fading sun over a world of ash" },
+    "floating_world": { "name": "The Floating World", "desc": "Luminous islands suspended in an endless sky" },
+    "deep_below": { "name": "The Depths Below", "desc": "Civilizations under the rock, lit by life itself" },
+    "endless_winter": { "name": "The Endless Winter", "desc": "Ice as far as the eye and memory can reach" }
   }
 }
