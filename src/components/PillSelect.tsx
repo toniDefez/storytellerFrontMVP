@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const pillTransition = { type: 'spring', stiffness: 400, damping: 18 } as const
 
-export type PillOption = string | { value: string; label: string }
+export type PillOption = string | { value: string; label: string; icon?: string }
 
 function getOptionValue(opt: PillOption): string {
   return typeof opt === 'string' ? opt : opt.value
@@ -13,15 +13,23 @@ function getOptionLabel(opt: PillOption): string {
   return typeof opt === 'string' ? opt : opt.label
 }
 
+function getOptionIcon(opt: PillOption): string | undefined {
+  return typeof opt === 'string' ? undefined : opt.icon
+}
+
 interface PillSelectProps {
   options: PillOption[]
   value: string
   onChange: (value: string) => void
   descriptions?: Record<string, string>
   allowDeselect?: boolean
+  /** Set of option values that resonate with the core axis */
+  resonantValues?: Set<string>
+  /** Set of option values suggested by AI ("Surprise me") */
+  aiPickedValues?: Set<string>
 }
 
-export function PillSelect({ options, value, onChange, descriptions, allowDeselect }: PillSelectProps) {
+export function PillSelect({ options, value, onChange, descriptions, allowDeselect, resonantValues, aiPickedValues }: PillSelectProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const activeKey = hovered ?? (value || null)
   const activeDesc = activeKey ? descriptions?.[activeKey] : null
@@ -31,6 +39,9 @@ export function PillSelect({ options, value, onChange, descriptions, allowDesele
       <div className="flex flex-wrap gap-2">
         {options.map(opt => {
           const v = getOptionValue(opt)
+          const icon = getOptionIcon(opt)
+          const isResonant = resonantValues?.has(v)
+          const isAiPicked = aiPickedValues?.has(v)
           return (
             <motion.button
               key={v}
@@ -45,10 +56,15 @@ export function PillSelect({ options, value, onChange, descriptions, allowDesele
               transition={pillTransition}
               className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
                 value === v
-                  ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
-                  : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
+                  ? isAiPicked
+                    ? 'bg-primary/60 text-primary-foreground border-dashed border-primary shadow-md shadow-primary/15'
+                    : 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20'
+                  : isResonant
+                    ? 'bg-background text-muted-foreground border-primary/40 ring-1 ring-primary/20 hover:border-primary hover:text-accent-foreground'
+                    : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
               }`}
             >
+              {icon && <span className="mr-1.5" aria-hidden="true">{icon}</span>}
               {getOptionLabel(opt)}
             </motion.button>
           )
@@ -97,6 +113,7 @@ export function MultiPillSelect({ options, value, onChange, descriptions }: Mult
       <div className="flex flex-wrap gap-2">
         {options.map(opt => {
           const v = getOptionValue(opt)
+          const icon = getOptionIcon(opt)
           return (
             <motion.button
               key={v}
@@ -113,6 +130,7 @@ export function MultiPillSelect({ options, value, onChange, descriptions }: Mult
                   : 'bg-background text-muted-foreground border-input hover:border-primary hover:text-accent-foreground hover:bg-accent'
               }`}
             >
+              {icon && <span className="mr-1.5" aria-hidden="true">{icon}</span>}
               {getOptionLabel(opt)}
             </motion.button>
           )
