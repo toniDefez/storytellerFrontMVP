@@ -96,6 +96,34 @@ export function deriveWorld(coreAxis: string) {
   })
 }
 
+export type WorldLayerType = 'physical' | 'biological' | 'society' | 'synthesis'
+
+export interface DeriveLayerResult {
+  layer: WorldLayerType
+  content: string
+  tensions?: string    // society layer only
+  name?: string        // synthesis layer only
+  factions?: string[]  // synthesis layer only
+  description?: string // synthesis layer only
+}
+
+export function deriveWorldLayer(
+  coreAxis: string,
+  layer: WorldLayerType,
+  previousLayers: Partial<Record<WorldLayerType, string>>,
+  physicalParameters?: Record<string, string | string[]>,
+) {
+  return request<DeriveLayerResult>('/world/derive-layer', {
+    method: 'POST',
+    body: JSON.stringify({
+      core_axis: coreAxis,
+      layer,
+      previous_layers: previousLayers,
+      physical_parameters: physicalParameters,
+    }),
+  })
+}
+
 export function updateWorld(id: number, input: Partial<Omit<World, 'id'>>) {
   return request<World>(`/world/update?id=${id}`, {
     method: 'PUT',
