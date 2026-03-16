@@ -77,25 +77,6 @@ export function createWorld(world: Omit<World, 'id'>) {
   })
 }
 
-export interface DeriveWorldResult {
-  name: string
-  core_axis: string
-  environment: string
-  subsistence: string
-  organization: string
-  tensions: string
-  tone: string
-  factions: string[]
-  description: string
-}
-
-export function deriveWorld(coreAxis: string) {
-  return request<DeriveWorldResult>('/world/derive', {
-    method: 'POST',
-    body: JSON.stringify({ core_axis: coreAxis }),
-  })
-}
-
 export type WorldLayerType = 'physical' | 'biological' | 'society' | 'synthesis'
 
 export interface DeriveLayerResult {
