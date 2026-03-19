@@ -10,8 +10,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
-import { Plus, Users, Clapperboard, Trash2, Pencil } from 'lucide-react'
+import { Plus, Users, Clapperboard, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
 import { toast } from 'sonner'
+import { exportWorld } from '../../services/worldExport'
 
 const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
 
@@ -35,6 +36,7 @@ export default function WorldDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     document.title = `${t('pageTitle.worldDetail', { name: detail?.world?.name ?? '' })} — StoryTeller`
@@ -82,6 +84,17 @@ export default function WorldDetailPage() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [id, t])
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      await exportWorld(Number(id))
+    } catch {
+      toast.error(t('importExport.exportError'))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const handleDelete = async () => {
     setLoading(true)
@@ -135,6 +148,27 @@ export default function WorldDetailPage() {
       <div className="rounded-xl overflow-hidden shadow-lg">
         <div className={`bg-gradient-to-br ${gradient} px-8 py-10 relative`}>
           <div className="absolute top-4 right-4 flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white/80 hover:text-white hover:bg-white/15"
+              asChild
+            >
+              <Link to={`/worlds/${id}/bible`}>
+                <BookOpen className="h-4 w-4 mr-1.5" />
+                {t('bible.viewBible')}
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white/80 hover:text-white hover:bg-white/15"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              <Download className="h-4 w-4 mr-1.5" />
+              {exporting ? t('importExport.exporting') : t('importExport.exportButton')}
+            </Button>
             <Button
               variant="ghost"
               size="sm"

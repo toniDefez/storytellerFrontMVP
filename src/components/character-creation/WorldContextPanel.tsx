@@ -3,42 +3,34 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Globe, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { getWorldDetail } from '@/services/api'
-import type { WorldDetail } from '@/services/api'
+import { getWorldById } from '@/services/api'
+import type { World } from '@/services/api'
 
 interface WorldContextPanelProps {
   worldId: number
   /** If provided, skip fetching and use this data directly */
-  worldDetail?: WorldDetail | null
+  world?: World | null
 }
 
-/**
- * WorldContextPanel -- A collapsible panel showing the parent world's
- * key context for character derivation. Uses warm orange accents
- * (character entity color) with world-purple highlights for world data.
- *
- * Expanded by default on first render, then collapsible.
- */
-export function WorldContextPanel({ worldId, worldDetail: externalData }: WorldContextPanelProps) {
+export function WorldContextPanel({ worldId, world: externalWorld }: WorldContextPanelProps) {
   const { t } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(true)
-  const [detail, setDetail] = useState<WorldDetail | null>(externalData ?? null)
-  const [loading, setLoading] = useState(!externalData)
-  const [error, setError] = useState('')
+  const [world, setWorld] = useState<World | null>(externalWorld ?? null)
+  const [loading, setLoading] = useState(!externalWorld)
 
   useEffect(() => {
-    if (externalData) {
-      setDetail(externalData)
+    if (externalWorld) {
+      setWorld(externalWorld)
       setLoading(false)
       return
     }
 
     setLoading(true)
-    getWorldDetail(worldId)
-      .then(data => setDetail(data))
-      .catch(err => setError(err instanceof Error ? err.message : 'Error loading world'))
+    getWorldById(worldId)
+      .then(data => setWorld(data))
+      .catch(() => {})
       .finally(() => setLoading(false))
-  }, [worldId, externalData])
+  }, [worldId, externalWorld])
 
   if (loading) {
     return (
@@ -51,11 +43,8 @@ export function WorldContextPanel({ worldId, worldDetail: externalData }: WorldC
     )
   }
 
-  if (error || !detail) {
-    return null
-  }
+  if (!world) return null
 
-  const world = detail.world
   const hasFactions = world.factions && world.factions.length > 0
   const hasCoreAxis = !!world.core_axis
   const hasDescription = !!world.description
@@ -121,6 +110,62 @@ export function WorldContextPanel({ worldId, worldDetail: externalData }: WorldC
                 </p>
               )}
 
+              {/* World layers */}
+              {world.environment && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600/60 mb-1">
+                    {t('world.create.layerEnvironmentLabel')}
+                  </p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">
+                    {world.environment}
+                  </p>
+                </div>
+              )}
+
+              {world.subsistence && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600/60 mb-1">
+                    {t('world.create.layerSubsistenceLabel')}
+                  </p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">
+                    {world.subsistence}
+                  </p>
+                </div>
+              )}
+
+              {world.organization && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-600/60 mb-1">
+                    {t('world.create.layerOrganizationLabel')}
+                  </p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">
+                    {world.organization}
+                  </p>
+                </div>
+              )}
+
+              {world.tensions && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-rose-600/60 mb-1">
+                    {t('world.create.layerTensionsLabel')}
+                  </p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">
+                    {world.tensions}
+                  </p>
+                </div>
+              )}
+
+              {world.tone && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600/60 mb-1">
+                    {t('world.create.layerToneLabel')}
+                  </p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">
+                    {world.tone}
+                  </p>
+                </div>
+              )}
+
               {/* Factions */}
               {hasFactions && (
                 <div>
@@ -138,18 +183,6 @@ export function WorldContextPanel({ worldId, worldDetail: externalData }: WorldC
                       </Badge>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Tensions */}
-              {world.tensions && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-rose-600/60 mb-1">
-                    {t('world.create.layerTensions')}
-                  </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {world.tensions}
-                  </p>
                 </div>
               )}
             </div>

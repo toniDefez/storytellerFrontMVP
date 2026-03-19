@@ -8,6 +8,7 @@ import EditWorldPage from './pages/home/EditWorldPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import NotFoundPage from './pages/NotFoundPage'
 import WorldDetailPage from './pages/home/WorldDetailPage'
+import WorldBiblePage from './pages/home/WorldBiblePage'
 import CreateCharacterPage from './pages/characters/CreateCharacterPage'
 import EditCharacterPage from './pages/characters/EditCharacterPage'
 import CharacterDetailPage from './pages/characters/CharacterDetailPage'
@@ -29,6 +30,7 @@ function App() {
           <Route path="worlds" element={<HomePage />} />
           <Route path="worlds/create" element={<CreateWorldPage />} />
           <Route path="worlds/:id" element={<WorldDetailPage />} />
+          <Route path="worlds/:id/bible" element={<WorldBiblePage />} />
           <Route path="worlds/:id/edit" element={<EditWorldPage />} />
           <Route path="worlds/:id/characters/create" element={<CreateCharacterPage />} />
           <Route path="worlds/:worldId/characters/:characterId" element={<CharacterDetailPage />} />

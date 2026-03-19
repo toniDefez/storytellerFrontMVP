@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { createScene, generateScene } from '../../services/api'
-import type { Scene } from '../../services/api'
+import { createScene, generateScene, getWorldDetail } from '../../services/api'
+import type { Scene, Character } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
+import { WorldContextPanel } from '@/components/character-creation/WorldContextPanel'
 import { PillSelect } from '../../components/PillSelect'
 import { FieldGroup } from '@/components/form/FieldGroup'
 import { SectionDivider } from '@/components/form/SectionDivider'
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Loader2, Clapperboard } from 'lucide-react'
+import { Loader2, Clapperboard, Users } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 
@@ -37,11 +38,39 @@ export default function CreateScenePage() {
   const [context, setContext] = useState('')
   const [aiPrompt, setAiPrompt] = useState('')
 
+  const [characters, setCharacters] = useState<Character[]>([])
+  const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<number>>(new Set())
+  const [charactersLoading, setCharactersLoading] = useState(true)
+
   const [aiLoading, setAiLoading] = useState(false)
   const [aiScene, setAiScene] = useState<Scene | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { hasInstallation, checked: installationChecked } = useInstallation()
+
+  useEffect(() => {
+    if (!worldId) return
+    setCharactersLoading(true)
+    getWorldDetail(Number(worldId))
+      .then(data => {
+        const raw = data as unknown as Record<string, unknown>
+        setCharacters(Array.isArray(raw.characters) ? raw.characters as Character[] : [])
+      })
+      .catch(() => setCharacters([]))
+      .finally(() => setCharactersLoading(false))
+  }, [worldId])
+
+  const toggleCharacter = (id: number) => {
+    setSelectedCharacterIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
   const timeOptions = TIME_VALUES.map(v => ({ value: v, label: t(`scene.times.${v}`) }))
   const timeDescriptions = Object.fromEntries(TIME_VALUES.map(v => [v, t(`scene.times.${v}Desc`)]))
@@ -133,6 +162,7 @@ export default function CreateScenePage() {
               </TabsList>
 
               <TabsContent value="manual">
+                <WorldContextPanel worldId={Number(worldId)} />
                 <form onSubmit={handleManualSubmit}>
                   <FieldGroup label={t('scene.create.titleLabel')}>
                     <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder={t('scene.create.titlePlaceholder')} />
@@ -166,6 +196,65 @@ export default function CreateScenePage() {
 
               <TabsContent value="ai">
                 <div>
+                  <WorldContextPanel worldId={Number(worldId)} />
+
+                  {/* Character roster */}
+                  <div className="rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50/40 to-amber-50/20 px-5 py-4 mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="w-4 h-4 text-entity-character" />
+                      <span className="text-xs font-semibold uppercase tracking-widest text-entity-character/70">
+                        {t('scene.create.availableCharacters')}
+                      </span>
+                      {selectedCharacterIds.size > 0 && (
+                        <span className="ml-auto text-xs text-entity-character font-medium">
+                          {t('scene.create.selectedCount', { count: selectedCharacterIds.size })}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {t('scene.create.availableCharactersHint')}
+                    </p>
+                    {charactersLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        {t('common.loading')}
+                      </div>
+                    ) : characters.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">
+                        {t('scene.create.noCharactersInWorld')}
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {characters.map(character => {
+                          const isSelected = selectedCharacterIds.has(character.id)
+                          return (
+                            <button
+                              key={character.id}
+                              type="button"
+                              onClick={() => toggleCharacter(character.id)}
+                              className={`
+                                inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm
+                                border transition-all duration-150 cursor-pointer
+                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-entity-character/50
+                                ${isSelected
+                                  ? 'bg-entity-character text-white border-entity-character shadow-sm'
+                                  : 'bg-white text-foreground/80 border-orange-200 hover:border-entity-character/50 hover:bg-orange-50'}
+                              `}
+                              aria-pressed={isSelected}
+                            >
+                              <span className="font-medium">{character.name}</span>
+                              {character.role && (
+                                <span className={`text-xs ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
+                                  {character.role}
+                                </span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
                   {installationChecked && !hasInstallation && <NoInstallationBanner />}
                   <form onSubmit={handleAIGenerate}>
                     <FieldGroup label={t('scene.create.aiPromptLabel')}>

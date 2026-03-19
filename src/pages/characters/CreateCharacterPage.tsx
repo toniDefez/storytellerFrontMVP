@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { motion, AnimatePresence } from 'framer-motion'
 import { createCharacter, generateCharacter } from '../../services/api'
 import type { Character } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -13,42 +14,131 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Loader2, User, X } from 'lucide-react'
+import { Loader2, User, X, Save } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
+import { WorldContextPanel } from '@/components/character-creation/WorldContextPanel'
+import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
+import { DerivationLayer } from '@/components/world-creation/DerivationLayer'
+import type { ExtendedChipStatus } from '@/components/world-creation/DerivationLayer'
+
+/* ------------------------------------------------------------------ */
+/* Manual tab constants                                                */
+/* ------------------------------------------------------------------ */
 
 const ROLE_VALUES = ['Guerrero', 'Mago', 'Picaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano'] as const
 const PERSONALITY_VALUES = ['Valiente', 'Astuto', 'Compasivo', 'Arrogante', 'Misterioso', 'Leal', 'Vengativo', 'Ingenuo', 'Sabio', 'Impulsivo', 'Reservado', 'Temerario'] as const
+
+/* ------------------------------------------------------------------ */
+/* Derive tab types & constants                                        */
+/* ------------------------------------------------------------------ */
+
+type DerivePhase = 'premise' | 'generating' | 'reviewing'
+
+interface SectionData {
+  content: string | null
+  status: ExtendedChipStatus
+  editedContent?: string
+}
+
+interface CharacterSections {
+  identity: SectionData
+  temperament: SectionData
+  history: SectionData
+  will: SectionData
+}
+
+const CHARACTER_LAYERS = ['identity', 'temperament', 'history', 'will'] as const
+type CharacterLayerKey = (typeof CHARACTER_LAYERS)[number]
+
+const LAYER_DISPLAY: Record<CharacterLayerKey, { icon: string; label: string; labelEn: string; color: string }> = {
+  identity:    { icon: '\u{1F3AD}', label: 'Identidad',    labelEn: 'Identity',    color: 'text-amber-600' },
+  temperament: { icon: '\u{1F525}', label: 'Temperamento', labelEn: 'Temperament', color: 'text-rose-600' },
+  history:     { icon: '\u{1F4DC}', label: 'Historia',     labelEn: 'History',     color: 'text-blue-600' },
+  will:        { icon: '\u{2728}',  label: 'Voluntad',     labelEn: 'Will',        color: 'text-emerald-600' },
+}
+
+const PREMISE_EXAMPLES = [
+  'Una sanadora que descubrio que su cura es peor que la enfermedad...',
+  'El ultimo cartografo de un mundo que ya no tiene fronteras...',
+  'Alguien que traiciono a su faccion por amor y ahora no pertenece a ninguna...',
+  'Un juez que aplica leyes en las que ya no cree...',
+  'La hija de un lider que sabe que su padre miente a todos...',
+]
+
+/* ------------------------------------------------------------------ */
+/* Derive tab helpers                                                  */
+/* ------------------------------------------------------------------ */
+
+function buildSectionContent(character: Character, section: CharacterLayerKey): string {
+  switch (section) {
+    case 'identity': {
+      const parts: string[] = []
+      if (character.role) parts.push(`Rol: ${character.role}`)
+      if (character.social_position) parts.push(`Posicion social: ${character.social_position}`)
+      if (character.faction_affiliation) parts.push(`Faccion: ${character.faction_affiliation}`)
+      return parts.join('\n\n') || ''
+    }
+    case 'temperament': {
+      const parts: string[] = []
+      if (character.personality) parts.push(`Personalidad: ${character.personality}`)
+      if (character.internal_contradiction) parts.push(`Contradiccion interna: ${character.internal_contradiction}`)
+      if (character.relation_to_collective_lie) parts.push(`Relacion con la mentira colectiva: ${character.relation_to_collective_lie}`)
+      return parts.join('\n\n') || ''
+    }
+    case 'history': {
+      const parts: string[] = []
+      if (character.background) parts.push(character.background)
+      if (character.personal_fear) parts.push(`Miedo personal: ${character.personal_fear}`)
+      return parts.join('\n\n') || ''
+    }
+    case 'will': {
+      if (character.goals && character.goals.length > 0) {
+        return character.goals.map((g, i) => `${i + 1}. ${g}`).join('\n')
+      }
+      return ''
+    }
+  }
+}
+
+function initSections(): CharacterSections {
+  return {
+    identity:    { content: null, status: 'idle' },
+    temperament: { content: null, status: 'idle' },
+    history:     { content: null, status: 'idle' },
+    will:        { content: null, status: 'idle' },
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Component                                                           */
+/* ------------------------------------------------------------------ */
 
 export default function CreateCharacterPage() {
   const { id: worldId } = useParams()
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
-  const [, setMode] = useState<'manual' | 'ai'>('manual')
 
   useEffect(() => {
     document.title = `${t('pageTitle.createCharacter')} — StoryTeller`
   }, [t, i18n.language])
 
-  const [name, setName] = useState('')
+  /* ---- Shared state ---- */
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { hasInstallation, checked: installationChecked } = useInstallation()
+
+  /* ---- Manual tab state ---- */
+  const [manualName, setManualName] = useState('')
   const [role, setRole] = useState('')
   const [personalityTags, setPersonalityTags] = useState<string[]>([])
   const [background, setBackground] = useState('')
   const [goals, setGoals] = useState<string[]>([''])
-  const [aiPrompt, setAiPrompt] = useState('')
 
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiCharacter, setAiCharacter] = useState<Character | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const { hasInstallation, checked: installationChecked } = useInstallation()
-
-  // Build pill options: value = Spanish backend string, label = translated display
   const roleOptions = ROLE_VALUES.map(v => ({ value: v, label: t(`character.roles.${v}`) }))
   const roleDesc: Record<string, string> = Object.fromEntries(
     ROLE_VALUES.map(v => [v, t(`character.roles.${v}Desc`)])
   )
-
   const personalityOptions = PERSONALITY_VALUES.map(v => ({ value: v, label: t(`character.personalities.${v}`) }))
   const personalityDesc: Record<string, string> = Object.fromEntries(
     PERSONALITY_VALUES.map(v => [v, t(`character.personalities.${v}Desc`)])
@@ -70,7 +160,7 @@ export default function CreateCharacterPage() {
     setError('')
     try {
       await createCharacter({
-        name,
+        name: manualName,
         role,
         personality: personalityTags.join(', '),
         background,
@@ -86,47 +176,125 @@ export default function CreateCharacterPage() {
     }
   }
 
-  const handleAIGenerate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setAiLoading(true)
-    setError('')
-    setAiCharacter(null)
-    try {
-      const character = await generateCharacter(Number(worldId), aiPrompt)
-      setAiCharacter(character)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : t('character.create.aiError'))
-    } finally {
-      setAiLoading(false)
-    }
-  }
+  /* ---- Derive tab state ---- */
+  const [derivePhase, setDerivePhase] = useState<DerivePhase>('premise')
+  const [deriveName, setDeriveName] = useState('')
+  const [premise, setPremise] = useState('')
+  const [sections, setSections] = useState<CharacterSections>(initSections)
+  const [generatedCharacter, setGeneratedCharacter] = useState<Character | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  const handleAISave = async () => {
-    if (!aiCharacter) return
-    setLoading(true)
+  // Rotating placeholder
+  const [placeholderIdx, setPlaceholderIdx] = useState(0)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIdx(prev => (prev + 1) % PREMISE_EXAMPLES.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleDerive = useCallback(async () => {
+    if (!premise.trim()) return
+    setDerivePhase('generating')
     setError('')
+
     try {
+      const character = await generateCharacter(Number(worldId), premise)
+      setGeneratedCharacter(character)
+
+      if (character.name && !deriveName) {
+        setDeriveName(character.name)
+      }
+
+      const newSections: CharacterSections = {
+        identity:    { content: buildSectionContent(character, 'identity'),    status: 'ready' },
+        temperament: { content: buildSectionContent(character, 'temperament'), status: 'ready' },
+        history:     { content: buildSectionContent(character, 'history'),     status: 'ready' },
+        will:        { content: buildSectionContent(character, 'will'),        status: 'ready' },
+      }
+
+      for (const key of CHARACTER_LAYERS) {
+        if (!newSections[key].content) {
+          newSections[key].content = t('character.create.pendingGeneration')
+        }
+      }
+
+      setSections(newSections)
+      setDerivePhase('reviewing')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('character.create.aiError'))
+      setDerivePhase('premise')
+    }
+  }, [premise, worldId, deriveName, t])
+
+  const acceptSection = useCallback((key: string) => {
+    setSections(prev => ({
+      ...prev,
+      [key]: { ...prev[key as CharacterLayerKey], status: 'accepted' },
+    }))
+  }, [])
+
+  const rejectSection = useCallback((key: string) => {
+    setSections(prev => ({
+      ...prev,
+      [key]: { ...prev[key as CharacterLayerKey], status: 'rejected' },
+    }))
+  }, [])
+
+  const editSection = useCallback((key: string, newText: string) => {
+    setSections(prev => ({
+      ...prev,
+      [key]: { ...prev[key as CharacterLayerKey], editedContent: newText, status: 'accepted' },
+    }))
+  }, [])
+
+  const allDecided = CHARACTER_LAYERS.every(
+    k => sections[k].status === 'accepted' || sections[k].status === 'rejected'
+  )
+  const hasAccepted = CHARACTER_LAYERS.some(k => sections[k].status === 'accepted')
+
+  const handleSave = useCallback(async () => {
+    setSaving(true)
+    setError('')
+
+    try {
+      const base = generatedCharacter || {} as Partial<Character>
+
       await createCharacter({
-        name: aiCharacter.name || 'Personaje generado',
-        role: aiCharacter.role || '',
-        personality: aiCharacter.personality || '',
-        background: aiCharacter.background || '',
-        goals: aiCharacter.goals || [],
+        name: deriveName || base.name || 'Personaje derivado',
+        role: base.role || '',
+        personality: base.personality || '',
+        background: base.background || '',
+        goals: base.goals || [],
         world_id: Number(worldId),
-        state: aiCharacter.state || {},
+        state: base.state || {},
+        premise,
+        social_position: base.social_position,
+        internal_contradiction: base.internal_contradiction,
+        relation_to_collective_lie: base.relation_to_collective_lie,
+        personal_fear: base.personal_fear,
+        faction_affiliation: base.faction_affiliation,
       })
+
       navigate(`/worlds/${worldId}`)
-    } catch (err: unknown) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : t('character.create.error'))
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
-  }
+  }, [generatedCharacter, deriveName, worldId, premise, navigate, t])
+
+  /* ---- Render ---- */
 
   return (
     <div className="flex justify-center items-start min-h-[80vh] py-4">
-      <div className="w-full max-w-2xl mx-auto">
-        <PageBreadcrumb items={[{label: t('nav.worlds'), href: '/worlds'}, {label: 'Mundo', href: '/worlds/' + worldId}, {label: t('character.create.title')}]} />
+      <div className="w-full max-w-3xl mx-auto">
+        <PageBreadcrumb items={[
+          { label: t('nav.worlds'), href: '/worlds' },
+          { label: 'Mundo', href: `/worlds/${worldId}` },
+          { label: t('character.create.title') },
+        ]} />
+
         <Card className="overflow-hidden">
           <CardHeader className="border-b border-amber-100 bg-entity-character-light/50">
             <div className="flex items-center gap-3">
@@ -146,16 +314,233 @@ export default function CreateCharacterPage() {
               </Alert>
             )}
 
-            <Tabs defaultValue="manual" onValueChange={v => setMode(v as 'manual' | 'ai')}>
+            <Tabs defaultValue="derive" onValueChange={() => setError('')}>
               <TabsList className="mb-6">
+                <TabsTrigger value="derive">{t('character.create.deriveButton')}</TabsTrigger>
                 <TabsTrigger value="manual">{t('character.create.manualTab')}</TabsTrigger>
-                <TabsTrigger value="ai">{t('character.create.aiTab')}</TabsTrigger>
               </TabsList>
 
+              {/* ============================================= */}
+              {/* TAB: DERIVE FROM WORLD                        */}
+              {/* ============================================= */}
+              <TabsContent value="derive">
+                <div>
+                  {installationChecked && !hasInstallation && (
+                    <div className="mb-6">
+                      <NoInstallationBanner />
+                    </div>
+                  )}
+
+                  {/* World context */}
+                  <WorldContextPanel worldId={Number(worldId)} />
+
+                  {/* PHASE: PREMISE */}
+                  <AnimatePresence mode="wait">
+                    {derivePhase === 'premise' && (
+                      <motion.div
+                        key="premise"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {/* Name */}
+                        <div className="mb-6">
+                          <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+                            {t('character.create.nameLabel')}
+                          </label>
+                          <Input
+                            type="text"
+                            value={deriveName}
+                            onChange={e => setDeriveName(e.target.value)}
+                            placeholder={t('character.create.namePlaceholder')}
+                            className="border-0 border-b-2 border-muted/50 rounded-none px-0 text-lg
+                                       font-[var(--font-display)] placeholder:italic placeholder:text-muted-foreground/40
+                                       focus-visible:ring-0 focus-visible:border-entity-character/50 transition-colors"
+                          />
+                          <p className="text-[10px] text-muted-foreground/50 mt-1 italic">
+                            {i18n.language === 'es' ? 'Opcional. La IA puede sugerir uno.' : 'Optional. AI can suggest one.'}
+                          </p>
+                        </div>
+
+                        {/* Premise */}
+                        <div className="mb-6">
+                          <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+                            {t('character.create.premiseLabel')}
+                          </label>
+                          <p className="text-xs text-muted-foreground/70 mb-3 leading-relaxed">
+                            {t('character.create.premiseHint')}
+                          </p>
+                          <div className="relative">
+                            <Textarea
+                              value={premise}
+                              onChange={e => setPremise(e.target.value)}
+                              placeholder={PREMISE_EXAMPLES[placeholderIdx]}
+                              className="min-h-[140px] resize-none text-base leading-relaxed
+                                         border-2 border-dashed border-entity-character/25 rounded-xl
+                                         bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))]
+                                         from-amber-500/[0.02] to-transparent
+                                         placeholder:text-muted-foreground/40 placeholder:italic
+                                         focus:border-solid focus:border-entity-character/40
+                                         focus-visible:ring-0 focus-visible:ring-offset-0
+                                         focus:shadow-md focus:shadow-amber-500/5
+                                         transition-all duration-300"
+                            />
+                            <span className="absolute bottom-3 right-3 text-[10px] text-muted-foreground/40">
+                              {premise.length}/500
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Derive button */}
+                        <Button
+                          type="button"
+                          size="lg"
+                          className="w-full font-semibold tracking-wide
+                                     bg-gradient-to-r from-amber-600 to-orange-500
+                                     hover:from-amber-700 hover:to-orange-600
+                                     hover:shadow-lg hover:shadow-amber-500/20 hover:-translate-y-0.5
+                                     transition-all duration-200"
+                          disabled={!premise.trim() || !hasInstallation}
+                          onClick={handleDerive}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          {t('character.create.deriveButton')}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* PHASE: GENERATING */}
+                  <AnimatePresence>
+                    {derivePhase === 'generating' && (
+                      <AIGeneratingIndicator />
+                    )}
+                  </AnimatePresence>
+
+                  {/* PHASE: REVIEWING */}
+                  <AnimatePresence>
+                    {derivePhase === 'reviewing' && (
+                      <motion.div
+                        key="reviewing"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {/* Name (editable) */}
+                        <div className="mb-6">
+                          <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+                            {t('character.create.nameLabel')}
+                          </label>
+                          <Input
+                            type="text"
+                            value={deriveName}
+                            onChange={e => setDeriveName(e.target.value)}
+                            placeholder={t('character.create.namePlaceholder')}
+                            className="border-0 border-b-2 border-amber-200 rounded-none px-0 text-lg
+                                       font-[var(--font-display)] placeholder:italic placeholder:text-muted-foreground/40
+                                       focus-visible:ring-0 focus-visible:border-entity-character/50 transition-colors"
+                          />
+                        </div>
+
+                        {/* Separator */}
+                        <div className="relative my-6 flex items-center gap-3">
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/60 to-transparent" />
+                          <span className="text-[10px] font-semibold text-amber-600/50 uppercase tracking-[0.2em]">
+                            {i18n.language === 'es' ? 'Resultado de la derivacion' : 'Derivation result'}
+                          </span>
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/60 to-transparent" />
+                        </div>
+
+                        {/* Layers */}
+                        <div className="space-y-4">
+                          {CHARACTER_LAYERS.map((layer, idx) => {
+                            const ls = sections[layer]
+                            if (ls.status === 'idle') return null
+
+                            return (
+                              <div key={layer}>
+                                <DerivationLayer
+                                  layerKey={layer}
+                                  layerMeta={LAYER_DISPLAY[layer]}
+                                  suggestion={ls.editedContent ?? ls.content}
+                                  cascadeDelay={idx * 180}
+                                  isRevealed={ls.content !== null}
+                                  onReveal={() => {}}
+                                  onSuggestionAccept={acceptSection}
+                                  onSuggestionReject={rejectSection}
+                                  onSuggestionEdit={editSection}
+                                  chipStatus={ls.status === 'ready' ? 'pending' : ls.status}
+                                />
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        {/* Save button */}
+                        <div className="mt-8 space-y-3">
+                          <AnimatePresence>
+                            {allDecided && hasAccepted && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                              >
+                                <Button
+                                  type="button"
+                                  size="lg"
+                                  className="w-full font-semibold tracking-wide
+                                             bg-gradient-to-r from-amber-600 to-orange-500
+                                             hover:from-amber-700 hover:to-orange-600
+                                             hover:shadow-lg hover:shadow-amber-500/20 hover:-translate-y-0.5
+                                             transition-all duration-200"
+                                  onClick={handleSave}
+                                  disabled={saving}
+                                >
+                                  {saving ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      {t('character.create.savingCharacter')}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Save className="w-4 h-4 mr-2" />
+                                      {t('character.create.saveCharacter')}
+                                    </>
+                                  )}
+                                </Button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {/* Re-edit premise */}
+                          <div className="text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDerivePhase('premise')
+                                setSections(initSections())
+                                setGeneratedCharacter(null)
+                              }}
+                              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition underline underline-offset-2"
+                            >
+                              {i18n.language === 'es' ? 'Volver a editar la premisa' : 'Edit premise again'}
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </TabsContent>
+
+              {/* ============================================= */}
+              {/* TAB: MANUAL                                    */}
+              {/* ============================================= */}
               <TabsContent value="manual">
                 <form onSubmit={handleManualSubmit}>
                   <FieldGroup label={t('character.create.nameLabel')}>
-                    <Input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full" required placeholder={t('character.create.namePlaceholder')} />
+                    <Input type="text" value={manualName} onChange={e => setManualName(e.target.value)} className="w-full" required placeholder={t('character.create.namePlaceholder')} />
                   </FieldGroup>
 
                   <SectionDivider label={t('character.create.identitySection')} />
@@ -193,46 +578,6 @@ export default function CreateCharacterPage() {
                     {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('character.create.submitting')}</> : t('character.create.submitButton')}
                   </Button>
                 </form>
-              </TabsContent>
-
-              <TabsContent value="ai">
-                <div>
-                  {installationChecked && !hasInstallation && <NoInstallationBanner />}
-                  <form onSubmit={handleAIGenerate}>
-                    <FieldGroup label={t('character.create.aiPromptLabel')}>
-                      <Textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="min-h-[90px] resize-none" placeholder={t('character.create.aiPromptPlaceholder')} required />
-                    </FieldGroup>
-                    <Button type="submit" size="lg" className="w-full mb-4" disabled={aiLoading || !hasInstallation}>
-                      {aiLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('character.create.aiGenerating')}</> : t('character.create.aiSubmitButton')}
-                    </Button>
-                  </form>
-
-                  {aiCharacter && (
-                    <div className="mt-2 rounded-xl border border-amber-200 overflow-hidden">
-                      <div className="px-5 py-3 bg-entity-character">
-                        <h3 className="text-sm font-bold text-white font-[var(--font-display)]">{aiCharacter.name}</h3>
-                        <p className="text-xs text-white/70">{aiCharacter.role}</p>
-                      </div>
-                      <div className="p-5 bg-entity-character-light space-y-2">
-                        {[
-                          { label: t('character.create.aiPreviewPersonality'), value: aiCharacter.personality },
-                          { label: t('character.create.aiPreviewBackground'), value: aiCharacter.background },
-                          ...(aiCharacter.goals?.length ? [{ label: t('character.create.aiPreviewGoals'), value: aiCharacter.goals.join(', ') }] : []),
-                        ].map(({ label, value }) => (
-                          <div key={label} className="flex gap-3 text-sm">
-                            <span className="text-entity-character-muted font-semibold w-24 shrink-0">{label}</span>
-                            <span className="text-foreground">{value}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="px-5 py-3 bg-card border-t border-amber-100">
-                        <Button size="lg" className="w-full" onClick={handleAISave} disabled={loading}>
-                          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('character.create.aiSaving')}</> : t('character.create.aiSaveButton')}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

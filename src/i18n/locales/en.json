@@ -108,6 +108,11 @@
       "layerOrganization": "Organization",
       "layerTensions": "Tensions",
       "layerTone": "Narrative tone",
+      "layerEnvironmentLabel": "Environment",
+      "layerSubsistenceLabel": "Subsistence",
+      "layerOrganizationLabel": "Organization",
+      "layerTensionsLabel": "Tensions",
+      "layerToneLabel": "Narrative tone",
       "richness0": "AI will interpret freely",
       "richness1": "AI has something to work with",
       "richness2": "AI has a rich world to derive from",
@@ -331,7 +336,11 @@
       "aiSaveButton": "Save this scene",
       "aiPreviewTone": "Tone",
       "aiPreviewContext": "Context",
-      "aiDefaultTitle": "Generated scene"
+      "aiDefaultTitle": "Generated scene",
+      "availableCharacters": "Available characters",
+      "availableCharactersHint": "Select the characters that participate in this scene",
+      "noCharactersInWorld": "This world has no characters yet",
+      "selectedCount": "{{count}} selected"
     },
     "edit": {
       "title": "Edit scene",
@@ -409,6 +418,32 @@
       "Intimo": "Intimate",
       "IntimoDesc": "Behind closed doors, characters reveal themselves. Vulnerability and genuine connection."
     }
+  },
+  "importExport": {
+    "exportButton": "Export",
+    "exporting": "Exporting...",
+    "exportError": "Could not export the world.",
+    "importButton": "Import world",
+    "importing": "Importing...",
+    "importConfirmTitle": "Import world",
+    "importConfirmMessage": "\"{{name}}\" will be imported as a new world. Continue?",
+    "importSuccess": "World imported successfully",
+    "importError": "Could not import the world.",
+    "importInvalidFile": "The file is not a valid StoryTeller export.",
+    "importInvalidVersion": "Incompatible export version."
+  },
+  "bible": {
+    "backToWorld": "Back to world",
+    "overviewSection": "Overview",
+    "rulesSection": "The rules of the world",
+    "factionsSection": "Factions",
+    "charactersSection": "Characters",
+    "chronicleSection": "Chronicle",
+    "noCharacters": "This world has no characters yet.",
+    "noScenes": "No scenes in this story yet.",
+    "noNarrative": "Narrative pending generation.",
+    "createdWith": "Created with StoryTeller",
+    "viewBible": "World bible"
   },
   "error": {
     "notFoundCode": "404",

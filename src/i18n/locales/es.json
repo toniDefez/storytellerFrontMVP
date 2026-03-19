@@ -108,6 +108,11 @@
       "layerOrganization": "Organización",
       "layerTensions": "Tensiones",
       "layerTone": "Tono narrativo",
+      "layerEnvironmentLabel": "Entorno",
+      "layerSubsistenceLabel": "Subsistencia",
+      "layerOrganizationLabel": "Organizacion",
+      "layerTensionsLabel": "Tensiones",
+      "layerToneLabel": "Tono narrativo",
       "richness0": "La IA interpretara libremente",
       "richness1": "La IA tiene algo con lo que trabajar",
       "richness2": "La IA tiene un mundo rico que derivar",
@@ -331,7 +336,11 @@
       "aiSaveButton": "Guardar esta escena",
       "aiPreviewTone": "Tono",
       "aiPreviewContext": "Contexto",
-      "aiDefaultTitle": "Escena generada"
+      "aiDefaultTitle": "Escena generada",
+      "availableCharacters": "Personajes disponibles",
+      "availableCharactersHint": "Selecciona los personajes que participan en esta escena",
+      "noCharactersInWorld": "Este mundo aun no tiene personajes",
+      "selectedCount": "{{count}} seleccionados"
     },
     "edit": {
       "title": "Editar escena",
@@ -409,6 +418,32 @@
       "Intimo": "Íntimo",
       "IntimoDesc": "A puerta cerrada, los personajes se revelan. Vulnerabilidad y conexión real."
     }
+  },
+  "importExport": {
+    "exportButton": "Exportar",
+    "exporting": "Exportando...",
+    "exportError": "No se pudo exportar el mundo.",
+    "importButton": "Importar mundo",
+    "importing": "Importando...",
+    "importConfirmTitle": "Importar mundo",
+    "importConfirmMessage": "Se importara \"{{name}}\" como un nuevo mundo. Continuar?",
+    "importSuccess": "Mundo importado correctamente",
+    "importError": "No se pudo importar el mundo.",
+    "importInvalidFile": "El archivo no es un export valido de StoryTeller.",
+    "importInvalidVersion": "Version de export no compatible."
+  },
+  "bible": {
+    "backToWorld": "Volver al mundo",
+    "overviewSection": "Descripcion general",
+    "rulesSection": "Las reglas del mundo",
+    "factionsSection": "Facciones",
+    "charactersSection": "Personajes",
+    "chronicleSection": "Cronica",
+    "noCharacters": "Este mundo aun no tiene personajes.",
+    "noScenes": "Aun no hay escenas en esta historia.",
+    "noNarrative": "Narrativa pendiente de generar.",
+    "createdWith": "Creado con StoryTeller",
+    "viewBible": "Biblia del mundo"
   },
   "error": {
     "notFoundCode": "404",
