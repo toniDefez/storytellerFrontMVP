@@ -341,7 +341,9 @@
       "availableCharacters": "Personajes disponibles",
       "availableCharactersHint": "Selecciona los personajes que participan en esta escena",
       "noCharactersInWorld": "Este mundo aun no tiene personajes",
-      "selectedCount": "{{count}} seleccionados"
+      "selectedCount": "{{count}} seleccionados",
+      "continuingAfter": "Continuando despues de: {{title}}",
+      "afterPromptHint": "Describe que ocurre a continuacion..."
     },
     "edit": {
       "title": "Editar escena",
@@ -379,7 +381,18 @@
       "generateNarrativeButton": "Generar narrativa",
       "generatingNarrative": "Generando narrativa...",
       "generateNarrativeError": "No se pudo generar la narrativa.",
-      "noNarrative": "Genera una narrativa para unir todos los eventos de esta escena en una historia coherente."
+      "noNarrative": "Genera una narrativa para unir todos los eventos de esta escena en una historia coherente.",
+      "improveNarrative": "Mejorar narrativa",
+      "feedbackPlaceholder": "Hazlo mas tenso, expande el dialogo, cambia el punto de vista...",
+      "regenerateWithFeedback": "Regenerar con feedback",
+      "regenerateNarrative": "Regenerar narrativa",
+      "regeneratingNarrative": "Regenerando narrativa...",
+      "editParagraph": "Editar parrafo",
+      "saveParagraph": "Guardar",
+      "cancelEdit": "Cancelar",
+      "narrativeUpdated": "Narrativa actualizada",
+      "whatHappensNext": "Que sucede despues?",
+      "createNextScene": "Crear siguiente escena"
     },
     "times": {
       "Amanecer": "Amanecer",

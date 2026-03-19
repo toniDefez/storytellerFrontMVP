@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getSceneDetail,
@@ -7,6 +7,7 @@ import {
   addCharacterToScene,
   generateEvents,
   getSceneNarrative,
+  regenerateNarrative,
   getWorldDetail,
 } from '../../services/api'
 import type { SceneDetail, Character, Event as StoryEvent } from '../../services/api'
@@ -14,7 +15,7 @@ import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Button } from '@/components/ui/button'
-import { Loader2, Pencil } from 'lucide-react'
+import { Loader2, Pencil, ArrowRight, RefreshCw, Check, X, MessageSquarePlus } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
@@ -46,6 +47,14 @@ export default function SceneDetailPage() {
   // Narrative
   const [narrative, setNarrative] = useState<string | null>(null)
   const [generatingNarrative, setGeneratingNarrative] = useState(false)
+
+  // Paragraph editing
+  const [editingParagraph, setEditingParagraph] = useState<number | null>(null)
+  const [editedText, setEditedText] = useState('')
+
+  // Narrative feedback
+  const [feedbackText, setFeedbackText] = useState('')
+  const [regeneratingWithFeedback, setRegeneratingWithFeedback] = useState(false)
 
   const { hasInstallation, checked: installationChecked } = useInstallation()
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
@@ -126,10 +135,53 @@ export default function SceneDetailPage() {
     try {
       const result = await getSceneNarrative(Number(sceneId))
       setNarrative(result.text)
+      setEditingParagraph(null)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('scene.detail.generateNarrativeError'))
     } finally {
       setGeneratingNarrative(false)
+    }
+  }
+
+  // Split narrative into paragraphs on double newlines
+  const narrativeParagraphs = useMemo(
+    () => narrative ? narrative.split(/\n\n+/).filter(p => p.trim().length > 0) : [],
+    [narrative],
+  )
+
+  const handleStartEditParagraph = useCallback((index: number) => {
+    setEditingParagraph(index)
+    setEditedText(narrativeParagraphs[index])
+  }, [narrativeParagraphs])
+
+  const handleSaveParagraph = useCallback(() => {
+    if (editingParagraph === null) return
+    const updated = [...narrativeParagraphs]
+    updated[editingParagraph] = editedText
+    setNarrative(updated.join('\n\n'))
+    setEditingParagraph(null)
+    setEditedText('')
+    toast.success(t('scene.detail.narrativeUpdated'))
+  }, [editingParagraph, editedText, narrativeParagraphs, t])
+
+  const handleCancelEditParagraph = useCallback(() => {
+    setEditingParagraph(null)
+    setEditedText('')
+  }, [])
+
+  const handleRegenerateWithFeedback = async () => {
+    if (!feedbackText.trim() || !narrative) return
+    setRegeneratingWithFeedback(true)
+    setError('')
+    try {
+      const result = await regenerateNarrative(Number(sceneId), feedbackText.trim(), narrative)
+      setNarrative(result.text)
+      setFeedbackText('')
+      setEditingParagraph(null)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('scene.detail.generateNarrativeError'))
+    } finally {
+      setRegeneratingWithFeedback(false)
     }
   }
 
@@ -297,21 +349,150 @@ export default function SceneDetailPage() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <h3 className="font-[var(--font-display)] text-xl font-bold text-slate-800">{t('scene.detail.narrativeSection')}</h3>
-            <Button variant="secondary" size="sm" onClick={handleGenerateNarrative} disabled={generatingNarrative}>
-              {generatingNarrative ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('scene.detail.generatingNarrative')}</> : t('scene.detail.generateNarrativeButton')}
-            </Button>
+            <div className="flex gap-2">
+              {narrative && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateNarrative}
+                  disabled={generatingNarrative || regeneratingWithFeedback}
+                  aria-label={t('scene.detail.regenerateNarrative')}
+                >
+                  {generatingNarrative
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('scene.detail.regeneratingNarrative')}</>
+                    : <><RefreshCw className="mr-1.5 h-4 w-4" />{t('scene.detail.regenerateNarrative')}</>
+                  }
+                </Button>
+              )}
+              {!narrative && (
+                <Button variant="secondary" size="sm" onClick={handleGenerateNarrative} disabled={generatingNarrative}>
+                  {generatingNarrative
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('scene.detail.generatingNarrative')}</>
+                    : t('scene.detail.generateNarrativeButton')
+                  }
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           {narrative ? (
-            <div className="prose max-w-none bg-gradient-to-br from-slate-50 to-sky-50 p-6 rounded-xl border border-sky-200 whitespace-pre-wrap text-slate-800 leading-relaxed">
-              {narrative}
-            </div>
+            <>
+              {/* Paragraph-level display */}
+              <div className="bg-gradient-to-br from-slate-50 to-sky-50 rounded-xl border border-sky-200 overflow-hidden">
+                {narrativeParagraphs.map((paragraph, idx) => (
+                  <div key={idx}>
+                    {editingParagraph === idx ? (
+                      <div className="p-4 bg-sky-50 border-b border-sky-200">
+                        <Textarea
+                          value={editedText}
+                          onChange={e => setEditedText(e.target.value)}
+                          className="min-h-[120px] bg-white text-slate-800 leading-relaxed"
+                          autoFocus
+                        />
+                        <div className="flex gap-2 mt-3 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCancelEditParagraph}
+                            aria-label={t('scene.detail.cancelEdit')}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            {t('scene.detail.cancelEdit')}
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleSaveParagraph}
+                            aria-label={t('scene.detail.saveParagraph')}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            {t('scene.detail.saveParagraph')}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="group relative px-6 py-4 cursor-pointer transition-colors hover:bg-sky-50/80 border-b border-sky-100 last:border-b-0"
+                        onClick={() => handleStartEditParagraph(idx)}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={t('scene.detail.editParagraph')}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleStartEditParagraph(idx) } }}
+                      >
+                        <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">{paragraph}</p>
+                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="bg-white/90 border border-sky-200 rounded-md p-1.5 shadow-sm">
+                            <Pencil className="h-3.5 w-3.5 text-sky-600" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Feedback / Improve section */}
+              <div className="mt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex-1 h-px bg-sky-200" />
+                  <span className="text-sm font-medium text-sky-700 flex items-center gap-1.5">
+                    <MessageSquarePlus className="h-4 w-4" />
+                    {t('scene.detail.improveNarrative')}
+                  </span>
+                  <div className="flex-1 h-px bg-sky-200" />
+                </div>
+                <div className="flex gap-3">
+                  <Textarea
+                    value={feedbackText}
+                    onChange={e => setFeedbackText(e.target.value)}
+                    placeholder={t('scene.detail.feedbackPlaceholder')}
+                    className="min-h-[48px] flex-1"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault()
+                        handleRegenerateWithFeedback()
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleRegenerateWithFeedback}
+                    disabled={!feedbackText.trim() || regeneratingWithFeedback}
+                    className="shrink-0"
+                  >
+                    {regeneratingWithFeedback
+                      ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('scene.detail.regeneratingNarrative')}</>
+                      : <><RefreshCw className="mr-1.5 h-4 w-4" />{t('scene.detail.regenerateWithFeedback')}</>
+                    }
+                  </Button>
+                </div>
+              </div>
+            </>
           ) : (
             <p className="text-gray-500 italic">{t('scene.detail.noNarrative')}</p>
           )}
         </CardContent>
       </Card>
+
+      {/* What happens next? */}
+      <div className="relative py-4">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-entity-scene/30" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-background px-4 text-lg font-display font-semibold text-entity-scene">
+            {t('scene.detail.whatHappensNext')}
+          </span>
+        </div>
+      </div>
+      <div className="flex justify-center pb-8">
+        <Button size="lg" variant="outline" className="border-entity-scene text-entity-scene hover:bg-entity-scene/5" asChild>
+          <Link to={`/worlds/${worldId}/scenes/create?after=${sceneId}`}>
+            {t('scene.detail.createNextScene')}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
     </div>
   )
 }

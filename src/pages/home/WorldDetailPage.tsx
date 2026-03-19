@@ -126,7 +126,13 @@ export default function WorldDetailPage() {
     )
   }
 
-  const { world, characters, scenes } = detail
+  const { world, characters, scenes: rawScenes } = detail
+  const scenes = [...(rawScenes || [])].sort((a, b) => {
+    const posA = (a as Record<string, unknown>).position as number ?? 0
+    const posB = (b as Record<string, unknown>).position as number ?? 0
+    if (posA !== posB) return posA - posB
+    return a.id - b.id
+  })
   const gradient = inferGradient(world)
 
   return (
@@ -368,42 +374,50 @@ export default function WorldDetailPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {scenes.map(s => (
-              <Link
-                key={s.id}
-                to={`/worlds/${id}/scenes/${s.id}`}
-                className="block"
-              >
-                <Card className="border-l-4 border-l-entity-scene hover:shadow-md transition-shadow h-full">
-                  <CardContent className="p-4">
-                    <h3 className="font-bold text-foreground">{s.title}</h3>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {s.location && (
-                        <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
-                          {s.location}
-                        </Badge>
-                      )}
-                      {s.time && (
-                        <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
-                          {s.time}
-                        </Badge>
-                      )}
-                      {s.tone && (
-                        <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
-                          {s.tone}
-                        </Badge>
-                      )}
-                    </div>
-                    {s.context && (
-                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                        {s.context}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+          <div className="space-y-3">
+            {scenes.map((s, idx) => {
+              const pos = (s as Record<string, unknown>).position as number ?? idx + 1
+              return (
+                <Link
+                  key={s.id}
+                  to={`/worlds/${id}/scenes/${s.id}`}
+                  className="block"
+                >
+                  <Card className="border-l-4 border-l-entity-scene hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-entity-scene/10 flex items-center justify-center">
+                        <span className="text-sm font-bold text-entity-scene">{pos}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-foreground">{s.title}</h3>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {s.location && (
+                            <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
+                              {s.location}
+                            </Badge>
+                          )}
+                          {s.time && (
+                            <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
+                              {s.time}
+                            </Badge>
+                          )}
+                          {s.tone && (
+                            <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
+                              {s.tone}
+                            </Badge>
+                          )}
+                        </div>
+                        {s.context && (
+                          <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
+                            {s.context}
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )
+            })}
           </div>
         )}
       </section>

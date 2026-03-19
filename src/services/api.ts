@@ -147,6 +147,7 @@ export interface Scene {
   tone: string
   context: string
   world_id: number
+  position?: number
 }
 
 export interface WorldDetail {
@@ -287,6 +288,13 @@ export interface SceneNarrative {
 
 export function getSceneNarrative(sceneId: number) {
   return request<SceneNarrative>(`/scene/narrative/get?id=${sceneId}`)
+}
+
+export function regenerateNarrative(sceneId: number, feedback: string, existingNarrative: string) {
+  return request<SceneNarrative>('/scene/narrative/regenerate', {
+    method: 'POST',
+    body: JSON.stringify({ scene_id: sceneId, feedback, existing_narrative: existingNarrative }),
+  })
 }
 
 // --- Installation ---

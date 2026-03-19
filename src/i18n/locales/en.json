@@ -341,7 +341,9 @@
       "availableCharacters": "Available characters",
       "availableCharactersHint": "Select the characters that participate in this scene",
       "noCharactersInWorld": "This world has no characters yet",
-      "selectedCount": "{{count}} selected"
+      "selectedCount": "{{count}} selected",
+      "continuingAfter": "Continuing after: {{title}}",
+      "afterPromptHint": "Describe what happens next..."
     },
     "edit": {
       "title": "Edit scene",
@@ -379,7 +381,18 @@
       "generateNarrativeButton": "Generate narrative",
       "generatingNarrative": "Generating narrative...",
       "generateNarrativeError": "Could not generate the narrative.",
-      "noNarrative": "Generate a narrative to weave all the events of this scene into a coherent story."
+      "noNarrative": "Generate a narrative to weave all the events of this scene into a coherent story.",
+      "improveNarrative": "Improve narrative",
+      "feedbackPlaceholder": "Make it more tense, expand the dialogue, change the point of view...",
+      "regenerateWithFeedback": "Regenerate with feedback",
+      "regenerateNarrative": "Regenerate narrative",
+      "regeneratingNarrative": "Regenerating narrative...",
+      "editParagraph": "Edit paragraph",
+      "saveParagraph": "Save",
+      "cancelEdit": "Cancel",
+      "narrativeUpdated": "Narrative updated",
+      "whatHappensNext": "What happens next?",
+      "createNextScene": "Create next scene"
     },
     "times": {
       "Amanecer": "Dawn",

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { createScene, generateScene, getWorldDetail } from '../../services/api'
+import { createScene, generateScene, getWorldDetail, getSceneById } from '../../services/api'
 import type { Scene, Character } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Loader2, Clapperboard, Users } from 'lucide-react'
+import { Loader2, Clapperboard, Users, ArrowRight } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 
@@ -24,8 +24,11 @@ const TONE_VALUES = ['Epico', 'Misterioso', 'Sombrio', 'Romantico', 'Tenso', 'Co
 export default function CreateScenePage() {
   const { id: worldId } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { t, i18n } = useTranslation()
   const [, setMode] = useState<'manual' | 'ai'>('manual')
+  const afterSceneId = searchParams.get('after')
+  const [afterScene, setAfterScene] = useState<Scene | null>(null)
 
   useEffect(() => {
     document.title = `${t('pageTitle.createScene')} — StoryTeller`
@@ -59,6 +62,19 @@ export default function CreateScenePage() {
       .catch(() => setCharacters([]))
       .finally(() => setCharactersLoading(false))
   }, [worldId])
+
+  useEffect(() => {
+    if (!afterSceneId) return
+    getSceneById(Number(afterSceneId))
+      .then(scene => {
+        setAfterScene(scene)
+        if (!aiPrompt) {
+          setAiPrompt(t('scene.create.afterPromptHint'))
+        }
+      })
+      .catch(() => setAfterScene(null))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [afterSceneId])
 
   const toggleCharacter = (id: number) => {
     setSelectedCharacterIds(prev => {
@@ -102,7 +118,12 @@ export default function CreateScenePage() {
     setError('')
     setAiScene(null)
     try {
-      const scene = await generateScene(Number(worldId), aiPrompt)
+      let prompt = aiPrompt
+      if (afterScene) {
+        const continuation = `Continua despues de: "${afterScene.title}". ${afterScene.context || ''}\n\n`
+        prompt = continuation + prompt
+      }
+      const scene = await generateScene(Number(worldId), prompt)
       setAiScene(scene)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('scene.create.aiError'))
@@ -163,6 +184,21 @@ export default function CreateScenePage() {
 
               <TabsContent value="manual">
                 <WorldContextPanel worldId={Number(worldId)} />
+                {afterScene && (
+                  <div className="rounded-xl border border-entity-scene/30 bg-entity-scene-light/40 px-5 py-4 mb-6">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ArrowRight className="w-4 h-4 text-entity-scene" />
+                      <span className="text-sm font-semibold text-entity-scene">
+                        {t('scene.create.continuingAfter', { title: afterScene.title })}
+                      </span>
+                    </div>
+                    {afterScene.context && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {afterScene.context}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <form onSubmit={handleManualSubmit}>
                   <FieldGroup label={t('scene.create.titleLabel')}>
                     <Input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full" required placeholder={t('scene.create.titlePlaceholder')} />
@@ -197,6 +233,22 @@ export default function CreateScenePage() {
               <TabsContent value="ai">
                 <div>
                   <WorldContextPanel worldId={Number(worldId)} />
+
+                  {afterScene && (
+                    <div className="rounded-xl border border-entity-scene/30 bg-entity-scene-light/40 px-5 py-4 mb-6">
+                      <div className="flex items-center gap-2 mb-1">
+                        <ArrowRight className="w-4 h-4 text-entity-scene" />
+                        <span className="text-sm font-semibold text-entity-scene">
+                          {t('scene.create.continuingAfter', { title: afterScene.title })}
+                        </span>
+                      </div>
+                      {afterScene.context && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {afterScene.context}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Character roster */}
                   <div className="rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50/40 to-amber-50/20 px-5 py-4 mb-6">
