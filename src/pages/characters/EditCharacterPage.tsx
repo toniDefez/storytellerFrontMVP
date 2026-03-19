@@ -28,6 +28,12 @@ export default function EditCharacterPage() {
   const [personalityTags, setPersonalityTags] = useState<string[]>([])
   const [background, setBackground] = useState('')
   const [goals, setGoals] = useState<string[]>([''])
+  const [premise, setPremise] = useState('')
+  const [socialPosition, setSocialPosition] = useState('')
+  const [internalContradiction, setInternalContradiction] = useState('')
+  const [relationToCollectiveLie, setRelationToCollectiveLie] = useState('')
+  const [personalFear, setPersonalFear] = useState('')
+  const [factionAffiliation, setFactionAffiliation] = useState('')
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState('')
@@ -54,6 +60,12 @@ export default function EditCharacterPage() {
         setPersonalityTags(data.personality ? data.personality.split(',').map(s => s.trim()).filter(Boolean) : [])
         setBackground(data.background)
         setGoals(data.goals?.length ? data.goals : [''])
+        setPremise(data.premise ?? '')
+        setSocialPosition(data.social_position ?? '')
+        setInternalContradiction(data.internal_contradiction ?? '')
+        setRelationToCollectiveLie(data.relation_to_collective_lie ?? '')
+        setPersonalFear(data.personal_fear ?? '')
+        setFactionAffiliation(data.faction_affiliation ?? '')
         setCharName(data.name)
         setOriginalState(data.state || {})
         setOriginalWorldId(data.world_id)
@@ -71,6 +83,8 @@ export default function EditCharacterPage() {
   const personalityDesc: Record<string, string> = Object.fromEntries(
     PERSONALITY_VALUES.map(v => [v, t(`character.personalities.${v}Desc`)])
   )
+
+  const hasDerivation = !!(premise || socialPosition || internalContradiction || relationToCollectiveLie || personalFear || factionAffiliation)
 
   const handleGoalChange = (idx: number, value: string) => {
     setGoals(goals.map((g, i) => (i === idx ? value : g)))
@@ -95,6 +109,12 @@ export default function EditCharacterPage() {
         goals: goals.filter(g => g.trim()),
         world_id: originalWorldId || Number(worldId),
         state: originalState,
+        ...(premise && { premise }),
+        ...(socialPosition && { social_position: socialPosition }),
+        ...(internalContradiction && { internal_contradiction: internalContradiction }),
+        ...(relationToCollectiveLie && { relation_to_collective_lie: relationToCollectiveLie }),
+        ...(personalFear && { personal_fear: personalFear }),
+        ...(factionAffiliation && { faction_affiliation: factionAffiliation }),
       })
       toast.success(t('character.edit.successTitle'), { description: t('character.edit.successDesc') })
       navigate(`/worlds/${worldId}/characters/${characterId}`)
@@ -149,6 +169,38 @@ export default function EditCharacterPage() {
               <FieldGroup label={t('character.create.personalityLabel')} hint={t('character.create.personalityHint')}>
                 <MultiPillSelect options={personalityOptions} value={personalityTags} onChange={setPersonalityTags} descriptions={personalityDesc} />
               </FieldGroup>
+
+              {hasDerivation && (
+                <>
+                  <SectionDivider label={t('character.create.derivationSection')} />
+
+                  {premise && (
+                    <FieldGroup label={t('character.create.premiseLabel')}>
+                      <Textarea value={premise} readOnly className="min-h-[60px] resize-none italic opacity-80 cursor-default focus:ring-0" />
+                    </FieldGroup>
+                  )}
+
+                  <FieldGroup label={t('character.create.socialPositionLabel')}>
+                    <Input type="text" value={socialPosition} onChange={e => setSocialPosition(e.target.value)} className="w-full" />
+                  </FieldGroup>
+
+                  <FieldGroup label={t('character.create.internalContradictionLabel')}>
+                    <Textarea value={internalContradiction} onChange={e => setInternalContradiction(e.target.value)} className="min-h-[70px] resize-none" />
+                  </FieldGroup>
+
+                  <FieldGroup label={t('character.create.relationToCollectiveLieLabel')}>
+                    <Input type="text" value={relationToCollectiveLie} onChange={e => setRelationToCollectiveLie(e.target.value)} className="w-full" />
+                  </FieldGroup>
+
+                  <FieldGroup label={t('character.create.personalFearLabel')}>
+                    <Input type="text" value={personalFear} onChange={e => setPersonalFear(e.target.value)} className="w-full" />
+                  </FieldGroup>
+
+                  <FieldGroup label={t('character.create.factionAffiliationLabel')}>
+                    <Input type="text" value={factionAffiliation} onChange={e => setFactionAffiliation(e.target.value)} className="w-full" />
+                  </FieldGroup>
+                </>
+              )}
 
               <SectionDivider label={t('character.create.historySection')} />
 

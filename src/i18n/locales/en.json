@@ -211,6 +211,7 @@
       "relationToCollectiveLieLabel": "Relation to the collective lie",
       "personalFearLabel": "Personal fear",
       "factionAffiliationLabel": "Faction affiliation",
+      "derivationSection": "Derivation",
       "temperamentSection": "Temperament",
       "willSection": "Will",
       "worldContextTitle": "World context",
