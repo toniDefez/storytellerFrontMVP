@@ -86,6 +86,18 @@ export default function CharacterDetailPage() {
         onCancel={() => setShowConfirmDelete(false)}
       />
 
+      {/* Premise as hero quote */}
+      {character.premise && (
+        <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/60 border-l-4 border-amber-400 rounded-r-xl px-5 py-4 mb-6">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600/60 mb-1">
+            {t('character.detail.premiseSection')}
+          </p>
+          <p className="text-base text-foreground/80 italic font-[var(--font-display)] leading-relaxed">
+            &ldquo;{character.premise}&rdquo;
+          </p>
+        </div>
+      )}
+
       <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
@@ -134,6 +146,44 @@ export default function CharacterDetailPage() {
               </div>
             )}
           </div>
+
+          {/* New derivation fields — only shown when present */}
+          {character.social_position && (
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-2">{t('character.detail.socialPositionSection')}</h3>
+              <p className="text-gray-700 whitespace-pre-wrap">{character.social_position}</p>
+            </div>
+          )}
+
+          {character.internal_contradiction && (
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-2">{t('character.detail.internalContradictionSection')}</h3>
+              <p className="text-gray-700 whitespace-pre-wrap">{character.internal_contradiction}</p>
+            </div>
+          )}
+
+          {character.relation_to_collective_lie && (
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-2">{t('character.detail.relationToCollectiveLieSection')}</h3>
+              <p className="text-gray-700 whitespace-pre-wrap">{character.relation_to_collective_lie}</p>
+            </div>
+          )}
+
+          {character.personal_fear && (
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-2">{t('character.detail.personalFearSection')}</h3>
+              <p className="text-gray-700 whitespace-pre-wrap">{character.personal_fear}</p>
+            </div>
+          )}
+
+          {character.faction_affiliation && (
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-2">{t('character.detail.factionAffiliationSection')}</h3>
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                {character.faction_affiliation}
+              </Badge>
+            </div>
+          )}
 
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-2">{t('character.detail.backgroundSection')}</h3>

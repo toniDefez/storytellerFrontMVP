@@ -121,7 +121,15 @@
       "regenerateLayer": "Regenerate this layer",
       "staleWarning": "Context has changed. Consider regenerating.",
       "generatingLayer": "Generating layer...",
-      "layerProgress": "Layer {{current}} of {{total}}"
+      "layerProgress": "Layer {{current}} of {{total}}",
+      "presetTitle": "Starting point",
+      "physicalTitle": "Physical rules",
+      "bioPresetTitle": "Starting point",
+      "bioSectionTitle": "Biological traits",
+      "bioGenerateButton": "Generate biological layer",
+      "societyPresetTitle": "Starting point",
+      "societySectionTitle": "Social traits",
+      "societyGenerateButton": "Generate society layer"
     },
     "edit": {
       "title": "Edit world",
@@ -187,7 +195,27 @@
       "aiSaveButton": "Save this character",
       "aiPreviewPersonality": "Personality",
       "aiPreviewBackground": "Background",
-      "aiPreviewGoals": "Goals"
+      "aiPreviewGoals": "Goals",
+      "premiseLabel": "Dramatic premise",
+      "premisePlaceholder": "Describe the seed of your character...",
+      "premiseHint": "A sentence that captures the essence of the character you want to create",
+      "deriveButton": "Derive character",
+      "deriving": "Deriving...",
+      "socialPositionLabel": "Social position",
+      "internalContradictionLabel": "Internal contradiction",
+      "relationToCollectiveLieLabel": "Relation to the collective lie",
+      "personalFearLabel": "Personal fear",
+      "factionAffiliationLabel": "Faction affiliation",
+      "temperamentSection": "Temperament",
+      "willSection": "Will",
+      "worldContextTitle": "World context",
+      "worldContextCollapse": "Hide context",
+      "worldContextExpand": "Show context",
+      "pendingGeneration": "Pending generation",
+      "saveCharacter": "Save character",
+      "savingCharacter": "Saving character...",
+      "derivationTitle": "Derive character from world",
+      "derivationSubtitle": "A character that is a consequence of their world, not a decoration upon it."
     },
     "edit": {
       "title": "Edit character",
@@ -213,6 +241,12 @@
       "noGoals": "No goals defined.",
       "stateSection": "State",
       "noState": "No state recorded.",
+      "premiseSection": "Premise",
+      "socialPositionSection": "Social position",
+      "internalContradictionSection": "Internal contradiction",
+      "relationToCollectiveLieSection": "Relation to the collective lie",
+      "personalFearSection": "Personal fear",
+      "factionAffiliationSection": "Faction affiliation",
       "deleteTitle": "Delete this character?",
       "deleteMessage": "This will permanently delete \"{{name}}\". This action cannot be undone.",
       "deleteConfirm": "Delete character",
@@ -482,12 +516,79 @@
       "variable": { "label": "Capricious", "desc": "Changes by zone. Regions of floating stone next to crushing regions." },
       "low": { "label": "Low gravity", "desc": "Long jumps, slow falls. Creatures can be enormous." },
       "crushing": { "label": "Crushing gravity", "desc": "Moving is hard. Low, sturdy structures. The sky feels closer." }
+    },
+    "preset": {
+      "dying_light": { "name": "The Dying Light", "desc": "A fading sun over a world of ash" },
+      "floating_world": { "name": "The Floating World", "desc": "Luminous islands suspended in an endless sky" },
+      "deep_below": { "name": "The Depths Below", "desc": "Civilizations under the rock, lit by life itself" },
+      "endless_winter": { "name": "The Endless Winter", "desc": "Ice as far as the eye and memory can reach" }
     }
   },
-  "preset": {
-    "dying_light": { "name": "The Dying Light", "desc": "A fading sun over a world of ash" },
-    "floating_world": { "name": "The Floating World", "desc": "Luminous islands suspended in an endless sky" },
-    "deep_below": { "name": "The Depths Below", "desc": "Civilizations under the rock, lit by life itself" },
-    "endless_winter": { "name": "The Endless Winter", "desc": "Ice as far as the eye and memory can reach" }
+  "biological": {
+    "dominance": {
+      "label": "Ecological dominance",
+      "hint": "What kind of life rules here? What form dominated evolution?",
+      "megafauna": { "label": "Megafauna", "desc": "Enormous creatures. Architecture, routes, war: everything revolves around the giants." },
+      "swarm": { "label": "Swarms", "desc": "Nothing is large, but everything moves in mass. Intelligence is collective, not individual." },
+      "flora": { "label": "Dominant flora", "desc": "Plants rule. They grow, invade, devour. Animals survive in the gaps they leave." },
+      "fungal": { "label": "Fungal networks", "desc": "Fungi and mycelium connect everything. Information travels underground. Nothing dies without being recycled." },
+      "microscopic": { "label": "Microscopic world", "desc": "Visible life is rare or fragile. What truly matters can't be seen with the naked eye." }
+    },
+    "intelligence": {
+      "label": "Relationship with intelligence",
+      "hint": "Are there intelligent creatures besides the dominant species?",
+      "apex_solo": { "label": "Sole sapient species", "desc": "Only one species thinks. The rest are resources, threats, or scenery." },
+      "rival_species": { "label": "Rival species", "desc": "Two or more intelligences compete. Interspecies diplomacy, biological wars." },
+      "symbiotic": { "label": "Obligate symbiosis", "desc": "The dominant species cannot survive without another. They depend on each other." },
+      "hive_mind": { "label": "Hive mind", "desc": "Intelligence does not reside in individuals but in the network. Together, they understand." },
+      "uplifted": { "label": "Recently awakened", "desc": "Something gave them intelligence recently. Animal instincts versus new reason." }
+    },
+    "bio_resource": {
+      "label": "Key biological resource",
+      "hint": "What does life produce that everyone needs or desires?",
+      "living_material": { "label": "Living material", "desc": "Bone, silk, chitin, living wood. You build with what grows. To kill is to harvest." },
+      "secretion": { "label": "Secretions", "desc": "Venom, honey, resin, ink. Something only one organism produces and everyone needs." },
+      "spores": { "label": "Spores", "desc": "They travel with the wind, alter the mind, heal or sicken. Whoever controls the spores controls health." },
+      "bio_light": { "label": "Biological light", "desc": "In a dark world, what shines is worth gold. Lantern-creatures, luminous algae farms." },
+      "symbiont_access": { "label": "Symbiont access", "desc": "Connecting to another creature grants power, knowledge, or health. Not everyone has access." }
+    },
+    "preset": {
+      "primordial_jungle": { "name": "The Primordial Jungle", "desc": "Devouring flora, megafauna, and materials that grow from the bones of the dead" },
+      "the_network": { "name": "The Network", "desc": "Fungi connecting everything underground, a distributed mind no one controls" },
+      "beast_and_rider": { "name": "Beast and Rider", "desc": "Domesticated giants, forced symbiosis, civilization atop something it doesn't understand" }
+    }
+  },
+  "society_layer": {
+    "power_source": {
+      "label": "Source of power",
+      "hint": "What grants power in this society? Who has it, who doesn't?",
+      "resource_control": { "label": "Resource control", "desc": "Whoever controls the scarce, commands. Water oligarchies, spore cartels, light monopolies." },
+      "knowledge": { "label": "Knowledge", "desc": "Knowledge is power. Scribes, scientists, oracles. Information is hoarded, sold." },
+      "lineage": { "label": "Blood and lineage", "desc": "Power is inherited. Noble houses, biological castes, genetic lines with real abilities." },
+      "combat": { "label": "Strength and combat", "desc": "Whoever can kill, rules. Arenas, ritual duels, martial meritocracy." },
+      "spiritual": { "label": "Spiritual connection", "desc": "Access to something others cannot perceive. Seers, shamans, mediators with the non-human." }
+    },
+    "core_tension": {
+      "label": "Core tension",
+      "hint": "What is the fracture that divides society?",
+      "haves_vs_have_nots": { "label": "Inequality", "desc": "Some have, others don't. The conflict is vertical: top against bottom." },
+      "tradition_vs_change": { "label": "Tradition vs. change", "desc": "Old methods work but limit. New ones promise but risk everything." },
+      "isolation_vs_expansion": { "label": "Isolation vs. expansion", "desc": "Stay safe or explore the unknown. Each option has a cost." },
+      "species_tension": { "label": "Interspecies tension", "desc": "Coexistence is not easy. Rights, territories, who is \"person\" and who is not." },
+      "memory_vs_forgetting": { "label": "Memory vs. forgetting", "desc": "Something from the past matters. Some want to remember, others want to bury it." }
+    },
+    "social_scale": {
+      "label": "Social scale",
+      "hint": "How large is the civilization?",
+      "scattered_bands": { "label": "Scattered bands", "desc": "Small groups, no state. Survival is local, alliances fragile." },
+      "city_states": { "label": "City-states", "desc": "Isolated power centers. Each city is a world. Trade and war connect." },
+      "empire": { "label": "Empire", "desc": "A massive structure trying to control everything. Bureaucracy, resistance at the margins." },
+      "nomadic": { "label": "Nomadic civilization", "desc": "Nobody stays. Routes are the structure. Meeting points are temporary capitals." }
+    },
+    "preset": {
+      "feudal_resource": { "name": "Resource Feudalism", "desc": "Noble houses controlling the scarce, fortress-cities, vassals and rebels" },
+      "nomad_sages": { "name": "The Wandering Sages", "desc": "Oral knowledge, caravans of scholars, power in what you know" },
+      "fractured_coexistence": { "name": "Fractured Coexistence", "desc": "Multiple species attempting coexistence, laws nobody fully respects" }
+    }
   }
 }

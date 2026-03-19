@@ -121,7 +121,15 @@
       "regenerateLayer": "Regenerar esta capa",
       "staleWarning": "El contexto ha cambiado. Considera regenerar.",
       "generatingLayer": "Generando capa...",
-      "layerProgress": "Capa {{current}} de {{total}}"
+      "layerProgress": "Capa {{current}} de {{total}}",
+      "presetTitle": "Punto de partida",
+      "physicalTitle": "Las reglas fisicas",
+      "bioPresetTitle": "Punto de partida",
+      "bioSectionTitle": "Rasgos biologicos",
+      "bioGenerateButton": "Generar capa biologica",
+      "societyPresetTitle": "Punto de partida",
+      "societySectionTitle": "Rasgos sociales",
+      "societyGenerateButton": "Generar capa social"
     },
     "edit": {
       "title": "Editar mundo",
@@ -187,7 +195,27 @@
       "aiSaveButton": "Guardar este personaje",
       "aiPreviewPersonality": "Personalidad",
       "aiPreviewBackground": "Trasfondo",
-      "aiPreviewGoals": "Objetivos"
+      "aiPreviewGoals": "Objetivos",
+      "premiseLabel": "Premisa dramatica",
+      "premisePlaceholder": "Describe la semilla de tu personaje...",
+      "premiseHint": "Una frase que capture la esencia del personaje que quieres crear",
+      "deriveButton": "Derivar personaje",
+      "deriving": "Derivando...",
+      "socialPositionLabel": "Posicion social",
+      "internalContradictionLabel": "Contradiccion interna",
+      "relationToCollectiveLieLabel": "Relacion con la mentira colectiva",
+      "personalFearLabel": "Miedo personal",
+      "factionAffiliationLabel": "Afiliacion de faccion",
+      "temperamentSection": "Temperamento",
+      "willSection": "Voluntad",
+      "worldContextTitle": "Contexto del mundo",
+      "worldContextCollapse": "Ocultar contexto",
+      "worldContextExpand": "Mostrar contexto",
+      "pendingGeneration": "Pendiente de generacion",
+      "saveCharacter": "Guardar personaje",
+      "savingCharacter": "Guardando personaje...",
+      "derivationTitle": "Derivar personaje del mundo",
+      "derivationSubtitle": "Un personaje que sea consecuencia de su mundo, no una decoracion sobre el."
     },
     "edit": {
       "title": "Editar personaje",
@@ -213,6 +241,12 @@
       "noGoals": "No hay objetivos definidos.",
       "stateSection": "Estado",
       "noState": "Sin estado registrado.",
+      "premiseSection": "Premisa",
+      "socialPositionSection": "Posicion social",
+      "internalContradictionSection": "Contradiccion interna",
+      "relationToCollectiveLieSection": "Relacion con la mentira colectiva",
+      "personalFearSection": "Miedo personal",
+      "factionAffiliationSection": "Afiliacion de faccion",
       "deleteTitle": "¿Borrar este personaje?",
       "deleteMessage": "Esto eliminará \"{{name}}\" de forma permanente. Esta acción no se puede deshacer.",
       "deleteConfirm": "Borrar personaje",
@@ -482,12 +516,79 @@
       "variable": { "label": "Caprichosa", "desc": "Cambia segun la zona. Regiones de piedra flotante junto a regiones aplastantes." },
       "low": { "label": "Peso ligero", "desc": "Saltos largos, caidas lentas. Las criaturas pueden ser enormes." },
       "crushing": { "label": "Peso aplastante", "desc": "Moverse cuesta. Estructuras bajas y robustas. El cielo se siente mas cerca." }
+    },
+    "preset": {
+      "dying_light": { "name": "La Luz Moribunda", "desc": "Un sol que se apaga sobre un mundo de ceniza" },
+      "floating_world": { "name": "El Mundo Flotante", "desc": "Islas luminosas suspendidas en un cielo sin fin" },
+      "deep_below": { "name": "Las Profundidades", "desc": "Civilizaciones bajo la roca, iluminadas por la vida misma" },
+      "endless_winter": { "name": "El Invierno Eterno", "desc": "Hielo hasta donde alcanza la vista y el recuerdo" }
     }
   },
-  "preset": {
-    "dying_light": { "name": "La Luz Moribunda", "desc": "Un sol que se apaga sobre un mundo de ceniza" },
-    "floating_world": { "name": "El Mundo Flotante", "desc": "Islas luminosas suspendidas en un cielo sin fin" },
-    "deep_below": { "name": "Las Profundidades", "desc": "Civilizaciones bajo la roca, iluminadas por la vida misma" },
-    "endless_winter": { "name": "El Invierno Eterno", "desc": "Hielo hasta donde alcanza la vista y el recuerdo" }
+  "biological": {
+    "dominance": {
+      "label": "Dominancia ecologica",
+      "hint": "Que tipo de vida manda aqui? Que forma domino la evolucion?",
+      "megafauna": { "label": "Megafauna", "desc": "Criaturas enormes. La arquitectura, las rutas, la guerra: todo gira en torno a los gigantes." },
+      "swarm": { "label": "Enjambres", "desc": "Nada es grande, pero todo se mueve en masa. La inteligencia es colectiva, no individual." },
+      "flora": { "label": "Flora dominante", "desc": "Las plantas mandan. Crecen, invaden, devoran. Los animales sobreviven en los huecos que dejan." },
+      "fungal": { "label": "Redes fungicas", "desc": "Hongos y micelios conectan todo. La informacion viaja bajo tierra. Nada muere sin ser reciclado." },
+      "microscopic": { "label": "Mundo microscopico", "desc": "La vida visible es rara o fragil. Lo que realmente importa no se ve a simple vista." }
+    },
+    "intelligence": {
+      "label": "Relacion con la inteligencia",
+      "hint": "Hay criaturas inteligentes ademas de la especie dominante?",
+      "apex_solo": { "label": "Unica especie sapiente", "desc": "Solo una especie piensa. Las demas son recursos, amenazas o paisaje." },
+      "rival_species": { "label": "Especies rivales", "desc": "Dos o mas inteligencias compiten. Diplomacia interespecies, guerras biologicas." },
+      "symbiotic": { "label": "Simbiosis obligada", "desc": "La especie dominante no puede sobrevivir sin otra. Dependen mutuamente." },
+      "hive_mind": { "label": "Mente colmena", "desc": "La inteligencia no reside en individuos sino en la red. Juntos, comprenden." },
+      "uplifted": { "label": "Despertar reciente", "desc": "Algo les dio inteligencia hace poco. Instintos animales contra razon nueva." }
+    },
+    "bio_resource": {
+      "label": "Recurso biologico clave",
+      "hint": "Que produce la vida que todos necesitan o desean?",
+      "living_material": { "label": "Material vivo", "desc": "Hueso, seda, quitina, madera viva. Se construye con lo que crece. Matar es cosechar." },
+      "secretion": { "label": "Secreciones", "desc": "Veneno, miel, resina, tinta. Algo que solo un organismo produce y todos necesitan." },
+      "spores": { "label": "Esporas", "desc": "Viajan con el viento, alteran la mente, curan o enferman. Quien controla las esporas controla la salud." },
+      "bio_light": { "label": "Luz biologica", "desc": "En un mundo oscuro, lo que brilla vale oro. Criaturas-farol, granjas de algas luminosas." },
+      "symbiont_access": { "label": "Acceso al simbionte", "desc": "Conectarse a otra criatura da poder, conocimiento o salud. No todos tienen acceso." }
+    },
+    "preset": {
+      "primordial_jungle": { "name": "La Jungla Primordial", "desc": "Flora devoradora, megafauna, y materiales que crecen en los huesos de lo que muere" },
+      "the_network": { "name": "La Red", "desc": "Hongos que conectan todo bajo tierra, una mente distribuida que nadie controla" },
+      "beast_and_rider": { "name": "Bestia y Jinete", "desc": "Gigantes domesticados, simbiosis forzada, civilizacion sobre algo que no comprende" }
+    }
+  },
+  "society_layer": {
+    "power_source": {
+      "label": "Fuente de poder",
+      "hint": "Que da poder en esta sociedad? Quien lo tiene, quien no?",
+      "resource_control": { "label": "Control del recurso", "desc": "Quien controla lo escaso, manda. Oligarquias del agua, carteles de esporas, monopolios de luz." },
+      "knowledge": { "label": "Conocimiento", "desc": "Saber es poder. Escribas, cientificos, oraculos. La informacion se guarda, se vende." },
+      "lineage": { "label": "Sangre y linaje", "desc": "El poder se hereda. Casas nobles, castas biologicas, lineas geneticas con habilidades reales." },
+      "combat": { "label": "Fuerza y combate", "desc": "Quien puede matar, gobierna. Arenas, duelos rituales, meritocracia marcial." },
+      "spiritual": { "label": "Conexion espiritual", "desc": "Acceso a algo que otros no perciben. Videntes, chamanes, mediadores con lo no-humano." }
+    },
+    "core_tension": {
+      "label": "Tension central",
+      "hint": "Cual es la fractura que divide a la sociedad?",
+      "haves_vs_have_nots": { "label": "Desigualdad", "desc": "Unos tienen, otros no. El conflicto es vertical: arriba contra abajo." },
+      "tradition_vs_change": { "label": "Tradicion contra cambio", "desc": "Los viejos metodos funcionan pero limitan. Los nuevos prometen pero arriesgan todo." },
+      "isolation_vs_expansion": { "label": "Aislamiento contra expansion", "desc": "Quedarse seguros o explorar lo desconocido. Cada opcion tiene un precio." },
+      "species_tension": { "label": "Tension entre especies", "desc": "La coexistencia no es facil. Derechos, territorios, quien es \"persona\" y quien no." },
+      "memory_vs_forgetting": { "label": "Memoria contra olvido", "desc": "Algo del pasado importa. Unos quieren recordar, otros quieren enterrarlo." }
+    },
+    "social_scale": {
+      "label": "Escala social",
+      "hint": "Como de grande es la civilizacion?",
+      "scattered_bands": { "label": "Bandas dispersas", "desc": "Grupos pequenos, sin Estado. La supervivencia es local, las alianzas fragiles." },
+      "city_states": { "label": "Ciudades-estado", "desc": "Nucleos de poder aislados. Cada ciudad es un mundo. El comercio y la guerra conectan." },
+      "empire": { "label": "Imperio", "desc": "Una estructura enorme que intenta controlarlo todo. Burocracia, resistencia en los margenes." },
+      "nomadic": { "label": "Civilizacion nomada", "desc": "Nadie se queda. Las rutas son la estructura. Los puntos de encuentro son capitales temporales." }
+    },
+    "preset": {
+      "feudal_resource": { "name": "Feudalismo del recurso", "desc": "Casas nobles que controlan lo escaso, ciudades-fortaleza, vasallos y rebeldes" },
+      "nomad_sages": { "name": "Los Sabios Errantes", "desc": "Conocimiento oral, caravanas de eruditos, poder en lo que sabes" },
+      "fractured_coexistence": { "name": "La Coexistencia Rota", "desc": "Multiples especies intentando convivir, leyes que nadie respeta del todo" }
+    }
   }
 }

@@ -149,7 +149,7 @@ export function DerivationProgress({ layers, statuses, revealedLayers, activeLay
               {/* Tooltip con nombre de capa */}
               <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 text-[10px] font-medium
                              text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100
-                             transition-opacity pointer-events-none">
+                             transition-opacity pointer-events-none max-w-[120px] truncate">
                 {meta.label}
               </span>
             </button>

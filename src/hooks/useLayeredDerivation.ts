@@ -34,10 +34,12 @@ export const LAYER_DISPLAY: Record<WorldLayerType, { icon: string; label: string
 export interface DerivationState {
   coreAxis: string
   physicalSelections: PhysicalSelections
+  biologicalSelections: PhysicalSelections
+  societySelections: PhysicalSelections
   currentStep: number  // 0-3 index into GENERATION_LAYERS
   layers: Record<WorldLayerType, LayerState>
   error: string | null
-  phase: 'input' | 'generating' | 'reviewing' | 'saving'
+  phase: 'input' | 'generating' | 'reviewing' | 'bio-input' | 'society-input' | 'saving'
 }
 
 function makeEmptyLayer(): LayerState {
@@ -56,6 +58,8 @@ function makeInitialLayers(): Record<WorldLayerType, LayerState> {
 const initialState: DerivationState = {
   coreAxis: '',
   physicalSelections: {},
+  biologicalSelections: {},
+  societySelections: {},
   currentStep: 0,
   layers: makeInitialLayers(),
   error: null,
@@ -69,6 +73,8 @@ const initialState: DerivationState = {
 type Action =
   | { type: 'SET_CORE_AXIS'; coreAxis: string }
   | { type: 'SET_PHYSICAL_SELECTIONS'; selections: PhysicalSelections }
+  | { type: 'SET_BIOLOGICAL_SELECTIONS'; selections: PhysicalSelections }
+  | { type: 'SET_SOCIETY_SELECTIONS'; selections: PhysicalSelections }
   | { type: 'START_LAYER'; layer: WorldLayerType }
   | { type: 'LAYER_COMPLETE'; layer: WorldLayerType; result: DeriveLayerResult }
   | { type: 'LAYER_ERROR'; layer: WorldLayerType; error: string }
@@ -91,6 +97,12 @@ function reducer(state: DerivationState, action: Action): DerivationState {
 
     case 'SET_PHYSICAL_SELECTIONS':
       return { ...state, physicalSelections: action.selections }
+
+    case 'SET_BIOLOGICAL_SELECTIONS':
+      return { ...state, biologicalSelections: action.selections }
+
+    case 'SET_SOCIETY_SELECTIONS':
+      return { ...state, societySelections: action.selections }
 
     case 'START_LAYER':
       return {
@@ -139,14 +151,25 @@ function reducer(state: DerivationState, action: Action): DerivationState {
       }
     }
 
-    case 'ACCEPT_LAYER':
+    case 'ACCEPT_LAYER': {
+      // Determine if we should transition to an interstitial input phase
+      let nextPhase: DerivationState['phase'] = state.phase
+      if (action.layer === 'physical') {
+        nextPhase = 'bio-input'
+      } else if (action.layer === 'biological') {
+        nextPhase = 'society-input'
+      }
+      // society accepted → stays in reviewing, auto-generate synthesis handled by page effect
+
       return {
         ...state,
+        phase: nextPhase,
         layers: {
           ...state.layers,
           [action.layer]: { ...state.layers[action.layer], status: 'accepted' },
         },
       }
+    }
 
     case 'REJECT_LAYER':
       return {
@@ -233,16 +256,30 @@ export function useLayeredDerivation() {
     return result
   }, [state.layers, getAcceptedContent])
 
+  // Get the appropriate selections for a given layer
+  const getLayerSelections = useCallback(
+    (layer: WorldLayerType): PhysicalSelections => {
+      switch (layer) {
+        case 'physical': return state.physicalSelections
+        case 'biological': return state.biologicalSelections
+        case 'society': return state.societySelections
+        default: return {}
+      }
+    },
+    [state.physicalSelections, state.biologicalSelections, state.societySelections],
+  )
+
   // Generate a specific layer
   const generateLayer = useCallback(
     async (layer: WorldLayerType) => {
       dispatch({ type: 'START_LAYER', layer })
       try {
+        const layerSelections = getLayerSelections(layer)
         const result = await deriveWorldLayer(
           state.coreAxis,
           layer,
           buildPreviousLayers(),
-          state.physicalSelections,
+          layerSelections,
         )
         dispatch({ type: 'LAYER_COMPLETE', layer, result })
       } catch (err) {
@@ -253,7 +290,7 @@ export function useLayeredDerivation() {
         })
       }
     },
-    [state.coreAxis, state.physicalSelections, buildPreviousLayers],
+    [state.coreAxis, getLayerSelections, buildPreviousLayers],
   )
 
   // Generate the next pending layer
@@ -312,6 +349,16 @@ export function useLayeredDerivation() {
     [],
   )
 
+  const setBiologicalSelections = useCallback(
+    (selections: PhysicalSelections) => dispatch({ type: 'SET_BIOLOGICAL_SELECTIONS', selections }),
+    [],
+  )
+
+  const setSocietySelections = useCallback(
+    (selections: PhysicalSelections) => dispatch({ type: 'SET_SOCIETY_SELECTIONS', selections }),
+    [],
+  )
+
   // Computed properties
   const allLayersDecided = GENERATION_LAYERS.every(
     l => ['accepted', 'rejected'].includes(state.layers[l].status),
@@ -328,6 +375,8 @@ export function useLayeredDerivation() {
     state,
     setCoreAxis,
     setPhysicalSelections,
+    setBiologicalSelections,
+    setSocietySelections,
     startDerivation,
     generateNextLayer,
     acceptLayer,

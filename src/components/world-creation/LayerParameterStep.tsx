@@ -5,44 +5,39 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { CategoryGroup } from './CategoryGroup'
 import { WorldRichnessIndicator } from './WorldRichnessIndicator'
-import {
-  PHYSICAL_CATEGORIES,
-  WORLD_PRESETS,
-  computeResonance,
-  type PhysicalSelections,
-  type WorldPreset,
+import type {
+  PhysicalCategory,
+  PhysicalSelections,
+  WorldPreset,
 } from '@/constants/physicalParameters'
 
-interface PhysicalParameterStepProps {
-  coreAxis: string
+interface LayerParameterStepProps {
+  categories: PhysicalCategory[]
+  presets: WorldPreset[]
   selections: PhysicalSelections
   onSelectionsChange: (selections: PhysicalSelections) => void
-  onDerive: () => void
+  onGenerate: () => void
   disabled?: boolean
+  sectionTitle: string       // i18n key for category section title
+  presetTitle: string        // i18n key for preset section title
+  generateLabel: string      // i18n key for generate button
 }
 
-export function PhysicalParameterStep({
-  coreAxis,
+export function LayerParameterStep({
+  categories,
+  presets,
   selections,
   onSelectionsChange,
-  onDerive,
+  onGenerate,
   disabled = false,
-}: PhysicalParameterStepProps) {
+  sectionTitle,
+  presetTitle,
+  generateLabel,
+}: LayerParameterStepProps) {
   const { t } = useTranslation()
   const [aiSuggested, setAiSuggested] = useState<Set<string>>(new Set())
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
-
-  const resonance = useMemo(() => computeResonance(coreAxis), [coreAxis])
-
-  const getResonantForCategory = (categoryKey: string) => {
-    const values = new Set<string>()
-    for (const key of resonance) {
-      const [cat, val] = key.split(':')
-      if (cat === categoryKey) values.add(val)
-    }
-    return values
-  }
 
   const [activePresetKey, setActivePresetKey] = useState<string | null>(null)
   const [hoveredPreset, setHoveredPreset] = useState<string | null>(null)
@@ -52,7 +47,7 @@ export function PhysicalParameterStep({
       // Toggle off: clear only the keys this preset set
       const cleared: PhysicalSelections = { ...selections }
       for (const key of Object.keys(preset.selections)) {
-        const cat = PHYSICAL_CATEGORIES.find(c => c.key === key)
+        const cat = categories.find(c => c.key === key)
         cleared[key] = cat?.multiSelect ? [] : ''
       }
       setActivePresetKey(null)
@@ -77,7 +72,7 @@ export function PhysicalParameterStep({
     setActivePresetKey(null)
     const newSelections = { ...selections }
     const newAiSuggested = new Set<string>()
-    for (const cat of PHYSICAL_CATEGORIES) {
+    for (const cat of categories) {
       const currentVal = selections[cat.key]
       const isEmpty = cat.multiSelect
         ? !(currentVal as string[])?.length
@@ -92,34 +87,24 @@ export function PhysicalParameterStep({
     onSelectionsChange(newSelections)
   }
 
-  const selectedCount = PHYSICAL_CATEGORIES.filter(cat => {
-    const val = selections[cat.key]
-    return cat.multiSelect ? (val as string[])?.length > 0 : !!val
-  }).length
-
-  const deriveLabel = selectedCount === 0
-    ? t('world.create.deriveButtonEmpty')
-    : t('world.create.deriveButtonFilled')
+  const selectedCount = useMemo(
+    () =>
+      categories.filter(cat => {
+        const val = selections[cat.key]
+        return cat.multiSelect ? (val as string[])?.length > 0 : !!val
+      }).length,
+    [categories, selections],
+  )
 
   return (
     <div className="space-y-8">
-      {/* Core axis reminder */}
-      <div className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm rounded-lg px-4 py-3 border border-border/50 lg:static">
-        <p className="text-xs text-muted-foreground/70 font-medium uppercase tracking-widest mb-1">
-          {t('world.create.coreAxisLabel')}
-        </p>
-        <p className="text-sm font-serif text-foreground/80 italic leading-relaxed">
-          {coreAxis}
-        </p>
-      </div>
-
       {/* Presets section */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-          {t('world.create.presetTitle')}
+          {t(presetTitle)}
         </p>
         <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
-          {WORLD_PRESETS.map(preset => {
+          {presets.map(preset => {
             const active = activePresetKey === preset.key
             return (
               <motion.button
@@ -160,26 +145,26 @@ export function PhysicalParameterStep({
               className="overflow-hidden"
             >
               <p className="mt-2 text-xs text-muted-foreground/70 italic pl-1">
-                {t(WORLD_PRESETS.find(p => p.key === (hoveredPreset ?? activePresetKey))?.descriptionKey ?? '')}
+                {t(presets.find(p => p.key === (hoveredPreset ?? activePresetKey))?.descriptionKey ?? '')}
               </p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Physical categories */}
+      {/* Categories */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-          {t('world.create.physicalTitle')}
+          {t(sectionTitle)}
         </p>
         <div className="space-y-1.5">
-          {PHYSICAL_CATEGORIES.map((cat, i) => (
+          {categories.map((cat, i) => (
             <CategoryGroup
               key={cat.key}
               category={cat}
               value={selections[cat.key] ?? (cat.multiSelect ? [] : '')}
               onChange={(val) => handleCategoryChange(cat.key, val)}
-              resonantValues={getResonantForCategory(cat.key)}
+              resonantValues={new Set<string>()}
               aiPickedValues={aiSuggested}
               defaultExpanded={i === 0 || isDesktop}
             />
@@ -193,7 +178,7 @@ export function PhysicalParameterStep({
           variant="outline"
           size="sm"
           onClick={handleSurpriseMe}
-          disabled={disabled || selectedCount === PHYSICAL_CATEGORIES.length}
+          disabled={disabled || selectedCount === categories.length}
           className="gap-2"
         >
           <Shuffle className="w-3.5 h-3.5" />
@@ -205,11 +190,11 @@ export function PhysicalParameterStep({
       <div className="flex justify-center">
         <WorldRichnessIndicator
           selectedCount={selectedCount}
-          totalCategories={PHYSICAL_CATEGORIES.length}
+          totalCategories={categories.length}
         />
       </div>
 
-      {/* Derive button */}
+      {/* Generate button */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -217,12 +202,12 @@ export function PhysicalParameterStep({
       >
         <Button
           size="lg"
-          onClick={onDerive}
+          onClick={onGenerate}
           disabled={disabled}
           className="w-full gap-2 font-serif text-base"
         >
           <Sparkles className="w-4 h-4" />
-          {deriveLabel}
+          {t(generateLabel)}
         </Button>
       </motion.div>
     </div>

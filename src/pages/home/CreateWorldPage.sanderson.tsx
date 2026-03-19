@@ -11,6 +11,7 @@ import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { useInstallation } from '@/hooks/useInstallation'
 import NoInstallationBanner from '@/components/NoInstallationBanner'
 import { PhysicalParameterStep } from '@/components/world-creation/PhysicalParameterStep'
+import { LayerParameterStep } from '@/components/world-creation/LayerParameterStep'
 import { DerivationLayer } from '@/components/world-creation/DerivationLayer'
 import { DerivationProgress } from '@/components/world-creation/DerivationProgress'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
@@ -19,6 +20,8 @@ import {
   GENERATION_LAYERS,
   LAYER_DISPLAY,
 } from '@/hooks/useLayeredDerivation'
+import { BIOLOGICAL_CATEGORIES, BIOLOGICAL_PRESETS } from '@/constants/biologicalParameters'
+import { SOCIETY_CATEGORIES, SOCIETY_PRESETS } from '@/constants/societyParameters'
 import { createWorld } from '@/services/api'
 import type { WorldLayerType } from '@/services/api'
 import type { ExtendedChipStatus } from '@/components/world-creation/DerivationLayer'
@@ -40,6 +43,8 @@ export default function CreateWorldPage() {
     state,
     setCoreAxis,
     setPhysicalSelections,
+    setBiologicalSelections,
+    setSocietySelections,
     startDerivation,
     generateNextLayer,
     acceptLayer,
@@ -85,6 +90,14 @@ export default function CreateWorldPage() {
     await startDerivation()
   }
 
+  const handleGenerateBiological = async () => {
+    await generateNextLayer()
+  }
+
+  const handleGenerateSociety = async () => {
+    await generateNextLayer()
+  }
+
   const handleScrollToLayer = (layer: string) => {
     layerRefs.current[layer]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
@@ -117,6 +130,7 @@ export default function CreateWorldPage() {
   /* ---- Derived values ---- */
 
   const showLayers = state.phase === 'reviewing' || state.phase === 'generating'
+    || state.phase === 'bio-input' || state.phase === 'society-input'
   const error = state.error || saveError
 
   const layerStatuses: Record<string, ExtendedChipStatus> = {}
@@ -338,12 +352,62 @@ export default function CreateWorldPage() {
                       })}
                     </div>
 
+                    {/* Biological interstitial input step */}
+                    <AnimatePresence mode="wait">
+                      {state.phase === 'bio-input' && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="mt-8"
+                        >
+                          <LayerParameterStep
+                            categories={BIOLOGICAL_CATEGORIES}
+                            presets={BIOLOGICAL_PRESETS}
+                            selections={state.biologicalSelections}
+                            onSelectionsChange={setBiologicalSelections}
+                            onGenerate={handleGenerateBiological}
+                            disabled={!hasInstallation}
+                            sectionTitle="world.create.bioSectionTitle"
+                            presetTitle="world.create.bioPresetTitle"
+                            generateLabel="world.create.bioGenerateButton"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Society interstitial input step */}
+                    <AnimatePresence mode="wait">
+                      {state.phase === 'society-input' && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="mt-8"
+                        >
+                          <LayerParameterStep
+                            categories={SOCIETY_CATEGORIES}
+                            presets={SOCIETY_PRESETS}
+                            selections={state.societySelections}
+                            onSelectionsChange={setSocietySelections}
+                            onGenerate={handleGenerateSociety}
+                            disabled={!hasInstallation}
+                            sectionTitle="world.create.societySectionTitle"
+                            presetTitle="world.create.societyPresetTitle"
+                            generateLabel="world.create.societyGenerateButton"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     {/* Actions */}
                     <div className="mt-8 space-y-3">
 
-                      {/* Generate next layer button */}
+                      {/* Generate next layer button (hidden during interstitial input phases) */}
                       <AnimatePresence>
-                        {canGenerateNext && !isGenerating && state.currentStep > 0 && state.currentStep < GENERATION_LAYERS.length && !hasPendingOrReady && (
+                        {canGenerateNext && !isGenerating && state.currentStep > 0 && state.currentStep < GENERATION_LAYERS.length && !hasPendingOrReady && state.phase !== 'bio-input' && state.phase !== 'society-input' && (
                           <motion.div
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}

@@ -132,51 +132,86 @@ export function SuggestionChip({ text, status, onAccept, onReject, onEdit }: Sug
           </AnimatePresence>
 
           {/* Texto de la sugerencia */}
-          <p className="pr-20 font-[var(--font-body)]">{text}</p>
+          <p className="font-[var(--font-body)]">{text}</p>
 
-          {/* Acciones (visibles en hover para pending, siempre visibles para accepted con opacidad baja) */}
-          <div
-            className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity duration-150 ${
-              status === 'pending'
-                ? 'opacity-0 group-hover:opacity-100'
-                : 'opacity-40 group-hover:opacity-100'
-            }`}
-          >
-            {status === 'pending' && (
+          {/* Actions bar: always visible when pending, subtle when accepted */}
+          {status === 'pending' ? (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.2 }}
+              className="flex items-center gap-2 mt-3 pt-3 border-t border-primary/10"
+            >
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={onAccept}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                           bg-primary/10 hover:bg-primary/20 text-primary
+                           text-xs font-semibold transition-colors"
+                aria-label="Aceptar sugerencia"
+              >
+                <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                Aceptar
+              </motion.button>
+
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleStartEdit}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                           bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground
+                           text-xs font-medium transition-colors"
+                aria-label="Editar sugerencia"
+              >
+                <Pencil className="w-3 h-3" />
+                Editar
+              </motion.button>
+
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={onReject}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                           bg-muted hover:bg-destructive/10 text-muted-foreground hover:text-destructive
+                           text-xs font-medium transition-colors"
+                aria-label="Rechazar sugerencia"
+              >
+                <X className="w-3 h-3" />
+                Descartar
+              </motion.button>
+            </motion.div>
+          ) : (
+            <div
+              className="flex items-center gap-1 justify-end mt-2
+                         opacity-50 group-hover:opacity-100 transition-opacity duration-150"
+            >
               <motion.button
                 type="button"
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={onAccept}
-                className="w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors"
-                aria-label="Aceptar sugerencia"
+                onClick={handleStartEdit}
+                className="w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Editar sugerencia"
               >
-                <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                <Pencil className="w-3 h-3" />
               </motion.button>
-            )}
 
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.15 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleStartEdit}
-              className="w-7 h-7 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Editar sugerencia"
-            >
-              <Pencil className="w-3 h-3" />
-            </motion.button>
-
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.15 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={onReject}
-              className="w-7 h-7 rounded-lg bg-muted hover:bg-destructive/10 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-              aria-label="Rechazar sugerencia"
-            >
-              <X className="w-3 h-3" />
-            </motion.button>
-          </div>
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onReject}
+                className="w-7 h-7 rounded-lg bg-muted hover:bg-destructive/10 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                aria-label="Rechazar sugerencia"
+              >
+                <X className="w-3 h-3" />
+              </motion.button>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

@@ -92,7 +92,7 @@ export function deriveWorldLayer(
   coreAxis: string,
   layer: WorldLayerType,
   previousLayers: Partial<Record<WorldLayerType, string>>,
-  physicalParameters?: Record<string, string | string[]>,
+  layerParameters?: Record<string, string | string[]>,
 ) {
   return request<DeriveLayerResult>('/world/derive-layer', {
     method: 'POST',
@@ -100,7 +100,8 @@ export function deriveWorldLayer(
       core_axis: coreAxis,
       layer,
       previous_layers: previousLayers,
-      physical_parameters: physicalParameters,
+      physical_parameters: layerParameters,  // backward compat for physical layer
+      layer_parameters: layerParameters,     // generic field for all layers
     }),
   })
 }
@@ -129,6 +130,13 @@ export interface Character {
   goals: string[]
   world_id: number
   state: Record<string, string>
+  // New derivation fields (optional — backend may not have them yet)
+  premise?: string
+  social_position?: string
+  internal_contradiction?: string
+  relation_to_collective_lie?: string
+  personal_fear?: string
+  faction_affiliation?: string
 }
 
 export interface Scene {
