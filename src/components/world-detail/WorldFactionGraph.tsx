@@ -116,15 +116,7 @@ export function WorldFactionGraph({ factions = [], structuredFactions, factionRe
 
   const hasStructured = !!(structuredFactions && structuredFactions.length > 0)
 
-  if (nodes.length === 0) return null
-
-  const ringLabels = [
-    t('world.visualization.elite'),
-    t('world.visualization.middle'),
-    t('world.visualization.marginal'),
-  ]
-
-  // Build edges from factionRelations
+  // Build edges from factionRelations (must be before early return)
   const edges = useMemo(() => {
     if (!factionRelations || !hasStructured) return []
     return factionRelations.map(rel => {
@@ -134,6 +126,14 @@ export function WorldFactionGraph({ factions = [], structuredFactions, factionRe
       return { ...rel, srcX: src.x, srcY: src.y, tgtX: tgt.x, tgtY: tgt.y }
     }).filter(Boolean) as (FactionRelation & { srcX: number; srcY: number; tgtX: number; tgtY: number })[]
   }, [factionRelations, nodes, hasStructured])
+
+  if (nodes.length === 0) return null
+
+  const ringLabels = [
+    t('world.visualization.elite'),
+    t('world.visualization.middle'),
+    t('world.visualization.marginal'),
+  ]
 
   return (
     <div>
