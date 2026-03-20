@@ -49,6 +49,57 @@ export function validateToken() {
 
 // --- Worlds ---
 
+// --- Structured environment types ---
+export type TerrainFeatureType = 'mountain' | 'plain' | 'valley' | 'plateau' | 'canyon' | 'island' | 'cave' | 'coast' | 'desert' | 'forest' | 'swamp' | 'volcano' | 'glacier' | 'floating'
+
+export interface TerrainFeature {
+  name: string
+  type: TerrainFeatureType
+  description: string
+}
+
+export interface StructuredEnvironment {
+  terrain_features: TerrainFeature[]
+  climate: string
+  water_system: string
+  light_regime: string
+  gravity: string
+  atmosphere: string
+  unique_phenomenon: string
+}
+
+// --- Structured ecosystem types ---
+export type TrophicLevel = 'producer' | 'primary_consumer' | 'secondary_consumer' | 'apex_predator' | 'decomposer'
+export type EcologicalRelationType = 'predation' | 'herbivory' | 'mutualism' | 'parasitism' | 'competition' | 'decomposition'
+
+export interface StructuredOrganism {
+  name: string
+  trophic_level: TrophicLevel
+  habitat: string
+  description: string
+}
+
+export interface EcologicalRelation {
+  source: string
+  target: string
+  type: EcologicalRelationType
+}
+
+export interface ExtractableResource {
+  name: string
+  source: string
+  use: string
+}
+
+export interface StructuredEcosystem {
+  energy_source: string
+  organisms: StructuredOrganism[]
+  relationships: EcologicalRelation[]
+  keystone_species: string
+  extractable_resources: ExtractableResource[]
+}
+
+// --- Structured faction types ---
 export type PowerBasis = 'military' | 'economic' | 'ritual' | 'land' | 'labor' | 'information'
 export type WorldWoundRelation = 'caused' | 'benefits' | 'suffers' | 'ignores'
 export type FactionRelationType = 'dependency' | 'conflict' | 'instrumentalization'
@@ -82,6 +133,8 @@ export interface World {
   tone: string
   structured_factions?: StructuredFaction[]
   faction_relations?: FactionRelation[]
+  structured_environment?: StructuredEnvironment
+  structured_ecosystem?: StructuredEcosystem
 }
 
 export function getWorlds() {
@@ -110,6 +163,8 @@ export interface DeriveLayerResult {
   description?: string                     // synthesis layer only
   structuredFactions?: StructuredFaction[]  // synthesis layer only (camelCase from Go backend)
   factionRelations?: FactionRelation[]     // synthesis layer only (camelCase from Go backend)
+  structuredEnvironment?: StructuredEnvironment  // physical layer (camelCase from Go backend)
+  structuredEcosystem?: StructuredEcosystem      // biological layer (camelCase from Go backend)
 }
 
 export function deriveWorldLayer(
@@ -367,4 +422,52 @@ export async function getMyInstallation(): Promise<Installation | null> {
 
 export function getLinkingToken() {
   return request<{ token: string }>('/installation/linking-token')
+}
+
+// --- World Graph ---
+
+export interface GraphNode {
+  id: string
+  label: string
+  domain: 'physical' | 'biological' | 'social' | 'core'
+  description?: string
+}
+
+export interface GraphEdge {
+  source: string
+  target: string
+  label?: string
+}
+
+export interface WorldGraphData {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+}
+
+export function generateWorldGraph(phrase: string) {
+  return request<WorldGraphData>('/world/generate-graph', {
+    method: 'POST',
+    body: JSON.stringify({ phrase }),
+  })
+}
+
+export function expandGraphNode(nodeId: string, nodeLabel: string, currentGraph: WorldGraphData) {
+  return request<WorldGraphData>('/world/expand-node', {
+    method: 'POST',
+    body: JSON.stringify({ node_id: nodeId, node_label: nodeLabel, current_graph: currentGraph }),
+  })
+}
+
+export function graphChat(message: string, currentGraph: WorldGraphData) {
+  return request<{ reply: string; patch?: WorldGraphData }>('/world/graph-chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, current_graph: currentGraph }),
+  })
+}
+
+export function createWorldFromGraph(graph: WorldGraphData) {
+  return request<{ id: number }>('/world/create-from-graph', {
+    method: 'POST',
+    body: JSON.stringify({ graph }),
+  })
 }
