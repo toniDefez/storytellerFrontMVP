@@ -75,6 +75,9 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
   const [editLabel, setEditLabel] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editDomain, setEditDomain] = useState<ConceptNodeData['domain']>('core')
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null)
+  const [editEdgeLabel, setEditEdgeLabel] = useState('')
+  const [isEditingEdge, setIsEditingEdge] = useState(false)
 
   const onConnect = useCallback(
     (params: Connection) => setEdges(eds => addEdge({ ...params, style: { stroke: '#94a3b8', strokeWidth: 1.5 } }, eds)),
@@ -83,6 +86,8 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node<ConceptNodeData>) => {
+      setSelectedEdge(null)
+      setIsEditingEdge(false)
       setSelectedNode(prev => {
         if (prev?.id === node.id) {
           setIsEditing(false)
@@ -123,6 +128,29 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
     setSelectedNode(null)
     setIsEditing(false)
   }, [selectedNode, setNodes, setEdges])
+
+  const handleEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    setSelectedNode(null)
+    setIsEditing(false)
+    setSelectedEdge(prev => prev?.id === edge.id ? null : edge)
+    setEditEdgeLabel(String(edge.label ?? ''))
+    setIsEditingEdge(false)
+  }, [])
+
+  const handleSaveEdge = useCallback(() => {
+    if (!selectedEdge) return
+    const updated = { ...selectedEdge, label: editEdgeLabel.trim() || undefined }
+    setEdges(es => es.map(e => e.id === selectedEdge.id ? updated : e))
+    setSelectedEdge(updated)
+    setIsEditingEdge(false)
+  }, [selectedEdge, editEdgeLabel, setEdges])
+
+  const handleDeleteEdge = useCallback(() => {
+    if (!selectedEdge) return
+    setEdges(es => es.filter(e => e.id !== selectedEdge.id))
+    setSelectedEdge(null)
+    setIsEditingEdge(false)
+  }, [selectedEdge, setEdges])
 
   const handleExpandSelected = useCallback(
     async () => {
@@ -228,6 +256,76 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
             <span className="text-[10px] text-muted-foreground">Click en un nodo para ver detalles</span>
           </div>
         )}
+
+        {/* Edge detail panel */}
+        {selectedEdge && (() => {
+          const sourceLabel = nodes.find(n => n.id === selectedEdge.source)?.data.label ?? selectedEdge.source
+          const targetLabel = nodes.find(n => n.id === selectedEdge.target)?.data.label ?? selectedEdge.target
+          return (
+            <div className="absolute bottom-3 left-3 z-20 w-64 bg-background border border-border rounded-xl shadow-lg p-3 flex flex-col gap-2">
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Relación</span>
+                <button
+                  onClick={() => { setSelectedEdge(null); setIsEditingEdge(false) }}
+                  className="text-muted-foreground hover:text-foreground shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-foreground leading-snug">
+                <span className="font-semibold">{sourceLabel}</span>
+                <span className="text-muted-foreground"> → </span>
+                <span className="font-semibold">{targetLabel}</span>
+              </p>
+
+              {isEditingEdge ? (
+                <>
+                  <input
+                    value={editEdgeLabel}
+                    onChange={e => setEditEdgeLabel(e.target.value)}
+                    className="text-xs text-foreground rounded-md border border-border px-2 py-1 outline-none focus:ring-1 focus:ring-primary/50"
+                    placeholder="Etiqueta de relación..."
+                  />
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={handleSaveEdge}
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-medium bg-primary text-primary-foreground rounded-lg py-1.5 hover:opacity-90 transition-opacity"
+                    >
+                      <Check className="w-3 h-3" /> Guardar
+                    </button>
+                    <button
+                      onClick={() => setIsEditingEdge(false)}
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-medium border border-border rounded-lg py-1.5 hover:bg-muted/50 transition-colors"
+                    >
+                      <X className="w-3 h-3" /> Cancelar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {selectedEdge.label && (
+                    <p className="text-xs text-muted-foreground italic">"{selectedEdge.label}"</p>
+                  )}
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => { setEditEdgeLabel(String(selectedEdge.label ?? '')); setIsEditingEdge(true) }}
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-medium border border-border rounded-lg py-1.5 hover:bg-muted/50 transition-colors"
+                    >
+                      <Pencil className="w-3 h-3" /> Editar
+                    </button>
+                    <button
+                      onClick={handleDeleteEdge}
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-medium border border-red-200 text-red-500 rounded-lg py-1.5 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" /> Borrar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Node detail panel */}
         {selectedNode && (
@@ -343,11 +441,17 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
 
         <ReactFlow
           nodes={nodes}
-          edges={edges}
+          edges={edges.map(e => ({
+            ...e,
+            style: e.id === selectedEdge?.id
+              ? { stroke: '#a855f7', strokeWidth: 2.5 }
+              : { stroke: '#94a3b8', strokeWidth: 1.5 },
+          }))}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={handleNodeClick}
+          onEdgeClick={handleEdgeClick}
           nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{ padding: 0.2 }}
