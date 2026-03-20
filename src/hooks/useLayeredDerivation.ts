@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from 'react'
-import { deriveWorldLayer, type WorldLayerType, type DeriveLayerResult } from '../services/api'
+import { deriveWorldLayer, type WorldLayerType, type DeriveLayerResult, type StructuredFaction, type FactionRelation } from '../services/api'
 import type { PhysicalSelections } from '../constants/physicalParameters'
 
 // ---------------------------------------------------------------------------
@@ -16,6 +16,8 @@ export interface LayerState {
   name?: string           // synthesis metadata
   factions?: string[]
   description?: string
+  structuredFactions?: StructuredFaction[]   // synthesis layer only
+  factionRelations?: FactionRelation[]      // synthesis layer only
 }
 
 export const GENERATION_LAYERS: WorldLayerType[] = ['physical', 'biological', 'society', 'synthesis']
@@ -133,6 +135,8 @@ function reducer(state: DerivationState, action: Action): DerivationState {
             name: action.result.name,
             factions: action.result.factions,
             description: action.result.description,
+            structuredFactions: action.result.structuredFactions,
+            factionRelations: action.result.factionRelations,
           },
         },
       }

@@ -104,10 +104,12 @@ export type WorldLayerType = 'physical' | 'biological' | 'society' | 'synthesis'
 export interface DeriveLayerResult {
   layer: WorldLayerType
   content: string
-  tensions?: string    // society layer only
-  name?: string        // synthesis layer only
-  factions?: string[]  // synthesis layer only
-  description?: string // synthesis layer only
+  tensions?: string                        // society layer only
+  name?: string                            // synthesis layer only
+  factions?: string[]                      // synthesis layer only
+  description?: string                     // synthesis layer only
+  structuredFactions?: StructuredFaction[]  // synthesis layer only (camelCase from Go backend)
+  factionRelations?: FactionRelation[]     // synthesis layer only (camelCase from Go backend)
 }
 
 export function deriveWorldLayer(

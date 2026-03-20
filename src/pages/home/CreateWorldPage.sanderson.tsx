@@ -118,6 +118,8 @@ export default function CreateWorldPage() {
         organization: getAcceptedContent('society') ?? '',
         tensions: state.layers.society.tensions ?? '',
         tone: getAcceptedContent('synthesis') ?? '',
+        structured_factions: synthesis.structuredFactions,
+        faction_relations: synthesis.factionRelations,
       })
       navigate('/worlds')
     } catch (err) {
