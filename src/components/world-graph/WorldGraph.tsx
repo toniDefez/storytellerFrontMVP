@@ -16,9 +16,16 @@ import { ConceptNode } from './ConceptNode'
 import type { ConceptNodeData } from './forceLayout'
 import { WorldGraphChat, type ChatMessage } from './WorldGraphChat'
 import { applyForceLayout } from './forceLayout'
-import { Loader2, Expand } from 'lucide-react'
+import { Loader2, Expand, X, Maximize2, Pencil, Trash2, Check } from 'lucide-react'
 
 const nodeTypes = { concept: ConceptNode }
+
+const DOMAIN_COLOR: Record<string, string> = {
+  physical: '#10b981', biological: '#f59e0b', social: '#0ea5e9', core: '#a855f7',
+}
+const DOMAIN_LABEL: Record<string, string> = {
+  physical: 'Físico', biological: 'Biológico', social: 'Social', core: 'Núcleo',
+}
 
 export type GraphData = {
   nodes: Array<{
@@ -63,19 +70,67 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
   const [expandingId, setExpandingId] = useState<string | null>(null)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatLoading, setChatLoading] = useState(false)
+  const [selectedNode, setSelectedNode] = useState<Node<ConceptNodeData> | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editLabel, setEditLabel] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editDomain, setEditDomain] = useState<ConceptNodeData['domain']>('core')
 
   const onConnect = useCallback(
     (params: Connection) => setEdges(eds => addEdge({ ...params, style: { stroke: '#94a3b8', strokeWidth: 1.5 } }, eds)),
     [setEdges],
   )
 
-  const handleNodeDoubleClick = useCallback(
-    async (_: React.MouseEvent, node: Node<ConceptNodeData>) => {
-      if (!onExpandNode || expandingId) return
+  const handleNodeClick = useCallback(
+    (_: React.MouseEvent, node: Node<ConceptNodeData>) => {
+      setSelectedNode(prev => {
+        if (prev?.id === node.id) {
+          setIsEditing(false)
+          return null
+        }
+        setIsEditing(false)
+        return node
+      })
+    },
+    [],
+  )
+
+  const startEditing = useCallback(() => {
+    if (!selectedNode) return
+    setEditLabel(selectedNode.data.label)
+    setEditDescription(selectedNode.data.description ?? '')
+    setEditDomain(selectedNode.data.domain)
+    setIsEditing(true)
+  }, [selectedNode])
+
+  const handleSaveEdit = useCallback(() => {
+    if (!selectedNode) return
+    const updated: ConceptNodeData = {
+      ...selectedNode.data,
+      label: editLabel.trim() || selectedNode.data.label,
+      description: editDescription.trim() || undefined,
+      domain: editDomain,
+    }
+    setNodes(ns => ns.map(n => n.id === selectedNode.id ? { ...n, data: updated } : n))
+    setSelectedNode(prev => prev ? { ...prev, data: updated } : null)
+    setIsEditing(false)
+  }, [selectedNode, editLabel, editDescription, editDomain, setNodes])
+
+  const handleDeleteNode = useCallback(() => {
+    if (!selectedNode) return
+    setNodes(ns => ns.filter(n => n.id !== selectedNode.id))
+    setEdges(es => es.filter(e => e.source !== selectedNode.id && e.target !== selectedNode.id))
+    setSelectedNode(null)
+    setIsEditing(false)
+  }, [selectedNode, setNodes, setEdges])
+
+  const handleExpandSelected = useCallback(
+    async () => {
+      if (!onExpandNode || !selectedNode || expandingId) return
+      const node = selectedNode
       setExpandingId(node.id)
       try {
         const expansion = await onExpandNode(node.id, node.data.label)
-        // Merge new nodes/edges, avoiding duplicates
         const existingIds = new Set(nodes.map(n => n.id))
         const newFlowNodes = expansion.nodes
           .filter(n => !existingIds.has(n.id))
@@ -100,11 +155,12 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
           }))
         setNodes(ns => [...ns, ...newFlowNodes])
         setEdges(es => [...es, ...newFlowEdges])
+        setSelectedNode(null)
       } finally {
         setExpandingId(null)
       }
     },
-    [onExpandNode, expandingId, nodes, edges, setNodes, setEdges],
+    [onExpandNode, selectedNode, expandingId, nodes, edges, setNodes, setEdges],
   )
 
   const handleChat = useCallback(
@@ -141,6 +197,13 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
             }))
           setNodes(ns => [...ns, ...newFlowNodes])
           setEdges(es => [...es, ...newFlowEdges])
+          if (newFlowNodes.length > 0) {
+            const names = newFlowNodes.map(n => n.data.label).join(', ')
+            setChatMessages(m => [...m, {
+              role: 'system',
+              content: `✓ ${newFlowNodes.length} nodo(s) añadido(s) al grafo: ${names}`,
+            }])
+          }
         }
       } finally {
         setChatLoading(false)
@@ -159,19 +222,132 @@ export function WorldGraph({ initialGraph, onSave, onExpandNode, onChat }: Props
             <span className="text-xs text-foreground">Expandiendo nodo...</span>
           </div>
         )}
-        {onExpandNode && (
+        {onExpandNode && !selectedNode && (
           <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 bg-background/80 backdrop-blur-sm border border-border/50 rounded-lg px-2.5 py-1.5">
             <Expand className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground">Doble click para expandir un nodo</span>
+            <span className="text-[10px] text-muted-foreground">Click en un nodo para ver detalles</span>
           </div>
         )}
+
+        {/* Node detail panel */}
+        {selectedNode && (
+          <div className="absolute bottom-3 left-3 z-20 w-64 bg-background border border-border rounded-xl shadow-lg p-3 flex flex-col gap-2 max-h-[70%] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2">
+              {isEditing ? (
+                <select
+                  value={editDomain}
+                  onChange={e => setEditDomain(e.target.value as ConceptNodeData['domain'])}
+                  className="text-[10px] font-semibold uppercase tracking-wide bg-transparent border border-border rounded px-1 py-0.5 text-muted-foreground"
+                >
+                  <option value="physical">Físico</option>
+                  <option value="biological">Biológico</option>
+                  <option value="social">Social</option>
+                  <option value="core">Núcleo</option>
+                </select>
+              ) : (
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: DOMAIN_COLOR[selectedNode.data.domain] ?? '#a855f7' }}
+                  />
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {DOMAIN_LABEL[selectedNode.data.domain] ?? selectedNode.data.domain}
+                  </span>
+                </div>
+              )}
+              <button
+                onClick={() => { setSelectedNode(null); setIsEditing(false) }}
+                className="text-muted-foreground hover:text-foreground shrink-0"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Label */}
+            {isEditing ? (
+              <input
+                value={editLabel}
+                onChange={e => setEditLabel(e.target.value)}
+                className="text-sm font-semibold text-foreground rounded-md border border-border px-2 py-1 outline-none focus:ring-1 focus:ring-primary/50"
+                placeholder="Nombre del nodo"
+              />
+            ) : (
+              <p className="text-sm font-semibold text-foreground leading-snug">{selectedNode.data.label}</p>
+            )}
+
+            {/* Description */}
+            {isEditing ? (
+              <textarea
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                rows={3}
+                className="text-xs text-muted-foreground rounded-md border border-border px-2 py-1.5 outline-none focus:ring-1 focus:ring-primary/50 resize-none"
+                placeholder="Descripción del nodo..."
+              />
+            ) : (
+              selectedNode.data.description && (
+                <p className="text-xs text-muted-foreground leading-relaxed">{selectedNode.data.description}</p>
+              )
+            )}
+
+            {/* Actions */}
+            {isEditing ? (
+              <div className="flex gap-1.5 mt-1">
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex-1 flex items-center justify-center gap-1 text-xs font-medium bg-primary text-primary-foreground rounded-lg py-1.5 hover:opacity-90 transition-opacity"
+                >
+                  <Check className="w-3 h-3" /> Guardar
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 flex items-center justify-center gap-1 text-xs font-medium border border-border rounded-lg py-1.5 hover:bg-muted/50 transition-colors"
+                >
+                  <X className="w-3 h-3" /> Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5 mt-1">
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={startEditing}
+                    className="flex-1 flex items-center justify-center gap-1 text-xs font-medium border border-border rounded-lg py-1.5 hover:bg-muted/50 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" /> Editar
+                  </button>
+                  <button
+                    onClick={handleDeleteNode}
+                    className="flex-1 flex items-center justify-center gap-1 text-xs font-medium border border-red-200 text-red-500 rounded-lg py-1.5 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" /> Borrar
+                  </button>
+                </div>
+                {onExpandNode && (
+                  <button
+                    onClick={handleExpandSelected}
+                    disabled={!!expandingId}
+                    className="flex items-center justify-center gap-1.5 w-full text-xs font-medium border border-border rounded-lg py-1.5 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {expandingId === selectedNode.id ? (
+                      <><Loader2 className="w-3 h-3 animate-spin" /> Expandiendo...</>
+                    ) : (
+                      <><Maximize2 className="w-3 h-3" /> Expandir nodo</>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <ReactFlow
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onNodeDoubleClick={handleNodeDoubleClick}
+          onNodeClick={handleNodeClick}
           nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{ padding: 0.2 }}

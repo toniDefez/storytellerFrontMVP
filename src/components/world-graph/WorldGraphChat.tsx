@@ -3,7 +3,7 @@ import { Send, Loader2, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export type ChatMessage = {
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system'
   content: string
 }
 
@@ -43,18 +43,24 @@ export function WorldGraphChat({ messages, loading, onSend }: Props) {
             Pídele a la IA que añada nodos, modifique relaciones o expanda conceptos del grafo.
           </p>
         )}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`text-[12px] rounded-lg px-2.5 py-1.5 leading-relaxed max-w-[90%] ${
-              m.role === 'user'
-                ? 'ml-auto bg-primary/10 text-foreground'
-                : 'bg-accent text-foreground'
-            }`}
-          >
-            {m.content}
-          </div>
-        ))}
+        {messages.map((m, i) =>
+          m.role === 'system' ? (
+            <div key={i} className="text-[10px] text-muted-foreground italic text-center py-0.5">
+              {m.content}
+            </div>
+          ) : (
+            <div
+              key={i}
+              className={`text-[12px] rounded-lg px-2.5 py-1.5 leading-relaxed max-w-[90%] ${
+                m.role === 'user'
+                  ? 'ml-auto bg-primary/10 text-foreground'
+                  : 'bg-accent text-foreground'
+              }`}
+            >
+              {m.content}
+            </div>
+          )
+        )}
         {loading && (
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Loader2 className="w-3 h-3 animate-spin" />
