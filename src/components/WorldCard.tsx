@@ -2,7 +2,6 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { Badge } from '@/components/ui/badge'
 
 interface WorldCardProps {
   id: number
@@ -33,8 +32,8 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, factions, description, 
 
   return (
     <motion.div
-      className="rounded-2xl bg-white shadow-sm border border-gray-100 cursor-pointer overflow-hidden"
-      whileHover={{ y: -4, boxShadow: '0 12px 32px rgba(0,0,0,0.10)' }}
+      className="rounded-[4px] bg-card shadow-ambient cursor-pointer overflow-hidden"
+      whileHover={{ y: -3, boxShadow: '0 0 0 1px rgba(27,28,26,0.05), 0 4px 12px rgba(27,28,26,0.08), 0 16px 40px rgba(27,28,26,0.06)' }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       onClick={() => navigate(`/worlds/${id}`)}
@@ -51,18 +50,18 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, factions, description, 
 
       <div className="px-5 pt-3 pb-5">
         {description && !core_axis && (
-          <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{description}</p>
+          <p className="text-xs italic font-display text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{description}</p>
         )}
 
         {factions.length > 0 && (
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t('world.factionsLabel')}</p>
+          <div className="pt-3 border-t border-border/50">
+            <p className="text-[10px] font-ui font-medium text-muted-foreground uppercase tracking-[0.08em] mb-1.5">{t('world.factionsLabel')}</p>
             <div className="flex flex-wrap gap-1">
               {factions.slice(0, 3).map(f => (
-                <Badge key={f} variant="outline">{f}</Badge>
+                <span key={f} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-ui bg-[rgba(27,28,26,0.05)] text-[#6b6860]">{f}</span>
               ))}
               {factions.length > 3 && (
-                <span className="text-[11px] text-gray-400 px-2 py-0.5">+{factions.length - 3}</span>
+                <span className="text-[11px] text-muted-foreground px-2 py-0.5">+{factions.length - 3}</span>
               )}
             </div>
           </div>

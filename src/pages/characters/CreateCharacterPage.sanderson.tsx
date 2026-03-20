@@ -11,99 +11,126 @@ import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { useInstallation } from '@/hooks/useInstallation'
 import NoInstallationBanner from '@/components/NoInstallationBanner'
 import { WorldContextPanel } from '@/components/character-creation/WorldContextPanel'
+import { FactionOrbitMap } from '@/components/character-creation/FactionOrbitMap'
+import { ConsciousnessPlane } from '@/components/character-creation/ConsciousnessPlane'
+import { PermeabilityMembrane } from '@/components/character-creation/PermeabilityMembrane'
+import { WantNeedFearTriangle } from '@/components/character-creation/WantNeedFearTriangle'
+import { LayerActionBar } from '@/components/character-creation/LayerActionBar'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
-import { DerivationLayer } from '@/components/world-creation/DerivationLayer'
-import type { ExtendedChipStatus } from '@/components/world-creation/DerivationLayer'
-import { generateCharacter, createCharacter } from '@/services/api'
-import type { Character } from '@/services/api'
+import { generateCharacter, createCharacter, getWorldById } from '@/services/api'
+import type { Character, World } from '@/services/api'
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
 
 type Phase = 'premise' | 'generating' | 'reviewing' | 'saving'
+type SectionKey = 'identity' | 'temperament' | 'history' | 'will'
+type SectionStatus = 'idle' | 'pending' | 'accepted' | 'rejected'
 
-interface SectionData {
-  content: string | null
-  status: ExtendedChipStatus
-  editedContent?: string
+interface SectionState {
+  status: SectionStatus
 }
 
-interface CharacterSections {
-  identity: SectionData
-  temperament: SectionData
-  history: SectionData
-  will: SectionData
-}
+const SECTIONS: SectionKey[] = ['identity', 'temperament', 'history', 'will']
 
-/* ------------------------------------------------------------------ */
-/* Layer display metadata (character-themed colors)                     */
-/* ------------------------------------------------------------------ */
-
-const CHARACTER_LAYERS = ['identity', 'temperament', 'history', 'will'] as const
-type CharacterLayerKey = (typeof CHARACTER_LAYERS)[number]
-
-const LAYER_DISPLAY: Record<CharacterLayerKey, { icon: string; label: string; labelEn: string; color: string }> = {
-  identity:    { icon: '\u{1F3AD}', label: 'Identidad',    labelEn: 'Identity',    color: 'text-amber-600' },
-  temperament: { icon: '\u{1F525}', label: 'Temperamento', labelEn: 'Temperament', color: 'text-rose-600' },
-  history:     { icon: '\u{1F4DC}', label: 'Historia',     labelEn: 'History',     color: 'text-blue-600' },
-  will:        { icon: '\u{2728}',  label: 'Voluntad',     labelEn: 'Will',        color: 'text-emerald-600' },
+const SECTION_META: Record<SectionKey, { icon: string; label: string; color: string; barColor: string }> = {
+  identity:    { icon: '🎭', label: 'Identidad',    color: 'text-amber-600',  barColor: 'bg-amber-500' },
+  temperament: { icon: '🔥', label: 'Temperamento', color: 'text-rose-600',   barColor: 'bg-rose-500' },
+  history:     { icon: '📜', label: 'Historia',     color: 'text-blue-600',   barColor: 'bg-blue-500' },
+  will:        { icon: '✨', label: 'Voluntad',     color: 'text-emerald-600', barColor: 'bg-emerald-500' },
 }
 
 /* ------------------------------------------------------------------ */
-/* Rotating placeholder premises                                       */
+/* Premise examples                                                    */
 /* ------------------------------------------------------------------ */
 
 const PREMISE_EXAMPLES = [
-  'Una sanadora que descubrio que su cura es peor que la enfermedad...',
-  'El ultimo cartografo de un mundo que ya no tiene fronteras...',
-  'Alguien que traiciono a su faccion por amor y ahora no pertenece a ninguna...',
+  'Una sanadora que descubrió que su cura es peor que la enfermedad...',
+  'El último cartógrafo de un mundo que ya no tiene fronteras...',
+  'Alguien que traicionó a su facción por amor y ahora no pertenece a ninguna...',
   'Un juez que aplica leyes en las que ya no cree...',
-  'La hija de un lider que sabe que su padre miente a todos...',
+  'La hija de un líder que sabe que su padre miente a todos...',
 ]
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                             */
-/* ------------------------------------------------------------------ */
-
-function buildSectionContent(character: Character, section: CharacterLayerKey): string {
-  switch (section) {
-    case 'identity': {
-      const parts: string[] = []
-      if (character.role) parts.push(`Rol: ${character.role}`)
-      if (character.social_position) parts.push(`Posicion social: ${character.social_position}`)
-      if (character.faction_affiliation) parts.push(`Faccion: ${character.faction_affiliation}`)
-      return parts.join('\n\n') || ''
-    }
-    case 'temperament': {
-      const parts: string[] = []
-      if (character.personality) parts.push(`Personalidad: ${character.personality}`)
-      if (character.internal_contradiction) parts.push(`Contradiccion interna: ${character.internal_contradiction}`)
-      if (character.relation_to_collective_lie) parts.push(`Relacion con la mentira colectiva: ${character.relation_to_collective_lie}`)
-      return parts.join('\n\n') || ''
-    }
-    case 'history': {
-      const parts: string[] = []
-      if (character.background) parts.push(character.background)
-      if (character.personal_fear) parts.push(`Miedo personal: ${character.personal_fear}`)
-      return parts.join('\n\n') || ''
-    }
-    case 'will': {
-      if (character.goals && character.goals.length > 0) {
-        return character.goals.map((g, i) => `${i + 1}. ${g}`).join('\n')
-      }
-      return ''
-    }
+function initSections(): Record<SectionKey, SectionState> {
+  return {
+    identity:    { status: 'idle' },
+    temperament: { status: 'idle' },
+    history:     { status: 'idle' },
+    will:        { status: 'idle' },
   }
 }
 
-function initSections(): CharacterSections {
-  return {
-    identity:    { content: null, status: 'idle' },
-    temperament: { content: null, status: 'idle' },
-    history:     { content: null, status: 'idle' },
-    will:        { content: null, status: 'idle' },
-  }
+/* ------------------------------------------------------------------ */
+/* Layer shell                                                         */
+/* ------------------------------------------------------------------ */
+
+function LayerShell({
+  sectionKey,
+  status,
+  onAccept,
+  onReject,
+  delay = 0,
+  children,
+}: {
+  sectionKey: SectionKey
+  status: SectionStatus
+  onAccept: () => void
+  onReject: () => void
+  delay?: number
+  children: React.ReactNode
+}) {
+  const meta = SECTION_META[sectionKey]
+
+  if (status === 'idle') return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 22, delay }}
+      className="relative mb-3"
+    >
+      {/* Colour bar */}
+      <div className={`absolute left-0 top-3 bottom-3 w-0.5 rounded-full ${meta.barColor} opacity-40`} />
+
+      <div className="ml-4">
+        {/* Header */}
+        <div className="flex items-center gap-2 py-2">
+          <span className="text-sm">{meta.icon}</span>
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${meta.color}`}>
+            {meta.label}
+          </span>
+          {status === 'accepted' && (
+            <span className="text-[9px] font-medium text-primary/60 bg-primary/8 px-2 py-0.5 rounded-full">
+              Confirmado
+            </span>
+          )}
+        </div>
+
+        {/* Content */}
+        <AnimatePresence>
+          {status !== 'rejected' && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden pb-2"
+            >
+              {children}
+              <LayerActionBar
+                status={status === 'pending' ? 'pending' : status === 'accepted' ? 'accepted' : 'pending'}
+                onAccept={onAccept}
+                onReject={onReject}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -119,57 +146,45 @@ export default function CreateCharacterPageSanderson() {
   const [phase, setPhase] = useState<Phase>('premise')
   const [name, setName] = useState('')
   const [premise, setPremise] = useState('')
-  const [sections, setSections] = useState<CharacterSections>(initSections)
-  const [generatedCharacter, setGeneratedCharacter] = useState<Character | null>(null)
+  const [sections, setSections] = useState<Record<SectionKey, SectionState>>(initSections)
+  const [character, setCharacter] = useState<Character | null>(null)
+  const [world, setWorld] = useState<World | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   // Rotating placeholder
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPlaceholderIdx(prev => (prev + 1) % PREMISE_EXAMPLES.length)
-    }, 4000)
-    return () => clearInterval(interval)
+    const id = setInterval(() => setPlaceholderIdx(p => (p + 1) % PREMISE_EXAMPLES.length), 4000)
+    return () => clearInterval(id)
   }, [])
+
+  // Fetch world data for visualisations
+  useEffect(() => {
+    if (!worldId) return
+    getWorldById(Number(worldId)).then(setWorld).catch(() => {})
+  }, [worldId])
 
   useEffect(() => {
     document.title = `${t('pageTitle.createCharacter')} -- StoryTeller`
   }, [t, i18n.language])
 
-  /* ---- Derive character ---- */
+  /* ---- Derive ---- */
 
   const handleDerive = useCallback(async () => {
     if (!premise.trim()) return
     setPhase('generating')
     setError('')
-
     try {
-      const character = await generateCharacter(Number(worldId), premise)
-      setGeneratedCharacter(character)
-
-      // If the backend returned a name and user hasn't typed one, use it
-      if (character.name && !name) {
-        setName(character.name)
-      }
-
-      // Populate sections from the generated character
-      const newSections: CharacterSections = {
-        identity:    { content: buildSectionContent(character, 'identity'),    status: 'ready' },
-        temperament: { content: buildSectionContent(character, 'temperament'), status: 'ready' },
-        history:     { content: buildSectionContent(character, 'history'),     status: 'ready' },
-        will:        { content: buildSectionContent(character, 'will'),        status: 'ready' },
-      }
-
-      // If a section has no content (backend doesn't return new fields yet), mark appropriately
-      for (const key of CHARACTER_LAYERS) {
-        if (!newSections[key].content) {
-          newSections[key].content = t('character.create.pendingGeneration')
-          newSections[key].status = 'ready'
-        }
-      }
-
-      setSections(newSections)
+      const c = await generateCharacter(Number(worldId), premise)
+      setCharacter(c)
+      if (c.name && !name) setName(c.name)
+      setSections({
+        identity:    { status: 'pending' },
+        temperament: { status: 'pending' },
+        history:     { status: 'pending' },
+        will:        { status: 'pending' },
+      })
       setPhase('reviewing')
     } catch (err) {
       setError(err instanceof Error ? err.message : t('character.create.aiError'))
@@ -177,79 +192,62 @@ export default function CreateCharacterPageSanderson() {
     }
   }, [premise, worldId, name, t])
 
-  /* ---- Section accept/reject/edit ---- */
+  /* ---- Section actions ---- */
 
-  const acceptSection = useCallback((key: string) => {
-    setSections(prev => ({
-      ...prev,
-      [key]: { ...prev[key as CharacterLayerKey], status: 'accepted' },
-    }))
+  const accept = useCallback((key: SectionKey) => {
+    setSections(p => ({ ...p, [key]: { status: 'accepted' } }))
   }, [])
 
-  const rejectSection = useCallback((key: string) => {
-    setSections(prev => ({
-      ...prev,
-      [key]: { ...prev[key as CharacterLayerKey], status: 'rejected' },
-    }))
+  const reject = useCallback((key: SectionKey) => {
+    setSections(p => ({ ...p, [key]: { status: 'rejected' } }))
   }, [])
 
-  const editSection = useCallback((key: string, newText: string) => {
-    setSections(prev => ({
-      ...prev,
-      [key]: { ...prev[key as CharacterLayerKey], editedContent: newText, status: 'accepted' },
-    }))
-  }, [])
+  /* ---- Save ---- */
 
-  /* ---- Save character ---- */
-
-  const allDecided = CHARACTER_LAYERS.every(
-    k => sections[k].status === 'accepted' || sections[k].status === 'rejected'
-  )
-  const hasAccepted = CHARACTER_LAYERS.some(k => sections[k].status === 'accepted')
+  const allDecided  = SECTIONS.every(k => sections[k].status === 'accepted' || sections[k].status === 'rejected')
+  const hasAccepted = SECTIONS.some(k => sections[k].status === 'accepted')
 
   const handleSave = useCallback(async () => {
+    if (!character) return
     setSaving(true)
     setError('')
-
     try {
-      const base = generatedCharacter || {} as Partial<Character>
-
       await createCharacter({
-        name: name || base.name || 'Personaje derivado',
-        role: base.role || '',
-        personality: base.personality || '',
-        background: base.background || '',
-        goals: base.goals || [],
-        world_id: Number(worldId),
-        state: base.state || {},
+        name:                      name || character.name || 'Personaje derivado',
+        role:                      character.role || '',
+        personality:               character.personality || '',
+        background:                character.background || '',
+        goals:                     character.goals || [],
+        world_id:                  Number(worldId),
+        state:                     character.state || {},
         premise,
-        social_position: base.social_position,
-        internal_contradiction: base.internal_contradiction,
-        relation_to_collective_lie: base.relation_to_collective_lie,
-        personal_fear: base.personal_fear,
-        faction_affiliation: base.faction_affiliation,
+        social_position:           character.social_position,
+        internal_contradiction:    character.internal_contradiction,
+        relation_to_collective_lie: character.relation_to_collective_lie,
+        personal_fear:             character.personal_fear,
+        faction_affiliation:       character.faction_affiliation,
       })
-
       navigate(`/worlds/${worldId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('character.create.error'))
     } finally {
       setSaving(false)
     }
-  }, [generatedCharacter, name, worldId, premise, navigate, t])
+  }, [character, name, worldId, premise, navigate, t])
 
-  /* ---- Render ---- */
+  /* ---------------------------------------------------------------- */
+  /* Render                                                            */
+  /* ---------------------------------------------------------------- */
 
   return (
     <div className="flex justify-center items-start min-h-[80vh] py-4">
       <div className="w-full max-w-3xl mx-auto">
         <PageBreadcrumb items={[
           { label: t('nav.worlds'), href: '/worlds' },
-          { label: 'Mundo', href: `/worlds/${worldId}` },
+          { label: world?.name ?? 'Mundo', href: `/worlds/${worldId}` },
           { label: t('character.create.derivationTitle') },
         ]} />
 
-        {/* Card principal */}
         <div className="rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
 
           {/* Header */}
@@ -269,27 +267,23 @@ export default function CreateCharacterPageSanderson() {
             </div>
           </div>
 
-          {/* Content */}
+          {/* Body */}
           <div className="px-6 py-6">
 
-            {/* Installation banner */}
             {installationChecked && !hasInstallation && (
-              <div className="mb-6">
-                <NoInstallationBanner />
-              </div>
+              <div className="mb-6"><NoInstallationBanner /></div>
             )}
 
-            {/* Error */}
             {error && (
               <Alert variant="destructive" className="mb-5">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            {/* World context panel (always visible, collapsible) */}
-            <WorldContextPanel worldId={Number(worldId)} />
+            {/* World context — pass world to avoid re-fetch */}
+            <WorldContextPanel worldId={Number(worldId)} world={world} />
 
-            {/* ---- PHASE: PREMISE ---- */}
+            {/* ── PHASE: PREMISE ── */}
             <AnimatePresence mode="wait">
               {phase === 'premise' && (
                 <motion.div
@@ -299,13 +293,11 @@ export default function CreateCharacterPageSanderson() {
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {/* Name input */}
-                  <div className="mb-6">
+                  <div className="mb-5">
                     <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
                       {t('character.create.nameLabel')}
                     </label>
                     <Input
-                      type="text"
                       value={name}
                       onChange={e => setName(e.target.value)}
                       placeholder={t('character.create.namePlaceholder')}
@@ -318,7 +310,6 @@ export default function CreateCharacterPageSanderson() {
                     </p>
                   </div>
 
-                  {/* Premise textarea */}
                   <div className="mb-6">
                     <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
                       {t('character.create.premiseLabel')}
@@ -326,7 +317,6 @@ export default function CreateCharacterPageSanderson() {
                     <p className="text-xs text-muted-foreground/70 mb-3 leading-relaxed">
                       {t('character.create.premiseHint')}
                     </p>
-
                     <div className="relative">
                       <Textarea
                         value={premise}
@@ -334,13 +324,11 @@ export default function CreateCharacterPageSanderson() {
                         placeholder={PREMISE_EXAMPLES[placeholderIdx]}
                         className="min-h-[140px] resize-none text-base leading-relaxed
                                    border-2 border-dashed border-entity-character/25 rounded-xl
-                                   bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))]
                                    from-amber-500/[0.02] to-transparent
                                    placeholder:text-muted-foreground/40 placeholder:italic
                                    focus:border-solid focus:border-entity-character/40
                                    focus-visible:ring-0 focus-visible:ring-offset-0
-                                   focus:shadow-md focus:shadow-amber-500/5
-                                   transition-all duration-300"
+                                   focus:shadow-md focus:shadow-amber-500/5 transition-all duration-300"
                       />
                       <span className="absolute bottom-3 right-3 text-[10px] text-muted-foreground/40">
                         {premise.length}/500
@@ -348,10 +336,8 @@ export default function CreateCharacterPageSanderson() {
                     </div>
                   </div>
 
-                  {/* Derive button */}
                   <Button
-                    type="button"
-                    size="lg"
+                    type="button" size="lg"
                     className="w-full font-semibold tracking-wide
                                bg-gradient-to-r from-amber-600 to-orange-500
                                hover:from-amber-700 hover:to-orange-600
@@ -367,29 +353,26 @@ export default function CreateCharacterPageSanderson() {
               )}
             </AnimatePresence>
 
-            {/* ---- PHASE: GENERATING ---- */}
+            {/* ── PHASE: GENERATING ── */}
             <AnimatePresence>
-              {phase === 'generating' && (
-                <AIGeneratingIndicator />
-              )}
+              {phase === 'generating' && <AIGeneratingIndicator />}
             </AnimatePresence>
 
-            {/* ---- PHASE: REVIEWING ---- */}
+            {/* ── PHASE: REVIEWING ── */}
             <AnimatePresence>
-              {phase === 'reviewing' && (
+              {phase === 'reviewing' && character && (
                 <motion.div
                   key="reviewing"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {/* Name (editable) */}
-                  <div className="mb-6">
+                  {/* Name */}
+                  <div className="mb-5">
                     <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
                       {t('character.create.nameLabel')}
                     </label>
                     <Input
-                      type="text"
                       value={name}
                       onChange={e => setName(e.target.value)}
                       placeholder={t('character.create.namePlaceholder')}
@@ -400,40 +383,93 @@ export default function CreateCharacterPageSanderson() {
                   </div>
 
                   {/* Separator */}
-                  <div className="relative my-6 flex items-center gap-3">
+                  <div className="relative my-5 flex items-center gap-3">
                     <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/60 to-transparent" />
-                    <span className="text-[10px] font-semibold text-amber-600/50 uppercase tracking-[0.2em]">
-                      {i18n.language === 'es' ? 'Resultado de la derivacion' : 'Derivation result'}
+                    <span className="text-[9px] font-semibold text-amber-600/50 uppercase tracking-[0.2em]">
+                      {i18n.language === 'es' ? 'Resultado de la derivación' : 'Derivation result'}
                     </span>
                     <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/60 to-transparent" />
                   </div>
 
-                  {/* Derivation layers */}
-                  <div className="space-y-4">
-                    {CHARACTER_LAYERS.map((layer, idx) => {
-                      const ls = sections[layer]
-                      if (ls.status === 'idle') return null
+                  {/* ── IDENTIDAD: faction orbit map ── */}
+                  <LayerShell
+                    sectionKey="identity"
+                    status={sections.identity.status}
+                    onAccept={() => accept('identity')}
+                    onReject={() => reject('identity')}
+                    delay={0.05}
+                  >
+                    <FactionOrbitMap
+                      factions={world?.factions ?? []}
+                      factionAffiliation={character.faction_affiliation}
+                      socialPosition={character.social_position}
+                      role={character.role}
+                      factionPowerTier={character.faction_power_tier}
+                    />
+                  </LayerShell>
 
-                      return (
-                        <div key={layer}>
-                          <DerivationLayer
-                            layerKey={layer}
-                            layerMeta={LAYER_DISPLAY[layer]}
-                            suggestion={ls.editedContent ?? ls.content}
-                            cascadeDelay={idx * 180}
-                            isRevealed={ls.content !== null}
-                            onReveal={() => {}}
-                            onSuggestionAccept={acceptSection}
-                            onSuggestionReject={rejectSection}
-                            onSuggestionEdit={editSection}
-                            chipStatus={ls.status === 'ready' ? 'pending' : ls.status}
-                          />
+                  {/* ── TEMPERAMENTO: consciousness plane + membrane ── */}
+                  <LayerShell
+                    sectionKey="temperament"
+                    status={sections.temperament.status}
+                    onAccept={() => accept('temperament')}
+                    onReject={() => reject('temperament')}
+                    delay={0.18}
+                  >
+                    <ConsciousnessPlane
+                      consciousnessState={character.consciousness_state}
+                      state={character.relation_to_collective_lie}
+                    />
+                    <PermeabilityMembrane
+                      declared={character.contradiction_declared}
+                      operative={character.contradiction_operative}
+                      contradiction={character.internal_contradiction}
+                    />
+                  </LayerShell>
+
+                  {/* ── HISTORIA: prose + fear ── */}
+                  <LayerShell
+                    sectionKey="history"
+                    status={sections.history.status}
+                    onAccept={() => accept('history')}
+                    onReject={() => reject('history')}
+                    delay={0.31}
+                  >
+                    <div className="space-y-3 mb-1">
+                      {character.background && (
+                        <p className="text-[13px] text-muted-foreground leading-relaxed font-[var(--font-body)]">
+                          {character.background}
+                        </p>
+                      )}
+                      {character.personal_fear && (
+                        <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-orange-400">Miedo</span>
+                          <p className="text-[12.5px] italic font-[var(--font-display)] text-foreground/80">
+                            {character.personal_fear}
+                          </p>
                         </div>
-                      )
-                    })}
-                  </div>
+                      )}
+                    </div>
+                  </LayerShell>
 
-                  {/* Save button */}
+                  {/* ── VOLUNTAD: want/need/fear triangle ── */}
+                  <LayerShell
+                    sectionKey="will"
+                    status={sections.will.status}
+                    onAccept={() => accept('will')}
+                    onReject={() => reject('will')}
+                    delay={0.44}
+                  >
+                    <WantNeedFearTriangle
+                      structuredGoals={character.structured_goals}
+                      goals={character.goals ?? []}
+                      personalFear={character.personal_fear}
+                      internalContradiction={character.internal_contradiction}
+                      tensions={world?.tensions}
+                    />
+                  </LayerShell>
+
+                  {/* Save */}
                   <div className="mt-8 space-y-3">
                     <AnimatePresence>
                       {allDecided && hasAccepted && (
@@ -443,8 +479,7 @@ export default function CreateCharacterPageSanderson() {
                           transition={{ type: 'spring', stiffness: 300, damping: 22 }}
                         >
                           <Button
-                            type="button"
-                            size="lg"
+                            type="button" size="lg"
                             className="w-full font-semibold tracking-wide
                                        bg-gradient-to-r from-amber-600 to-orange-500
                                        hover:from-amber-700 hover:to-orange-600
@@ -454,30 +489,19 @@ export default function CreateCharacterPageSanderson() {
                             disabled={saving}
                           >
                             {saving ? (
-                              <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                {t('character.create.savingCharacter')}
-                              </>
+                              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('character.create.savingCharacter')}</>
                             ) : (
-                              <>
-                                <Save className="w-4 h-4 mr-2" />
-                                {t('character.create.saveCharacter')}
-                              </>
+                              <><Save className="w-4 h-4 mr-2" />{t('character.create.saveCharacter')}</>
                             )}
                           </Button>
                         </motion.div>
                       )}
                     </AnimatePresence>
 
-                    {/* Re-edit premise */}
                     <div className="text-center">
                       <button
                         type="button"
-                        onClick={() => {
-                          setPhase('premise')
-                          setSections(initSections())
-                          setGeneratedCharacter(null)
-                        }}
+                        onClick={() => { setPhase('premise'); setSections(initSections()); setCharacter(null) }}
                         className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition underline underline-offset-2"
                       >
                         {i18n.language === 'es' ? 'Volver a editar la premisa' : 'Edit premise again'}

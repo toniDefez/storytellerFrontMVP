@@ -167,6 +167,25 @@
       "createSceneAi": "Generar con IA",
       "createSceneButton": "Crear escena",
       "factionsInline": "Facciones:"
+    },
+    "visualization": {
+      "physicalLayer": "Físico",
+      "biologicalLayer": "Biológico",
+      "societyLayer": "Sociedad",
+      "tensionsLayer": "Tensiones",
+      "tone": "Tono",
+      "factionMap": "Mapa de facciones",
+      "causalCascade": "Cadena causal",
+      "elite": "élite",
+      "middle": "clase media",
+      "marginal": "margen",
+      "dependency": "dependencia",
+      "conflict": "conflicto",
+      "instrumentalization": "instrumentalización",
+      "caused": "causó",
+      "benefits": "beneficia",
+      "suffers": "sufre",
+      "ignores": "ignora"
     }
   },
   "character": {

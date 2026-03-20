@@ -18,14 +18,14 @@ function NavItem({ to, labelKey, Icon }: { to: string; labelKey: string; Icon: R
   return (
     <Link
       to={to}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+      className={`flex items-center gap-3 px-4 py-2.5 rounded-sm text-sm font-medium transition-all duration-150 ${
         isActive
-          ? 'bg-violet-600/20 text-violet-300 border border-violet-600/30'
-          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+          ? 'border-l-2 border-[#c4622d] bg-[rgba(196,98,45,0.10)] text-[#e8d5c8]'
+          : 'text-[#9a7a6e] hover:text-[#c9b8ae] hover:bg-[rgba(255,255,255,0.04)] border border-transparent'
       }`}
       aria-current={isActive ? 'page' : undefined}
     >
-      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-violet-400' : ''}`} />
+      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#c4622d]' : ''}`} />
       {t(labelKey)}
     </Link>
   )
@@ -35,32 +35,29 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
   const { t } = useTranslation()
 
   return (
-    <aside aria-label={t('a11y.sidebar')} className="flex flex-col h-full bg-slate-950 border-r border-slate-800/60 w-60">
+    <aside aria-label={t('a11y.sidebar')} className="flex flex-col h-full bg-[#2d1a17] border-r border-[#4a2e28]/60 w-60">
       {/* Logo */}
       <div className="px-5 pt-7 pb-6">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center shrink-0">
-            <svg aria-hidden="true" className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-          <span className="font-bold text-white text-sm tracking-tight font-[var(--font-display)]">StoryTeller</span>
+          <span className="font-display italic text-[#e8d5c8] text-base font-normal tracking-tight">
+            StoryTeller
+          </span>
         </div>
       </div>
 
       {/* Nav */}
       <nav aria-label={t('a11y.sidebarNav')} className="flex-1 px-3 space-y-1">
-        <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-4 mb-3">{t('a11y.sidebarNav')}</p>
+        <p className="text-[10px] font-semibold text-[#6b4a42] uppercase tracking-widest px-4 mb-3">{t('a11y.sidebarNav')}</p>
         {NAV_ITEM_DEFS.map(item => (
           <NavItem key={item.to} {...item} />
         ))}
       </nav>
 
       {/* Logout */}
-      <div className="px-3 pb-6 border-t border-slate-800/60 pt-4">
+      <div className="px-3 pb-6 border-t border-[#4a2e28]/60 pt-4">
         <button
           onClick={onLogout}
-          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 rounded-lg transition-all duration-150"
+          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-[#6b4a42] hover:text-[#9a7a6e] hover:bg-[rgba(255,255,255,0.04)] rounded-sm transition-all duration-150"
         >
           <LogOut className="w-4 h-4 shrink-0" />
           {t('nav.logout')}
@@ -82,7 +79,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-background">
       {/* Skip navigation link */}
       <a
         href="#main-content"
@@ -105,9 +102,9 @@ export default function MainLayout() {
       </Sheet>
 
       {/* Main */}
-      <main id="main-content" aria-label={t('a11y.mainContent')} className="flex-1 md:ml-60 min-h-screen">
+      <main id="main-content" aria-label={t('a11y.mainContent')} className="flex-1 md:ml-60 min-h-screen vellum-texture">
         {/* Mobile topbar */}
-        <div className="md:hidden flex items-center gap-4 bg-slate-950 border-b border-slate-800 px-4 py-3 sticky top-0 z-20">
+        <div className="md:hidden flex items-center gap-4 bg-[#2d1a17] border-b border-[#4a2e28] px-4 py-3 sticky top-0 z-20">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-slate-400 hover:text-white transition"

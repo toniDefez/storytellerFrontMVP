@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Character Viz — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --font-display: 'Lora', Georgia, serif;
+    --font-body: 'Source Sans 3', sans-serif;
+    --bg: oklch(97% 0.008 65);
+    --surface: oklch(99% 0.004 65);
+    --border: oklch(90% 0.012 65);
+    --border-subtle: oklch(93% 0.008 65);
+    --fg: oklch(22% 0.015 65);
+    --fg-muted: oklch(50% 0.015 65);
+    --fg-faint: oklch(68% 0.012 65);
+    --amber: oklch(67% 0.17 55);
+    --amber-light: oklch(95% 0.04 70);
+    --amber-mid: oklch(85% 0.08 65);
+    --rose: oklch(60% 0.18 15);
+    --rose-light: oklch(95% 0.04 15);
+    --purple: oklch(50% 0.18 290);
+    --purple-light: oklch(94% 0.04 290);
+    --emerald: oklch(55% 0.14 160);
+    --emerald-light: oklch(95% 0.04 160);
+    --blue: oklch(55% 0.16 240);
+    --blue-light: oklch(95% 0.04 240);
+    --sidebar: oklch(14% 0.02 30);
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--sidebar);
+    padding: 28px 0;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+  }
+  .sidebar-brand {
+    padding: 0 24px 28px;
+    border-bottom: 1px solid oklch(25% 0.02 30);
+  }
+  .sidebar-brand h2 {
+    font-family: var(--font-display);
+    color: oklch(92% 0.01 65);
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .sidebar-brand p {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: oklch(45% 0.02 30);
+    margin-top: 2px;
+  }
+  .sidebar-nav { padding: 20px 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 24px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(42% 0.02 30);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-item:hover { color: oklch(72% 0.02 30); }
+  .nav-item.active {
+    color: oklch(88% 0.02 65);
+    background: oklch(20% 0.025 30);
+    border-right: 2px solid var(--amber);
+  }
+  .nav-icon { width: 14px; height: 14px; opacity: 0.7; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; padding: 32px 40px; max-width: 780px; }
+
+  .breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--fg-faint); margin-bottom: 24px;
+  }
+  .breadcrumb span { opacity: 0.4; }
+
+  /* ── CARD WRAPPER ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px oklch(0% 0 0 / 0.04);
+  }
+
+  .card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--amber-light);
+    background: oklch(98% 0.015 65);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .card-header-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: oklch(92% 0.06 60);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .card-header h1 {
+    font-family: var(--font-display);
+    font-size: 18px; font-weight: 500;
+    color: var(--fg);
+  }
+  .card-header p {
+    font-size: 12px; font-style: italic;
+    color: var(--fg-faint); margin-top: 1px;
+  }
+  .card-body { padding: 24px; }
+
+  /* ── WORLD CONTEXT BAR (collapsed) ── */
+  .world-context {
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    background: oklch(97% 0.01 65);
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+  }
+  .world-context-icon { font-size: 13px; opacity: 0.5; }
+  .world-context-label {
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: oklch(62% 0.06 60); font-weight: 600;
+  }
+  .world-context-name {
+    font-family: var(--font-display);
+    font-size: 13px; color: var(--fg); margin-left: 6px;
+  }
+  .world-context-chevron { margin-left: auto; opacity: 0.35; font-size: 12px; }
+
+  /* ── DIVIDER ── */
+  .section-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(to right, transparent, oklch(88% 0.05 60), transparent);
+  }
+  .section-divider span {
+    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: oklch(72% 0.06 60); font-weight: 600;
+  }
+
+  /* ── DERIVATION LAYER ── */
+  .layer {
+    position: relative;
+    margin-bottom: 8px;
+    animation: layerIn 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+  }
+  .layer:nth-child(1) { animation-delay: 0.05s; }
+  .layer:nth-child(2) { animation-delay: 0.18s; }
+  .layer:nth-child(3) { animation-delay: 0.31s; }
+  .layer:nth-child(4) { animation-delay: 0.44s; }
+
+  @keyframes layerIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .layer-bar {
+    position: absolute; left: 0; top: 8px; bottom: 8px;
+    width: 2px; border-radius: 2px;
+    opacity: 0.4;
+  }
+  .layer-amber  .layer-bar { background: var(--amber); }
+  .layer-rose   .layer-bar { background: var(--rose); }
+  .layer-blue   .layer-bar { background: var(--blue); }
+  .layer-emerald .layer-bar { background: var(--emerald); }
+
+  .layer-inner { margin-left: 16px; }
+  .layer-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; cursor: pointer;
+  }
+  .layer-header-icon { font-size: 14px; }
+  .layer-header-label {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 700;
+  }
+  .layer-amber   .layer-header-label { color: var(--amber); }
+  .layer-rose    .layer-header-label { color: var(--rose); }
+  .layer-blue    .layer-header-label { color: var(--blue); }
+  .layer-emerald .layer-header-label { color: var(--emerald); }
+
+  .layer-badge-confirmed {
+    font-size: 9px; font-weight: 500;
+    color: var(--emerald); background: var(--emerald-light);
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .layer-chevron { margin-left: auto; opacity: 0.3; font-size: 11px; }
+  .layer-content { padding-bottom: 16px; }
+
+  /* ── ACTION BAR ── */
+  .action-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .btn-accept {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    padding: 6px 14px; border-radius: 8px; border: none;
+    background: var(--amber); color: white;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-accept:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-reject {
+    font-size: 11px; font-weight: 500;
+    padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--fg-faint); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-reject:hover { border-color: var(--rose); color: var(--rose); }
+  .btn-edit {
+    font-size: 11px; font-weight: 500;
+    padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--fg-muted); cursor: pointer; transition: all 0.15s; margin-left: auto;
+  }
+  .btn-edit:hover { border-color: var(--fg-muted); }
+
+  /* ════════════════════════════════
+     COMPONENTE 1: FACTION ORBIT MAP
+     ════════════════════════════════ */
+  .faction-orbit-map {
+    position: relative;
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto 16px;
+  }
+  .faction-orbit-map svg { width: 100%; height: auto; overflow: visible; }
+
+  .orbit-ring {
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 1;
+    animation: ringIn 0.6s cubic-bezier(0.34, 1.1, 0.64, 1) both;
+    transform-origin: center;
+  }
+  @keyframes ringIn {
+    from { opacity: 0; transform: scale(0.5); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .orbit-ring:nth-child(1) { animation-delay: 0.1s; stroke-opacity: 0.35; }
+  .orbit-ring:nth-child(2) { animation-delay: 0.2s; stroke-opacity: 0.22; }
+  .orbit-ring:nth-child(3) { animation-delay: 0.3s; stroke-opacity: 0.13; }
+
+  .orbit-tick { stroke: var(--amber); stroke-width: 1; stroke-opacity: 0.2; }
+
+  .faction-node circle {
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .faction-node:hover circle { filter: brightness(1.2); }
+  .faction-node text {
+    font-family: var(--font-body);
+    pointer-events: none;
+    dominant-baseline: middle;
+  }
+
+  .player-marker {
+    animation: playerIn 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+    animation-delay: 0.7s;
+    transform-origin: center;
+  }
+  @keyframes playerIn {
+    from { opacity: 0; transform: scale(0); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .orbit-label {
+    position: absolute;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  /* Power labels around the map */
+  .power-labels {
+    display: flex; justify-content: space-between;
+    padding: 0 8px;
+    margin-top: 6px;
+  }
+  .power-label {
+    font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--fg-faint); font-weight: 500;
+  }
+
+  /* Role info below map */
+  .role-info {
+    background: var(--amber-light);
+    border-radius: 8px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .role-info-label {
+    font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: oklch(55% 0.1 60); font-weight: 600;
+    display: block; margin-bottom: 2px;
+  }
+  .role-info-value {
+    font-family: var(--font-display);
+    font-size: 13px; color: var(--fg);
+  }
+
+  /* ════════════════════════════════
+     COMPONENTE 2: LIE SPECTRUM BAR
+     ════════════════════════════════ */
+  .lie-spectrum {
+    margin-bottom: 16px;
+  }
+  .lie-spectrum-label {
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--fg-faint); font-weight: 600; margin-bottom: 10px;
+    display: block;
+  }
+  .lie-spectrum-track {
+    display: flex; gap: 3px; position: relative;
+    margin-bottom: 8px;
+  }
+  .lie-segment {
+    flex: 1; height: 28px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8.5px; letter-spacing: 0.05em; text-transform: uppercase;
+    font-weight: 600; cursor: pointer;
+    transition: all 0.2s; position: relative;
+    border: 1px solid transparent;
+  }
+  .lie-segment.inactive {
+    background: oklch(93% 0.006 65);
+    color: var(--fg-faint);
+    opacity: 0.5;
+  }
+  .lie-segment.active-dormido    { background: oklch(88% 0.015 250); color: oklch(38% 0.05 250); border-color: oklch(80% 0.04 250); }
+  .lie-segment.active-inquieto   { background: oklch(93% 0.04 65); color: oklch(48% 0.12 60); border-color: oklch(85% 0.08 60); }
+  .lie-segment.active-despierto  { background: oklch(93% 0.06 60); color: oklch(50% 0.15 55); border-color: var(--amber-mid); }
+  .lie-segment.active-explotador { background: oklch(94% 0.04 30); color: oklch(48% 0.12 30); border-color: oklch(85% 0.08 30); }
+  .lie-segment.active-subversivo { background: var(--rose-light); color: var(--rose); border-color: oklch(88% 0.08 15); }
+
+  .lie-indicator {
+    position: absolute; bottom: -14px; left: 50%;
+    transform: translateX(-50%);
+    animation: indicatorIn 0.4s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+    animation-delay: 0.4s;
+  }
+  @keyframes indicatorIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  .lie-indicator::before {
+    content: '▲'; font-size: 8px; color: var(--amber);
+    display: block; text-align: center;
+  }
+
+  .lie-description {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 12.5px; color: var(--fg-muted);
+    text-align: center;
+    margin-top: 18px;
+    line-height: 1.5;
+    padding: 0 16px;
+  }
+
+  /* ════════════════════════════════
+     COMPONENTE 3: CONTRADICCIÓN
+     ════════════════════════════════ */
+  .contradiction {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: 0; margin-bottom: 16px;
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--border-subtle);
+  }
+  .contradiction-side {
+    padding: 14px 16px;
+    background: var(--surface);
+  }
+  .contradiction-side.left  { background: oklch(98% 0.012 250); }
+  .contradiction-side.right { background: oklch(98% 0.012 15); }
+  .contradiction-side-label {
+    font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 6px; display: block;
+  }
+  .left .contradiction-side-label  { color: oklch(50% 0.08 250); }
+  .right .contradiction-side-label { color: var(--rose); }
+  .contradiction-side p {
+    font-family: var(--font-display);
+    font-style: italic; font-size: 12px;
+    line-height: 1.55; color: var(--fg);
+  }
+  .contradiction-divider {
+    width: 32px;
+    background: linear-gradient(to bottom, oklch(98% 0.012 250), oklch(98% 0.012 15));
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 4px;
+    position: relative;
+    border-left: 1px solid oklch(88% 0.04 250 / 0.5);
+    border-right: 1px solid oklch(88% 0.04 15 / 0.5);
+  }
+  .contradiction-divider::before {
+    content: ''; position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 1px;
+    background: linear-gradient(to bottom, oklch(80% 0.05 250 / 0.4), oklch(80% 0.06 15 / 0.4));
+  }
+  .tension-icon {
+    font-size: 14px; position: relative; z-index: 1;
+    background: var(--surface); padding: 2px;
+    border-radius: 4px;
+    animation: tensionPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes tensionPulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50%       { transform: scale(1.15); opacity: 1; }
+  }
+
+  /* ════════════════════════════════
+     COMPONENTE 4: GOALS + TENSIONES
+     ════════════════════════════════ */
+  .goals-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .goal-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border-radius: 9px;
+    background: var(--bg);
+    border: 1px solid var(--border-subtle);
+    animation: goalIn 0.3s ease both;
+    transition: border-color 0.15s;
+  }
+  .goal-item:hover { border-color: var(--border); }
+  .goal-item:nth-child(1) { animation-delay: 0.1s; }
+  .goal-item:nth-child(2) { animation-delay: 0.2s; }
+  .goal-item:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes goalIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .goal-icon {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .goal-icon.protect  { background: var(--blue-light); }
+  .goal-icon.defy     { background: var(--rose-light); }
+  .goal-icon.personal { background: var(--amber-light); }
+  .goal-icon.observe  { background: var(--emerald-light); }
+
+  .goal-text {
+    flex: 1; font-size: 13px; color: var(--fg);
+    line-height: 1.45; padding-top: 4px;
+  }
+  .goal-badge {
+    flex-shrink: 0; align-self: center;
+    font-size: 8.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    font-weight: 700; padding: 3px 8px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-world    { background: var(--purple-light); color: var(--purple); }
+  .badge-faction  { background: var(--amber-light);  color: oklch(52% 0.12 60); }
+  .badge-personal { background: oklch(95% 0.006 65); color: var(--fg-faint); }
+  .badge-subversive { background: var(--rose-light); color: var(--rose); }
+
+  /* ── HISTORIA (text block) ── */
+  .history-block {
+    margin-bottom: 12px;
+  }
+  .history-block p {
+    font-size: 13px; color: var(--fg-muted); line-height: 1.65;
+    font-family: var(--font-body);
+  }
+  .fear-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 10px;
+    background: oklch(95% 0.015 30);
+    border: 1px solid oklch(88% 0.03 30);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 11.5px; color: oklch(42% 0.08 30);
+    font-family: var(--font-display); font-style: italic;
+  }
+  .fear-badge::before { content: '◈'; font-style: normal; }
+
+  /* ── SAVE BUTTON ── */
+  .save-section { margin-top: 28px; }
+  .btn-save {
+    width: 100%; padding: 14px 24px; border-radius: 12px; border: none;
+    background: linear-gradient(135deg, oklch(62% 0.16 55), oklch(58% 0.18 40));
+    color: white; font-family: var(--font-body); font-size: 14px;
+    font-weight: 600; letter-spacing: 0.05em;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 12px oklch(62% 0.16 55 / 0.3);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px oklch(62% 0.16 55 / 0.4);
+  }
+  .btn-back {
+    display: block; text-align: center; margin-top: 10px;
+    font-size: 11.5px; color: var(--fg-faint);
+    text-decoration: underline; text-underline-offset: 3px;
+    cursor: pointer; transition: color 0.15s;
+    background: none; border: none; width: 100%;
+  }
+  .btn-back:hover { color: var(--fg-muted); }
+
+  /* ── TOOLTIP (hover sobre faction node) ── */
+  .tooltip {
+    position: fixed;
+    background: var(--sidebar);
+    color: oklch(90% 0.01 65);
+    font-size: 11px; padding: 5px 10px; border-radius: 6px;
+    pointer-events: none; opacity: 0; transition: opacity 0.15s;
+    z-index: 100;
+    font-family: var(--font-body);
+    white-space: nowrap;
+  }
+  .tooltip.visible { opacity: 1; }
+
+  /* ── PROTOTYPE BANNER ── */
+  .proto-banner {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--sidebar); border-top: 1px solid oklch(25% 0.03 30);
+    padding: 8px 24px; display: flex; align-items: center; gap: 16px;
+    font-size: 11px; color: oklch(45% 0.02 30); z-index: 200;
+  }
+  .proto-banner strong { color: oklch(72% 0.06 60); }
+  .proto-tag {
+    background: oklch(22% 0.03 60); color: oklch(72% 0.1 60);
+    font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+    font-weight: 700; padding: 2px 7px; border-radius: 4px; flex-shrink: 0;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <h2>StoryTeller</h2>
+    <p>Shared Worlds Engine</p>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 3h10v10H3z M6 3v10 M3 7h7"/>
+      </svg>Chronicles
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="2" width="12" height="12" rx="1"/>
+        <path d="M2 6h12M6 6v8"/>
+      </svg>Cartography
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 2l1.8 3.6L14 6.5l-3 2.9.7 4.1L8 11.4l-3.7 2.1.7-4.1-3-2.9 4.2-.9z"/>
+      </svg>Pantheon
+    </div>
+    <div class="nav-item active">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+      </svg>Characters
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M2 4h12M2 8h8M2 12h5"/>
+      </svg>Scenes
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="breadcrumb">
+    Mundos <span>›</span> Aethelgard <span>›</span> Personajes <span>›</span> Derivar
+  </div>
+
+  <div class="card">
+    <!-- Header -->
+    <div class="card-header">
+      <div class="card-header-icon">🎭</div>
+      <div>
+        <h1>Derivar personaje</h1>
+        <p>El personaje como consecuencia del mundo</p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="card-body">
+
+      <!-- World Context (collapsed) -->
+      <div class="world-context">
+        <span class="world-context-icon">🌍</span>
+        <span class="world-context-label">Mundo</span>
+        <span class="world-context-name">Aethelgard</span>
+        <span class="world-context-chevron">›</span>
+      </div>
+
+      <div class="section-divider">
+        <span>Resultado de la derivación</span>
+      </div>
+
+      <!-- ══════════════════════════════
+           CAPA 1: IDENTIDAD
+           ══════════════════════════════ -->
+      <div class="layer layer-amber">
+        <div class="layer-bar"></div>
+        <div class="layer-inner">
+          <div class="layer-header">
+            <span class="layer-header-icon">🎭</span>
+            <span class="layer-header-label">Identidad</span>
+            <span class="layer-chevron">▾</span>
+          </div>
+          <div class="layer-content">
+
+            <!-- FACTION ORBIT MAP -->
+            <div class="faction-orbit-map">
+              <svg viewBox="0 0 280 260" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="oklch(96% 0.015 65)" stop-opacity="0.6"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                  </radialGradient>
+                </defs>
+
+                <!-- Background glow -->
+                <circle cx="140" cy="130" r="120" fill="url(#bgGrad)"/>
+
+                <!-- Orbit rings — 3 levels of power -->
+                <circle class="orbit-ring" cx="140" cy="130" r="45"  style="animation-delay:0.1s"/>
+                <circle class="orbit-ring" cx="140" cy="130" r="82"  style="animation-delay:0.2s"/>
+                <circle class="orbit-ring" cx="140" cy="130" r="118" style="animation-delay:0.3s"/>
+
+                <!-- Power center dot -->
+                <circle cx="140" cy="130" r="4" fill="oklch(67% 0.17 55)" opacity="0.4"/>
+
+                <!-- Tick marks (directional) -->
+                <line class="orbit-tick" x1="140" y1="85" x2="140" y2="90"/>
+                <line class="orbit-tick" x1="140" y1="48" x2="140" y2="53"/>
+                <line class="orbit-tick" x1="140" y1="12" x2="140" y2="17"/>
+
+                <!-- FACCIÓN: Casa Thorne (poder alto, anillo 1, arriba) -->
+                <g class="faction-node" id="node-thorne"
+                   onmouseenter="showTooltip(event,'Casa Thorne · Nobleza dominante')"
+                   onmouseleave="hideTooltip()">
+                  <!-- Posición: cx=140, cy=130-45=85 -->
+                  <circle cx="140" cy="85" r="22"
+                    fill="oklch(96% 0.035 290)"
+                    stroke="oklch(72% 0.12 290)"
+                    stroke-width="1.5"/>
+                  <text x="140" y="82" text-anchor="middle" font-size="8"
+                    font-weight="700" letter-spacing="0.05em" fill="oklch(40% 0.14 290)"
+                    font-family="'Source Sans 3', sans-serif" text-transform="uppercase">CASA</text>
+                  <text x="140" y="91" text-anchor="middle" font-size="9"
+                    font-weight="700" fill="oklch(35% 0.16 290)"
+                    font-family="'Source Sans 3', sans-serif">THORNE</text>
+                </g>
+
+                <!-- FACCIÓN: Pueblo Llano (poder bajo, anillo 3, abajo-izquierda) -->
+                <!-- Ángulo: 210° → x = 140 + 118*cos(210°), y = 130 + 118*sin(210°) -->
+                <!-- cos(210°)=-0.866, sin(210°)=-0.5 → cx≈37, cy≈71 -->
+                <g class="faction-node" id="node-pueblo"
+                   onmouseenter="showTooltip(event,'Pueblo Llano · Clase trabajadora')"
+                   onmouseleave="hideTooltip()">
+                  <circle cx="38" cy="71" r="22"
+                    fill="oklch(95% 0.028 65)"
+                    stroke="oklch(78% 0.1 60)"
+                    stroke-width="1.5"/>
+                  <text x="38" y="68" text-anchor="middle" font-size="7.5"
+                    font-weight="700" letter-spacing="0.04em" fill="oklch(45% 0.12 60)"
+                    font-family="'Source Sans 3', sans-serif">PUEBLO</text>
+                  <text x="38" y="78" text-anchor="middle" font-size="7.5"
+                    font-weight="700" fill="oklch(45% 0.12 60)"
+                    font-family="'Source Sans 3', sans-serif">LLANO</text>
+                </g>
+
+                <!-- FACCIÓN: Nexos Libres (poder medio, anillo 2, derecha) -->
+                <!-- Ángulo: 0° → x = 140+82=222, y=130 -->
+                <g class="faction-node" id="node-nexos"
+                   onmouseenter="showTooltip(event,'Nexos Libres · Magos independientes')"
+                   onmouseleave="hideTooltip()">
+                  <circle cx="222" cy="130" r="22"
+                    fill="oklch(95% 0.025 160)"
+                    stroke="oklch(70% 0.1 160)"
+                    stroke-width="1.5"/>
+                  <text x="222" y="127" text-anchor="middle" font-size="7.5"
+                    font-weight="700" letter-spacing="0.04em" fill="oklch(40% 0.12 160)"
+                    font-family="'Source Sans 3', sans-serif">NEXOS</text>
+                  <text x="222" y="137" text-anchor="middle" font-size="7.5"
+                    font-weight="700" fill="oklch(40% 0.12 160)"
+                    font-family="'Source Sans 3', sans-serif">LIBRES</text>
+                </g>
+
+                <!-- FACCIÓN: Sin-Aceso (marginados, anillo 3, abajo-derecha) -->
+                <!-- Ángulo: 330° → cos=-0.866, sin=0.5 → cx≈242, cy≈71 -->
+                <g class="faction-node" id="node-sin"
+                   onmouseenter="showTooltip(event,'Sin-Acceso · Excluidos del sistema')"
+                   onmouseleave="hideTooltip()">
+                  <circle cx="242" cy="71" r="22"
+                    fill="oklch(95% 0.02 15)"
+                    stroke="oklch(75% 0.08 15)"
+                    stroke-width="1.5"
+                    stroke-dasharray="4 2"/>
+                  <text x="242" y="68" text-anchor="middle" font-size="7.5"
+                    font-weight="700" letter-spacing="0.04em" fill="oklch(45% 0.1 15)"
+                    font-family="'Source Sans 3', sans-serif">SIN-</text>
+                  <text x="242" y="78" text-anchor="middle" font-size="7.5"
+                    font-weight="700" fill="oklch(45% 0.1 15)"
+                    font-family="'Source Sans 3', sans-serif">ACCESO</text>
+                </g>
+
+                <!-- Línea de dominio: Thorne → Pueblo (poder fluye hacia abajo) -->
+                <line x1="128" y1="107" x2="50" y2="90"
+                  stroke="oklch(72% 0.12 290)" stroke-width="1"
+                  stroke-opacity="0.25" stroke-dasharray="3 3"
+                  marker-end="url(#arrowdown)"/>
+
+                <!-- Línea de exclusión: Thorne → Sin-Acceso -->
+                <line x1="152" y1="107" x2="230" y2="90"
+                  stroke="oklch(60% 0.08 15)" stroke-width="1"
+                  stroke-opacity="0.2" stroke-dasharray="3 3"/>
+
+                <!-- Arrow marker -->
+                <defs>
+                  <marker id="arrowdown" markerWidth="6" markerHeight="6"
+                    refX="3" refY="3" orient="auto">
+                    <path d="M0,0 L6,3 L0,6 z"
+                      fill="oklch(72% 0.12 290)" opacity="0.4"/>
+                  </marker>
+                </defs>
+
+                <!-- PLAYER MARKER — en Pueblo Llano, desplazado ligeramente -->
+                <!-- Elara está en anillo 3 pero conectada a Pueblo Llano -->
+                <g class="player-marker" id="player-marker"
+                   transform="translate(38, 71)">
+                  <!-- Halo -->
+                  <circle r="30" fill="none" stroke="oklch(67% 0.17 55)"
+                    stroke-width="1.5" stroke-opacity="0.25"
+                    stroke-dasharray="4 3"/>
+                  <!-- Marker -->
+                  <circle r="9" fill="oklch(67% 0.17 55)"
+                    stroke="white" stroke-width="2"/>
+                  <text text-anchor="middle" y="1"
+                    font-size="9" fill="white" dominant-baseline="middle"
+                    font-family="'Source Sans 3', sans-serif" font-weight="700">E</text>
+                </g>
+
+                <!-- Leyenda: "Tú" label -->
+                <text x="38" y="108" text-anchor="middle" font-size="8.5"
+                  fill="oklch(67% 0.17 55)" font-weight="700"
+                  font-family="'Source Sans 3', sans-serif">
+                  ← Elara
+                </text>
+
+                <!-- Power center label -->
+                <text x="140" y="126" text-anchor="middle" font-size="7"
+                  fill="oklch(67% 0.17 55)" font-weight="600" opacity="0.5"
+                  letter-spacing="0.08em" font-family="'Source Sans 3', sans-serif">PODER</text>
+                <text x="140" y="135" text-anchor="middle" font-size="6.5"
+                  fill="oklch(67% 0.17 55)" opacity="0.35"
+                  letter-spacing="0.06em" font-family="'Source Sans 3', sans-serif">absoluto</text>
+
+                <!-- Ring labels -->
+                <text x="170" y="118" font-size="6.5"
+                  fill="oklch(50% 0.14 290)" opacity="0.5" font-style="italic"
+                  font-family="'Source Sans 3', sans-serif">elite</text>
+                <text x="182" y="105" font-size="6.5"
+                  fill="oklch(50% 0.1 60)" opacity="0.4" font-style="italic"
+                  font-family="'Source Sans 3', sans-serif">clase media</text>
+                <text x="190" y="91" font-size="6.5"
+                  fill="oklch(50% 0.06 30)" opacity="0.4" font-style="italic"
+                  font-family="'Source Sans 3', sans-serif">marginados</text>
+
+              </svg>
+            </div>
+
+            <!-- Role info -->
+            <div class="role-info">
+              <div>
+                <span class="role-info-label">Rol</span>
+                <span class="role-info-value">Curandera errante del Pueblo Llano</span>
+              </div>
+            </div>
+
+            <div class="action-bar">
+              <button class="btn-accept">✓ Aceptar</button>
+              <button class="btn-reject">✕ Descartar</button>
+              <button class="btn-edit">✎ Editar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════
+           CAPA 2: TEMPERAMENTO
+           ══════════════════════════════ -->
+      <div class="layer layer-rose">
+        <div class="layer-bar"></div>
+        <div class="layer-inner">
+          <div class="layer-header">
+            <span class="layer-header-icon">🔥</span>
+            <span class="layer-header-label">Temperamento</span>
+            <span class="layer-chevron">▾</span>
+          </div>
+          <div class="layer-content">
+
+            <!-- LIE SPECTRUM BAR -->
+            <div class="lie-spectrum">
+              <span class="lie-spectrum-label">Relación con la mentira colectiva</span>
+              <div class="lie-spectrum-track">
+                <div class="lie-segment inactive">Dormida</div>
+                <div class="lie-segment inactive">Inquieta</div>
+                <div class="lie-segment active-despierto">
+                  Despierta
+                  <div class="lie-indicator"></div>
+                </div>
+                <div class="lie-segment inactive">Explota</div>
+                <div class="lie-segment inactive">Subvers.</div>
+              </div>
+              <p class="lie-description">
+                "Ve la mentira con claridad, pero aún no sabe qué hacer con ese saber."
+              </p>
+            </div>
+
+            <!-- CONTRADICCIÓN INTERNA -->
+            <div class="contradiction">
+              <div class="contradiction-side left">
+                <span class="contradiction-side-label">Máscara</span>
+                <p>Cree ser una sanadora fiel al orden del Nexo</p>
+              </div>
+              <div class="contradiction-divider">
+                <span class="tension-icon">⚡</span>
+              </div>
+              <div class="contradiction-side right">
+                <span class="contradiction-side-label">Verdad</span>
+                <p>Sabe que sus curas prolongan la dependencia al sistema mágico</p>
+              </div>
+            </div>
+
+            <div class="action-bar">
+              <button class="btn-accept">✓ Aceptar</button>
+              <button class="btn-reject">✕ Descartar</button>
+              <button class="btn-edit">✎ Editar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════
+           CAPA 3: HISTORIA
+           ══════════════════════════════ -->
+      <div class="layer layer-blue">
+        <div class="layer-bar"></div>
+        <div class="layer-inner">
+          <div class="layer-header">
+            <span class="layer-header-icon">📜</span>
+            <span class="layer-header-label">Historia</span>
+            <span class="layer-chevron">▾</span>
+          </div>
+          <div class="layer-content">
+            <div class="history-block">
+              <p>Criada en los márgenes de Aethelgard, Elara aprendió a curar con las raíces del bosque antes de que el Nexo le ofreciera un puesto. Aceptó creyendo que podría cambiar las cosas desde dentro. Lleva tres años viendo cómo sus pacientes vuelven, más dependientes del flujo mágico que nunca.</p>
+              <div class="fear-badge">
+                Que su compasión sea la cadena que ata a quienes quiere liberar
+              </div>
+            </div>
+            <div class="action-bar">
+              <button class="btn-accept" style="background:var(--blue)">✓ Aceptar</button>
+              <button class="btn-reject">✕ Descartar</button>
+              <button class="btn-edit">✎ Editar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════
+           CAPA 4: VOLUNTAD
+           ══════════════════════════════ -->
+      <div class="layer layer-emerald">
+        <div class="layer-bar"></div>
+        <div class="layer-inner">
+          <div class="layer-header">
+            <span class="layer-header-icon">✨</span>
+            <span class="layer-header-label">Voluntad</span>
+            <span class="layer-badge-confirmed">Confirmado</span>
+            <span class="layer-chevron">▾</span>
+          </div>
+          <div class="layer-content">
+            <div class="goals-list">
+              <div class="goal-item">
+                <div class="goal-icon protect">🛡</div>
+                <span class="goal-text">Encontrar una cura que no cree dependencia al flujo mágico</span>
+                <span class="goal-badge badge-world">Tensión del mundo</span>
+              </div>
+              <div class="goal-item">
+                <div class="goal-icon defy">⚔</div>
+                <span class="goal-text">Exponer al Consejo del Nexo ante el Pueblo Llano</span>
+                <span class="goal-badge badge-subversive">Subversivo</span>
+              </div>
+              <div class="goal-item">
+                <div class="goal-icon personal">♥</div>
+                <span class="goal-text">Sacar a su hermano menor de la zona de control mágico</span>
+                <span class="goal-badge badge-personal">Personal</span>
+              </div>
+            </div>
+            <div class="action-bar">
+              <button class="btn-accept" style="background:var(--emerald)">✓ Aceptar</button>
+              <button class="btn-reject">✕ Descartar</button>
+              <button class="btn-edit">✎ Editar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAVE -->
+      <div class="save-section">
+        <button class="btn-save">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2H5L2 5v9h12V4l-1-2z M10 2v4H5V2 M8 8v5"/>
+          </svg>
+          Guardar personaje
+        </button>
+        <button class="btn-back">Volver a editar la premisa</button>
+      </div>
+
+    </div><!-- /card-body -->
+  </div><!-- /card -->
+</main>
+
+<!-- PROTOTYPE BANNER -->
+<div class="proto-banner">
+  <span class="proto-tag">Prototipo</span>
+  <span><strong>Character Viz</strong> — FactionOrbitMap · LieSpectrumBar · ContradictionTension · GoalsTensionLinks</span>
+  <span style="margin-left:auto;opacity:0.4">storytellerFrontMVP · Aethelgard sample data</span>
+</div>
+
+<script>
+  const tooltip = document.getElementById('tooltip');
+
+  function showTooltip(e, text) {
+    tooltip.textContent = text;
+    tooltip.classList.add('visible');
+    moveTooltip(e);
+    document.addEventListener('mousemove', moveTooltip);
+  }
+  function hideTooltip() {
+    tooltip.classList.remove('visible');
+    document.removeEventListener('mousemove', moveTooltip);
+  }
+  function moveTooltip(e) {
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top  = (e.clientY - 28) + 'px';
+  }
+</script>
+</body>
+</html>

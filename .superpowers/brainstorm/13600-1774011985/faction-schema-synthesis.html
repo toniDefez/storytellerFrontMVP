@@ -1,0 +1,166 @@
+<h2>Síntesis: qué datos de facción añadir</h2>
+<p class="subtitle">Antropólogo + Narrador coinciden en el núcleo. Aquí el modelo propuesto y cómo se vería en el orbit map.</p>
+
+<div class="section">
+  <h3>Acuerdo entre agentes — campos por facción</h3>
+
+  <div class="options">
+    <div class="option selected" data-choice="schema" style="pointer-events:none;cursor:default;">
+      <div class="letter">✓</div>
+      <div class="content">
+        <h3>5 campos estructurados por facción</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <div style="background:#f0fdf4;border-left:3px solid #22c55e;padding:8px;border-radius:4px;">
+            <div style="font-size:10px;font-weight:700;color:#166534;margin-bottom:2px;">tier <span style="font-weight:400;color:#888">enum</span></div>
+            <div style="font-size:11px;color:#15803d;">elite · middle · marginal</div>
+            <div style="font-size:10px;color:#888;margin-top:2px;">→ posición en el orbit map</div>
+          </div>
+          <div style="background:#eff6ff;border-left:3px solid #3b82f6;padding:8px;border-radius:4px;">
+            <div style="font-size:10px;font-weight:700;color:#1e40af;margin-bottom:2px;">power_basis <span style="font-weight:400;color:#888">enum</span></div>
+            <div style="font-size:11px;color:#1d4ed8;">military · economic · ritual · land · labor</div>
+            <div style="font-size:10px;color:#888;margin-top:2px;">→ icono/color en el nodo</div>
+          </div>
+          <div style="background:#fff7ed;border-left:3px solid #f97316;padding:8px;border-radius:4px;">
+            <div style="font-size:10px;font-weight:700;color:#9a3412;margin-bottom:2px;">resource_controlled <span style="font-weight:400;color:#888">string</span></div>
+            <div style="font-size:11px;color:#c2410c;">"derechos sobre el Acuífero"</div>
+            <div style="font-size:10px;color:#888;margin-top:2px;">→ tooltip al hover</div>
+          </div>
+          <div style="background:#fdf4ff;border-left:3px solid #a855f7;padding:8px;border-radius:4px;">
+            <div style="font-size:10px;font-weight:700;color:#6b21a8;margin-bottom:2px;">world_wound_relation <span style="font-weight:400;color:#888">enum</span></div>
+            <div style="font-size:11px;color:#7e22ce;">caused · benefits · suffers · ignores</div>
+            <div style="font-size:10px;color:#888;margin-top:2px;">→ borde/forma del nodo</div>
+          </div>
+          <div style="background:#fff1f2;border-left:3px solid #f43f5e;padding:8px;border-radius:4px;grid-column:span 2;">
+            <div style="font-size:10px;font-weight:700;color:#9f1239;margin-bottom:2px;">internal_pressure <span style="font-weight:400;color:#888">1 frase</span></div>
+            <div style="font-size:11px;color:#be123c;font-style:italic;">"Mantiene unidad a través del miedo a una amenaza que ya no existe"</div>
+            <div style="font-size:10px;color:#888;margin-top:2px;">→ ancla de derivación de personajes (narrador)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:16px;">3 tipos de relaciones entre facciones (edges)</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+    <div style="background:#fafafa;border:1px solid #e5e7eb;padding:8px;border-radius:6px;">
+      <div style="font-size:11px;font-weight:700;color:#374151;">→ Dependencia</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Flecha dirigida. A necesita algo que solo B tiene. Asimétrica = palanca de poder.</div>
+    </div>
+    <div style="background:#fafafa;border:1px solid #e5e7eb;padding:8px;border-radius:6px;">
+      <div style="font-size:11px;font-weight:700;color:#374151;">⚡ Conflicto</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Línea roja. Dos facciones disputan el mismo recurso o territorio. Motor del conflicto mundial.</div>
+    </div>
+    <div style="background:#fafafa;border:1px solid #e5e7eb;padding:8px;border-radius:6px;">
+      <div style="font-size:11px;font-weight:700;color:#374151;">◎ Instrumentalización</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Línea asimétrica. El poderoso usa al débil. El débil puede o no saberlo.</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Así se vería el orbit map enriquecido — Aethelgard</h3>
+  <div style="background:#faf9f7;border-radius:8px;padding:16px;display:flex;justify-content:center;">
+    <svg viewBox="-40 -30 380 310" style="width:100%;max-width:480px;" xmlns="http://www.w3.org/2000/svg">
+
+      <!-- Rings -->
+      <circle cx="150" cy="130" r="50" fill="none" stroke="#a855f7" stroke-width="1" stroke-opacity=".25"/>
+      <circle cx="150" cy="130" r="90" fill="none" stroke="#d97706" stroke-width="1" stroke-opacity=".18"/>
+      <circle cx="150" cy="130" r="125" fill="none" stroke="#dc2626" stroke-width="1" stroke-opacity=".13"/>
+
+      <!-- Ring labels -->
+      <text x="202" y="134" font-size="8" fill="#7e22ce" opacity=".5" font-style="italic" font-family="sans-serif">élite</text>
+      <text x="242" y="134" font-size="8" fill="#92400e" opacity=".5" font-style="italic" font-family="sans-serif">clase media</text>
+      <text x="277" y="134" font-size="8" fill="#991b1b" opacity=".5" font-style="italic" font-family="sans-serif">margen</text>
+
+      <!-- Center dot -->
+      <circle cx="150" cy="130" r="3" fill="#a855f7" opacity=".3"/>
+
+      <!-- Dependency edge: Gremios → Consejo (dashed arrow) -->
+      <line x1="115" y1="90" x2="150" y2="82" stroke="#d97706" stroke-width="1.5" stroke-opacity=".4" stroke-dasharray="4 2"/>
+      <polygon points="150,78 146,87 154,87" fill="#d97706" opacity=".5"/>
+
+      <!-- Conflict edge: Consejo ↔ Excavadores (red) -->
+      <line x1="150" y1="82" x2="80" y2="220" stroke="#f43f5e" stroke-width="1.5" stroke-opacity=".35" stroke-dasharray="3 3"/>
+
+      <!-- Instrumentalization edge: Consejo → Custodios (asymmetric dashed) -->
+      <line x1="150" y1="82" x2="225" y2="165" stroke="#8b5cf6" stroke-width="1" stroke-opacity=".3" stroke-dasharray="6 2 2 2"/>
+
+      <!-- NODE 1: Consejo del Acuífero — ELITE, ritual, caused wound -->
+      <g>
+        <circle cx="150" cy="82" r="28" fill="#f3e8ff" stroke="#a855f7" stroke-width="2.5"/>
+        <!-- caused wound = solid thick border, already handled -->
+        <text x="150" y="76" text-anchor="middle" font-size="7" font-weight="700" fill="#7e22ce" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">CONSEJO</text>
+        <text x="150" y="85" text-anchor="middle" font-size="7" font-weight="700" fill="#7e22ce" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">ACUÍFERO</text>
+        <!-- power_basis icon: ritual = 🔮 -->
+        <text x="150" y="97" text-anchor="middle" font-size="10">🔮</text>
+        <!-- world_wound badge: "caused" = red dot -->
+        <circle cx="172" cy="62" r="5" fill="#f43f5e"/>
+        <text x="172" y="65" text-anchor="middle" font-size="6" fill="white" font-weight="700">C</text>
+      </g>
+
+      <!-- NODE 2: Gremios de Luz — MIDDLE, labor/knowledge, benefits -->
+      <g>
+        <circle cx="95" cy="165" r="26" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+        <text x="95" y="159" text-anchor="middle" font-size="7" font-weight="700" fill="#92400e" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">GREMIOS</text>
+        <text x="95" y="168" text-anchor="middle" font-size="7" font-weight="700" fill="#92400e" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">DE LUZ</text>
+        <text x="95" y="180" text-anchor="middle" font-size="10">⚙️</text>
+        <!-- world_wound badge: "benefits" = amber dot -->
+        <circle cx="116" cy="147" r="5" fill="#f59e0b"/>
+        <text x="116" y="150" text-anchor="middle" font-size="6" fill="white" font-weight="700">B</text>
+      </g>
+
+      <!-- NODE 3: Custodios de la Forma — MIDDLE, military, allied/maintains -->
+      <g>
+        <circle cx="215" cy="165" r="26" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="215" y="159" text-anchor="middle" font-size="7" font-weight="700" fill="#1e40af" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">CUSTODIOS</text>
+        <text x="215" y="168" text-anchor="middle" font-size="7" font-weight="700" fill="#1e40af" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">FORMA</text>
+        <text x="215" y="180" text-anchor="middle" font-size="10">⚔️</text>
+        <!-- benefits = amber -->
+        <circle cx="236" cy="147" r="5" fill="#f59e0b"/>
+        <text x="236" y="150" text-anchor="middle" font-size="6" fill="white" font-weight="700">B</text>
+      </g>
+
+      <!-- NODE 4: Excavadores — MARGINAL, information, suffers -->
+      <g>
+        <circle cx="80" cy="240" r="24" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4 2"/>
+        <text x="80" y="234" text-anchor="middle" font-size="7" font-weight="700" fill="#991b1b" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">EXCAVA-</text>
+        <text x="80" y="243" text-anchor="middle" font-size="7" font-weight="700" fill="#991b1b" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">DORES</text>
+        <text x="80" y="255" text-anchor="middle" font-size="10">🔍</text>
+        <!-- suffers = purple dot -->
+        <circle cx="100" cy="220" r="5" fill="#8b5cf6"/>
+        <text x="100" y="223" text-anchor="middle" font-size="6" fill="white" font-weight="700">S</text>
+      </g>
+
+      <!-- NODE 5: Proscritos — MARGINAL, land/survival, suffers -->
+      <g>
+        <circle cx="225" cy="245" r="24" fill="#fdf2f8" stroke="#ec4899" stroke-width="1" stroke-dasharray="4 2"/>
+        <text x="225" y="239" text-anchor="middle" font-size="7" font-weight="700" fill="#9d174d" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">PROSCRITOS</text>
+        <text x="225" y="248" text-anchor="middle" font-size="7" font-weight="700" fill="#9d174d" font-family="sans-serif" letter-spacing=".04em" style="text-transform:uppercase">DEL VELO</text>
+        <text x="225" y="259" text-anchor="middle" font-size="10">🌿</text>
+        <circle cx="245" cy="225" r="5" fill="#8b5cf6"/>
+        <text x="245" y="228" text-anchor="middle" font-size="6" fill="white" font-weight="700">S</text>
+      </g>
+
+      <!-- Legend -->
+      <g transform="translate(-30, 270)">
+        <text x="0" y="0" font-size="7.5" fill="#6b7280" font-family="sans-serif" font-weight="700">LEYENDA NODO</text>
+        <circle cx="5" cy="12" r="4" fill="#f43f5e"/><text x="14" y="15" font-size="7" fill="#6b7280" font-family="sans-serif">C = causó la herida</text>
+        <circle cx="5" cy="24" r="4" fill="#f59e0b"/><text x="14" y="27" font-size="7" fill="#6b7280" font-family="sans-serif">B = se beneficia</text>
+        <circle cx="5" cy="36" r="4" fill="#8b5cf6"/><text x="14" y="39" font-size="7" fill="#6b7280" font-family="sans-serif">S = sufre la herida</text>
+
+        <text x="150" y="0" font-size="7.5" fill="#6b7280" font-family="sans-serif" font-weight="700">LEYENDA EDGE</text>
+        <line x1="150" y1="10" x2="185" y2="10" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 2"/>
+        <polygon points="185,7 181,10 185,13" fill="#d97706"/>
+        <text x="190" y="13" font-size="7" fill="#6b7280" font-family="sans-serif">dependencia</text>
+        <line x1="150" y1="22" x2="185" y2="22" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <text x="190" y="25" font-size="7" fill="#6b7280" font-family="sans-serif">conflicto</text>
+        <line x1="150" y1="34" x2="185" y2="34" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="6 2 2 2"/>
+        <text x="190" y="37" font-size="7" fill="#6b7280" font-family="sans-serif">instrumentalización</text>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<div class="section">
+  <p class="subtitle">Los iconos (🔮⚙️⚔️🔍🌿) representan <strong>power_basis</strong>. Los badges C/B/S representan la relación con la herida del mundo. Las líneas entre nodos son las relaciones estructurales. Todo generado por el LLM — cero heurísticas de texto.</p>
+</div>

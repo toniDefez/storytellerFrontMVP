@@ -1,0 +1,189 @@
+<h2>¿Cómo mostrar la información del mundo de forma gráfica?</h2>
+<p class="subtitle">Tres enfoques para reemplazar las tarjetas de texto en el WorldDetailPage. Usa datos reales de Aethelgard.</p>
+
+<div class="cards">
+
+  <!-- OPTION A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#faf9f7;padding:16px;font-family:sans-serif;">
+
+      <!-- Cascade Diagram -->
+      <div style="margin-bottom:10px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9a8880;margin-bottom:6px;">Cadena causal del mundo</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="background:#e8f5e9;border-left:3px solid #4caf50;padding:5px 8px;border-radius:2px;">
+            <div style="font-size:8px;color:#2e7d32;font-weight:700;text-transform:uppercase;margin-bottom:1px;">🌍 Físico</div>
+            <div style="font-size:9px;color:#1b5e20;">Gravedad baja · Terreno fracturado · Sin lluvia superficial</div>
+          </div>
+          <div style="text-align:center;font-size:10px;color:#bbb;">↓</div>
+          <div style="background:#fff8e1;border-left:3px solid #f9a825;padding:5px 8px;border-radius:2px;">
+            <div style="font-size:8px;color:#e65100;font-weight:700;text-transform:uppercase;margin-bottom:1px;">🌿 Biológico</div>
+            <div style="font-size:9px;color:#bf360c;">Flora bioluminiscente · Fauna adaptada a oquedades · Ciclos sin sol</div>
+          </div>
+          <div style="text-align:center;font-size:10px;color:#bbb;">↓</div>
+          <div style="background:#e8eaf6;border-left:3px solid #5c6bc0;padding:5px 8px;border-radius:2px;">
+            <div style="font-size:8px;color:#283593;font-weight:700;text-transform:uppercase;margin-bottom:1px;">🏛 Sociedad</div>
+            <div style="font-size:9px;color:#1a237e;">Gremios de luz · Castas según acceso al Acuífero · Teocracia subterránea</div>
+          </div>
+          <div style="text-align:center;font-size:10px;color:#bbb;">↓</div>
+          <div style="background:#fce4ec;border-left:3px solid #e91e63;padding:5px 8px;border-radius:2px;">
+            <div style="font-size:8px;color:#880e4f;font-weight:700;text-transform:uppercase;margin-bottom:1px;">⚡ Tensiones</div>
+            <div style="font-size:9px;color:#4a0029;">Quien controla el Acuífero controla la vida · La excavación del pasado amenaza el orden</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Faction orbit mini -->
+      <div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9a8880;margin-bottom:4px;">Mapa de facciones</div>
+        <svg viewBox="-10 -10 200 160" style="width:100%;max-height:90px;">
+          <circle cx="90" cy="70" r="30" fill="none" stroke="#a855f7" stroke-width="1" stroke-opacity=".3"/>
+          <circle cx="90" cy="70" r="55" fill="none" stroke="#d97706" stroke-width="1" stroke-opacity=".2"/>
+          <circle cx="90" cy="70" r="75" fill="none" stroke="#dc2626" stroke-width="1" stroke-opacity=".15"/>
+          <circle cx="90" cy="40" r="14" fill="#f3e8ff" stroke="#a855f7" stroke-width="1.5"/>
+          <text x="90" y="44" text-anchor="middle" font-size="5.5" fill="#7e22ce" font-weight="700">ACUÍFERO</text>
+          <circle cx="55" cy="110" r="14" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+          <text x="55" y="114" text-anchor="middle" font-size="5.5" fill="#92400e" font-weight="700">GREMIOS</text>
+          <circle cx="130" cy="100" r="14" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <text x="130" y="104" text-anchor="middle" font-size="5.5" fill="#991b1b" font-weight="700">PROSCRITO</text>
+          <circle cx="90" cy="70" r="6" fill="#d97706" stroke="white" stroke-width="1.5"/>
+          <text x="90" y="73" text-anchor="middle" font-size="7" fill="white" font-weight="900">★</text>
+        </svg>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Cascade + Orbit</h3>
+      <p>Diagrama de causalidad vertical (físico → sociedad) + mapa de facciones SVG. Las capas muestran que cada una <em>causa</em> la siguiente. Las facciones muestran jerarquía de poder.</p>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#faf9f7;padding:16px;font-family:sans-serif;">
+
+      <!-- Eje central vs tensiones — membrana -->
+      <div style="margin-bottom:10px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9a8880;margin-bottom:6px;">Eje del mundo vs tensión sistémica</div>
+        <div style="display:flex;border-radius:6px;overflow:hidden;min-height:60px;border:1px solid #e5e0da;">
+          <div style="flex:1;background:#eef6f0;padding:8px 10px;">
+            <div style="font-size:7.5px;color:#2d6a4f;font-weight:700;text-transform:uppercase;margin-bottom:4px;">Verdad fundacional</div>
+            <div style="font-size:9px;color:#1b4332;font-style:italic;">El Acuífero no es un recurso: es una memoria geológica que el mundo usa para recordar quién fue antes</div>
+          </div>
+          <div style="width:28px;background:linear-gradient(to bottom,#eef6f0,white,#fce4ec);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div>
+          <div style="flex:1;background:#fce4ec;padding:8px 10px;">
+            <div style="font-size:7.5px;color:#880e4f;font-weight:700;text-transform:uppercase;margin-bottom:4px;">Mentira colectiva</div>
+            <div style="font-size:9px;color:#4a0029;font-style:italic;">El Acuífero es sagrado e inagotable. Quien lo cuestione amenaza la estabilidad de todos</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Radial world summary -->
+      <div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9a8880;margin-bottom:4px;">Resumen radial del mundo</div>
+        <svg viewBox="0 0 180 100" style="width:100%;max-height:80px;">
+          <circle cx="90" cy="50" r="32" fill="#f5f0eb" stroke="#d4cfc8" stroke-width="1"/>
+          <text x="90" y="48" text-anchor="middle" font-size="6" fill="#6b5e55" font-weight="700">AETHELGARD</text>
+          <text x="90" y="57" text-anchor="middle" font-size="5" fill="#9a8880">Mundo subterráneo</text>
+
+          <!-- Spokes -->
+          <line x1="90" y1="18" x2="90" y2="0" stroke="#4caf50" stroke-width="1.5" opacity=".6"/>
+          <text x="90" y="-3" text-anchor="middle" font-size="6" fill="#2e7d32">FÍSICO</text>
+          <line x1="90" y1="82" x2="90" y2="100" stroke="#e91e63" stroke-width="1.5" opacity=".6"/>
+          <text x="90" y="107" text-anchor="middle" font-size="6" fill="#880e4f">TENSIÓN</text>
+          <line x1="58" y1="34" x2="35" y2="18" stroke="#f9a825" stroke-width="1.5" opacity=".6"/>
+          <text x="26" y="16" text-anchor="middle" font-size="6" fill="#e65100">BIO</text>
+          <line x1="122" y1="34" x2="145" y2="18" stroke="#5c6bc0" stroke-width="1.5" opacity=".6"/>
+          <text x="154" y="16" text-anchor="middle" font-size="6" fill="#283593">SOC</text>
+          <line x1="58" y1="66" x2="35" y2="82" stroke="#9c27b0" stroke-width="1.5" opacity=".6"/>
+          <text x="22" y="87" text-anchor="middle" font-size="6" fill="#6a1b9a">TONO</text>
+          <line x1="122" y1="66" x2="145" y2="82" stroke="#d97706" stroke-width="1.5" opacity=".6"/>
+          <text x="158" y="87" text-anchor="middle" font-size="6" fill="#92400e">FACCS</text>
+        </svg>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Membrana + Radial</h3>
+      <p>Membrana central (core_axis vs mentira colectiva) + diagrama radial con el mundo al centro y las 5 dimensiones como ejes. Énfasis en la tensión filosófica del mundo.</p>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#faf9f7;padding:16px;font-family:sans-serif;">
+
+      <!-- Full world panel combining everything -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9a8880;margin-bottom:5px;">Todo integrado — panel único</div>
+
+        <!-- Core axis quote bar -->
+        <div style="background:linear-gradient(to right,#e8f5e9,#e8eaf6);padding:5px 8px;border-radius:4px;margin-bottom:6px;border-left:2px solid #5c6bc0;">
+          <div style="font-size:8px;color:#283593;font-style:italic;">"El Acuífero no es un recurso — es una memoria geológica"</div>
+          <div style="font-size:7px;color:#9a8880;margin-top:1px;">Eje central · Tono: gótico subterráneo</div>
+        </div>
+
+        <!-- 3 columns: layers, factions, tensions -->
+        <div style="display:grid;grid-template-columns:1fr 80px 1fr;gap:6px;">
+          <!-- Layers -->
+          <div>
+            <div style="font-size:7px;color:#9a8880;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Capas causales</div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#4caf50;flex-shrink:0;"></div>
+                <div style="font-size:7.5px;color:#444;">Física</div>
+              </div>
+              <div style="margin-left:4px;width:1px;height:6px;background:#ddd;"></div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#f9a825;flex-shrink:0;"></div>
+                <div style="font-size:7.5px;color:#444;">Biológica</div>
+              </div>
+              <div style="margin-left:4px;width:1px;height:6px;background:#ddd;"></div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#5c6bc0;flex-shrink:0;"></div>
+                <div style="font-size:7.5px;color:#444;">Sociedad</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Faction mini orbit -->
+          <svg viewBox="0 0 80 80" style="width:80px;height:80px;">
+            <circle cx="40" cy="40" r="15" fill="none" stroke="#a855f7" stroke-width=".8" stroke-opacity=".4"/>
+            <circle cx="40" cy="40" r="28" fill="none" stroke="#d97706" stroke-width=".8" stroke-opacity=".3"/>
+            <circle cx="40" cy="25" r="8" fill="#f3e8ff" stroke="#a855f7" stroke-width="1"/>
+            <text x="40" y="28" text-anchor="middle" font-size="4" fill="#7e22ce" font-weight="700">ACUÍF.</text>
+            <circle cx="20" cy="58" r="8" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+            <text x="20" y="61" text-anchor="middle" font-size="4" fill="#92400e" font-weight="700">GREM.</text>
+            <circle cx="60" cy="55" r="8" fill="#fee2e2" stroke="#dc2626" stroke-width=".8" stroke-dasharray="2 1"/>
+            <text x="60" y="58" text-anchor="middle" font-size="4" fill="#991b1b" font-weight="700">PROSC.</text>
+            <circle cx="40" cy="40" r="4" fill="#d97706" stroke="white" stroke-width="1"/>
+            <text x="40" y="43" text-anchor="middle" font-size="5" fill="white" font-weight="900">★</text>
+          </svg>
+
+          <!-- Tension indicators -->
+          <div>
+            <div style="font-size:7px;color:#9a8880;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Tensiones activas</div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <div style="background:#fce4ec;border-radius:2px;padding:2px 5px;">
+                <div style="font-size:7px;color:#880e4f;">Control del Acuífero</div>
+              </div>
+              <div style="background:#fff3cd;border-radius:2px;padding:2px 5px;">
+                <div style="font-size:7px;color:#856404;">Excavación prohibida</div>
+              </div>
+              <div style="background:#e8eaf6;border-radius:2px;padding:2px 5px;">
+                <div style="font-size:7px;color:#283593;">Castas de luz</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Dashboard integrado</h3>
+      <p>Un panel compacto que combina capas causales (timeline vertical), mapa de facciones (SVG central) y tensiones activas (chips) en una sola vista de 3 columnas. Todo a la vez.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:16px;">
+  <p class="subtitle" style="font-size:12px;">💡 Las 3 opciones reemplazan las tarjetas de texto actuales y usan los mismos datos ya disponibles: <code>core_axis, environment, subsistence, organization, tensions, factions</code></p>
+</div>

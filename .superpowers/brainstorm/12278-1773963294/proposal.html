@@ -1,0 +1,740 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400;1,6..72,500&family=Source+Sans+3:wght@300;400;500;600&family=Work+Sans:wght@400;500;600&display=swap');
+
+  /* ---- RESET / BASE ---- */
+  .demo-wrap { display: flex; flex-direction: column; gap: 2.5rem; }
+
+  .compare-label {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+  }
+  .compare-label.before { color: #94a3b8; }
+  .compare-label.after { color: #712d28; }
+
+  /* ---- BEFORE (actual) ---- */
+  .screen-before {
+    display: flex;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    height: 320px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .before-sidebar {
+    width: 180px;
+    background: #020617;
+    padding: 16px 12px;
+    flex-shrink: 0;
+  }
+
+  .before-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .before-logo-box {
+    width: 22px;
+    height: 22px;
+    background: #7c3aed;
+    border-radius: 5px;
+  }
+
+  .before-logo-text {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: white;
+  }
+
+  .before-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.62rem;
+    margin-bottom: 3px;
+    color: #94a3b8;
+  }
+
+  .before-nav-item.active {
+    background: rgba(124,58,237,0.18);
+    color: #c4b5fd;
+    border: 1px solid rgba(124,58,237,0.25);
+  }
+
+  .before-content {
+    flex: 1;
+    background: #f8fafc;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  .before-title {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+
+  .before-sub {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.6rem;
+    color: #94a3b8;
+    margin-bottom: 16px;
+  }
+
+  .before-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .before-card {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .before-card-header {
+    height: 40px;
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  }
+
+  .before-card-body { padding: 8px 10px; }
+
+  .before-card-title {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 3px;
+  }
+
+  .before-card-desc {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.55rem;
+    color: #94a3b8;
+    line-height: 1.4;
+  }
+
+  .before-btn {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #7c3aed;
+    color: white;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 6px;
+  }
+
+  /* ---- AFTER (propuesto) ---- */
+  .screen-after {
+    display: flex;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(27,28,26,0.12);
+    height: 320px;
+  }
+
+  .after-sidebar {
+    width: 180px;
+    background: #2d1a17;
+    padding: 16px 12px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .after-logo {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .after-logo-text {
+    font-family: 'Newsreader', serif;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #e8d5c8;
+    letter-spacing: -0.01em;
+    font-style: italic;
+  }
+
+  .after-nav-section-label {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.48rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #6b4a42;
+    margin-bottom: 6px;
+    margin-left: 10px;
+  }
+
+  .after-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 400;
+    margin-bottom: 2px;
+    color: #9a7a6e;
+    position: relative;
+  }
+
+  .after-nav-item.active {
+    color: #e8d5c8;
+    background: rgba(196, 98, 45, 0.12);
+  }
+
+  .after-nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 16px;
+    background: #c4622d;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .after-logout {
+    margin-top: auto;
+    padding: 6px 10px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.58rem;
+    color: #6b4a42;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 10px;
+  }
+
+  .after-content {
+    flex: 1;
+    background-color: #faf9f5;
+    background-image: radial-gradient(circle, rgba(216,214,206,0.5) 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+    padding: 22px 24px;
+    overflow: hidden;
+  }
+
+  .after-title {
+    font-family: 'Newsreader', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #1b1c1a;
+    letter-spacing: -0.025em;
+    margin-bottom: 2px;
+    line-height: 1.2;
+  }
+
+  .after-sub {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 0.62rem;
+    color: #877270;
+    margin-bottom: 16px;
+  }
+
+  .after-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .after-card {
+    background: #f4f3ee;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(27,28,26,0.04),
+      0 2px 8px rgba(27,28,26,0.05),
+      0 8px 24px rgba(27,28,26,0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .after-card-header {
+    height: 42px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 10px 6px;
+  }
+
+  .after-card-header-label {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.42rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.65);
+  }
+
+  .after-card-body { padding: 9px 10px 10px; }
+
+  .after-card-title {
+    font-family: 'Newsreader', serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #1b1c1a;
+    margin-bottom: 3px;
+    letter-spacing: -0.01em;
+  }
+
+  .after-card-desc {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 0.55rem;
+    color: #877270;
+    line-height: 1.45;
+    margin-bottom: 6px;
+  }
+
+  .after-chip {
+    display: inline-block;
+    background: rgba(27,28,26,0.05);
+    color: #6b6860;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.45rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 999px;
+    margin-right: 3px;
+  }
+
+  .after-btn {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #712d28, #8e443d);
+    color: white;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(113,45,40,0.3);
+  }
+
+  /* ---- DETAIL PAGE ---- */
+  .detail-section {
+    margin-top: 0.5rem;
+  }
+
+  .screen-detail {
+    display: flex;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(27,28,26,0.12);
+    height: 380px;
+  }
+
+  .detail-sidebar {
+    width: 180px;
+    background: #2d1a17;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 12px;
+  }
+
+  .detail-content {
+    flex: 1;
+    background-color: #faf9f5;
+    background-image: radial-gradient(circle, rgba(216,214,206,0.5) 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+    padding: 22px 24px;
+    overflow: hidden;
+  }
+
+  .detail-breadcrumb {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.5rem;
+    color: #b8b5ae;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .detail-hero {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(27,28,26,0.06);
+  }
+
+  .detail-world-name {
+    font-family: 'Newsreader', serif;
+    font-size: 1.7rem;
+    font-weight: 400;
+    color: #1b1c1a;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+
+  .detail-world-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #e8e0f5;
+    color: #5a3e8a;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.48rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+
+  .detail-action-row {
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .detail-btn-primary {
+    background: linear-gradient(135deg, #712d28, #8e443d);
+    color: white;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.55rem;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(113,45,40,0.25);
+  }
+
+  .detail-btn-ghost {
+    color: #877270;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.52rem;
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(27,28,26,0.1);
+    white-space: nowrap;
+  }
+
+  .detail-desc-lead {
+    margin-bottom: 14px;
+  }
+
+  .drop-cap {
+    font-family: 'Newsreader', serif;
+    font-size: 2.8rem;
+    font-weight: 300;
+    font-style: italic;
+    color: #5a3e8a;
+    float: left;
+    line-height: 0.78;
+    margin-right: 3px;
+    margin-top: 6px;
+  }
+
+  .detail-desc-text {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 300;
+    color: #4a4840;
+    line-height: 1.7;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    clear: both;
+  }
+
+  .detail-field {
+    background: #f0ede7;
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+
+  .detail-field-label {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.42rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #9a8880;
+    margin-bottom: 3px;
+  }
+
+  .detail-field-value {
+    font-family: 'Newsreader', serif;
+    font-size: 0.6rem;
+    color: #2a2826;
+    line-height: 1.3;
+  }
+
+  .section-divider {
+    text-align: center;
+    font-family: 'Newsreader', serif;
+    font-size: 0.7rem;
+    color: rgba(27,28,26,0.2);
+    letter-spacing: 0.4em;
+    padding: 4px 0;
+    clear: both;
+    margin: 10px 0;
+  }
+
+  /* annotations */
+  .annotation {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #fefce8;
+    border-left: 3px solid #eab308;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 8px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.58rem;
+    color: #713f12;
+    line-height: 1.4;
+  }
+
+  .annotation-icon {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .change-tag {
+    display: inline-block;
+    background: #dcfce7;
+    color: #166534;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.48rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 999px;
+    margin-right: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+</style>
+
+<h2>Diseño Propuesto — Dirección B (Living Folio)</h2>
+<p class="subtitle">Side-by-side: actual vs propuesto para Home y World Detail</p>
+
+<div class="demo-wrap">
+
+  <!-- HOME PAGE COMPARISON -->
+  <div>
+    <div class="section" style="margin-bottom: 0.75rem;">
+      <h3 style="font-family:'Newsreader',serif;font-size:1.1rem;font-weight:400;color:#1b1c1a;margin-bottom:0.25rem;">Página Principal (Home)</h3>
+    </div>
+
+    <div class="compare-label before">Actual</div>
+    <div class="screen-before" style="margin-bottom:1rem;">
+      <div class="before-sidebar">
+        <div class="before-logo">
+          <div class="before-logo-box"></div>
+          <span class="before-logo-text">StoryTeller</span>
+        </div>
+        <div class="before-nav-item active">🌍 Mundos</div>
+        <div class="before-nav-item">⚙️ Ajustes</div>
+      </div>
+      <div class="before-content">
+        <div class="before-title">Mis Mundos</div>
+        <div class="before-sub">2 mundos creados</div>
+        <div class="before-cards">
+          <div class="before-card">
+            <div class="before-card-header"></div>
+            <div class="before-card-body">
+              <div class="before-card-title">Aethelgard</div>
+              <div class="before-card-desc">Un reino medieval de magia y política donde cada decisión tiene consecuencias...</div>
+            </div>
+          </div>
+          <div class="before-card">
+            <div class="before-card-header" style="background:linear-gradient(135deg,#06b6d4,#0284c7)"></div>
+            <div class="before-card-body">
+              <div class="before-card-title">Terras Altas</div>
+              <div class="before-card-desc">Civilización acuática entre nieblas eternas y ruinas sumergidas...</div>
+            </div>
+          </div>
+        </div>
+        <div class="before-btn">+ Nuevo Mundo</div>
+      </div>
+    </div>
+
+    <div class="compare-label after">Propuesto</div>
+    <div class="screen-after">
+      <div class="after-sidebar">
+        <div class="after-logo">
+          <span class="after-logo-text">StoryTeller</span>
+        </div>
+        <div class="after-nav-section-label">Navegación</div>
+        <div class="after-nav-item active">
+          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Mis Mundos
+        </div>
+        <div class="after-nav-item">
+          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z"/><path stroke-linecap="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Ajustes
+        </div>
+        <div class="after-logout">
+          <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+          Salir
+        </div>
+      </div>
+      <div class="after-content">
+        <div class="after-title">Estantería de Mundos</div>
+        <div class="after-sub">Los universos que has imaginado, esperando a ser habitados</div>
+        <div class="after-cards">
+          <div class="after-card">
+            <div class="after-card-header" style="background:linear-gradient(135deg,#5a3e8a,#3d2870)">
+              <span class="after-card-header-label">Fantasía Medieval</span>
+            </div>
+            <div class="after-card-body">
+              <div class="after-card-title">Aethelgard</div>
+              <div class="after-card-desc">Un reino donde la magia y la política danzan en equilibrio frágil...</div>
+              <span class="after-chip">4 personajes</span>
+              <span class="after-chip">2 escenas</span>
+            </div>
+          </div>
+          <div class="after-card">
+            <div class="after-card-header" style="background:linear-gradient(135deg,#1f6e6e,#155555)">
+              <span class="after-card-header-label">Sci-fi Oceánico</span>
+            </div>
+            <div class="after-card-body">
+              <div class="after-card-title">Terras Altas</div>
+              <div class="after-card-desc">Entre nieblas eternas y ruinas sumergidas en el tiempo...</div>
+              <span class="after-chip">2 personajes</span>
+            </div>
+          </div>
+        </div>
+        <div class="after-btn">+ Nuevo Mundo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORLD DETAIL -->
+  <div class="detail-section">
+    <div class="section" style="margin-bottom:0.75rem;">
+      <h3 style="font-family:'Newsreader',serif;font-size:1.1rem;font-weight:400;color:#1b1c1a;margin-bottom:0.25rem;">World Detail — Aethelgard</h3>
+    </div>
+
+    <div class="compare-label after">Propuesto</div>
+    <div class="screen-detail">
+      <div class="detail-sidebar">
+        <div class="after-logo" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.07)">
+          <span class="after-logo-text">StoryTeller</span>
+        </div>
+        <div class="after-nav-section-label">Mundo actual</div>
+        <div style="font-family:'Newsreader',serif;font-size:0.65rem;font-style:italic;color:#e8d5c8;padding:6px 10px;margin-bottom:12px;">Aethelgard</div>
+        <div class="after-nav-section-label">Secciones</div>
+        <div class="after-nav-item active">Descripción</div>
+        <div class="after-nav-item">Personajes</div>
+        <div class="after-nav-item">Escenas</div>
+        <div class="after-nav-item">Codex</div>
+        <div class="after-logout">
+          <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+          Salir
+        </div>
+      </div>
+      <div class="detail-content">
+        <div class="detail-breadcrumb">
+          <span>Mundos</span>
+          <span>›</span>
+          <span style="color:#4a4840">Aethelgard</span>
+        </div>
+        <div class="detail-hero">
+          <div>
+            <div class="detail-world-name">Aethelgard</div>
+            <span class="detail-world-badge">Mundo · Fantasía Medieval</span>
+          </div>
+          <div class="detail-action-row">
+            <div class="detail-btn-primary">+ Personaje</div>
+            <div class="detail-btn-ghost">Exportar</div>
+          </div>
+        </div>
+        <div class="detail-desc-lead">
+          <span class="drop-cap">E</span>
+          <span class="detail-desc-text">n las tierras de Aethelgard, la magia fluye como sangre bajo la piel de la tierra — invisible, vital, peligrosa. Las grandes casas compiten por el control de los nexos mágicos mientras el pueblo llano sobrevive en los márgenes de su ambición.</span>
+        </div>
+        <div class="section-divider">✦ ✦ ✦</div>
+        <div class="detail-grid">
+          <div class="detail-field">
+            <div class="detail-field-label">Entorno</div>
+            <div class="detail-field-value">Continente medieval con influencia nórdica</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Tono</div>
+            <div class="detail-field-value" style="font-style:italic">Épico, melancólico, político</div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Tensiones</div>
+            <div class="detail-field-value">Magia vs. religión, nobleza vs. pueblo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMBIOS CLAVE -->
+  <div>
+    <h3 style="font-family:'Newsreader',serif;font-size:1rem;font-weight:400;color:#1b1c1a;margin-bottom:0.75rem;">Cambios clave incluidos</h3>
+    <div class="annotation">
+      <span class="annotation-icon">🎨</span>
+      <div><span class="change-tag">color</span> Sidebar warm-dark <code style="font-size:0.55rem">#2d1a17</code> — botones terracota <code style="font-size:0.55rem">#712d28</code> → <code style="font-size:0.55rem">#8e443d</code></div>
+    </div>
+    <div class="annotation">
+      <span class="annotation-icon">✏️</span>
+      <div><span class="change-tag">tipo</span> Newsreader para títulos y nav — Source Sans 3 light para cuerpo — Work Sans para labels/chips</div>
+    </div>
+    <div class="annotation">
+      <span class="annotation-icon">🖼️</span>
+      <div><span class="change-tag">textura</span> Vellum dot pattern en fondo principal — ambient shadows sin bordes fríos</div>
+    </div>
+    <div class="annotation">
+      <span class="annotation-icon">📖</span>
+      <div><span class="change-tag">drop cap</span> Primera letra del texto principal en color entidad (púrpura worlds, siena chars, verdigris scenes)</div>
+    </div>
+    <div class="annotation">
+      <span class="annotation-icon">💎</span>
+      <div><span class="change-tag">entidad</span> Worlds → <code style="font-size:0.55rem">#5a3e8a</code> violeta rico · Chars → <code style="font-size:0.55rem">#9e3d22</code> siena · Scenes → <code style="font-size:0.55rem">#1f6e6e</code> verdigris</div>
+    </div>
+    <div class="annotation">
+      <span class="annotation-icon">✦</span>
+      <div><span class="change-tag">ornamental</span> Divisores de sección con <code style="font-size:0.55rem">✦ ✦ ✦</code> — nav item con left-border bookmark en terracota</div>
+    </div>
+  </div>
+
+</div>

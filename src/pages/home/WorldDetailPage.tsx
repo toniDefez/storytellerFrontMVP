@@ -6,11 +6,13 @@ import type { WorldDetail, World } from '../../services/api'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { Plus, Users, Clapperboard, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
+import { WorldCausalCascade } from '@/components/world-detail/WorldCausalCascade'
+import { WorldFactionGraph } from '@/components/world-detail/WorldFactionGraph'
+import type { StructuredFaction, FactionRelation } from '@/services/api'
 import { toast } from 'sonner'
 import { exportWorld } from '../../services/worldExport'
 
@@ -73,6 +75,8 @@ export default function WorldDetailPage() {
           organization: String(raw.organization ?? ''),
           tensions: String(raw.tensions ?? ''),
           tone: String(raw.tone ?? ''),
+          structured_factions: Array.isArray(raw.structured_factions) ? raw.structured_factions as StructuredFaction[] : undefined,
+          faction_relations: Array.isArray(raw.faction_relations) ? raw.faction_relations as FactionRelation[] : undefined,
         }
 
         setDetail({
@@ -128,8 +132,8 @@ export default function WorldDetailPage() {
 
   const { world, characters, scenes: rawScenes } = detail
   const scenes = [...(rawScenes || [])].sort((a, b) => {
-    const posA = (a as Record<string, unknown>).position as number ?? 0
-    const posB = (b as Record<string, unknown>).position as number ?? 0
+    const posA = a.position ?? 0
+    const posB = b.position ?? 0
     if (posA !== posB) return posA - posB
     return a.id - b.id
   })
@@ -196,17 +200,17 @@ export default function WorldDetailPage() {
               {t('world.detail.deleteButton')}
             </Button>
           </div>
-          <h1 className="text-4xl font-bold text-white font-display leading-tight">
+          <h1 className="text-[2.5rem] font-display font-normal tracking-[-0.03em] leading-tight text-white">
             {world.name}
           </h1>
-          {world.description && (
-            <p className="mt-3 text-white/80 text-lg max-w-2xl leading-relaxed">
-              {world.description}
-            </p>
-          )}
         </div>
 
         <div className="bg-card border border-t-0 border-border rounded-b-xl px-8 py-5 space-y-4">
+          {world.description && (
+            <p className="prose-drop-cap prose-literary mb-6 overflow-hidden">
+              {world.description}
+            </p>
+          )}
           {world.factions && world.factions.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground">{t('world.detail.factionsInline')}</span>
@@ -218,35 +222,34 @@ export default function WorldDetailPage() {
             </div>
           )}
 
-          {/* Sanderson layers */}
+          {/* World visualization */}
           {world.core_axis && (
             <div className="mt-6">
-              <p className="text-sm text-muted-foreground italic mb-3">
+              <p className="text-sm text-muted-foreground italic mb-4">
                 "{world.core_axis}"
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {([
-                  { key: 'environment' as const, label: t('world.create.layerEnvironment'), color: 'emerald' },
-                  { key: 'subsistence' as const, label: t('world.create.layerSubsistence'), color: 'amber' },
-                  { key: 'organization' as const, label: t('world.create.layerOrganization'), color: 'blue' },
-                  { key: 'tensions' as const, label: t('world.create.layerTensions'), color: 'rose' },
-                  { key: 'tone' as const, label: t('world.create.layerTone'), color: 'violet' },
-                ]).filter(l => world[l.key]).map(layer => (
-                  <div key={layer.key} className={`rounded-xl bg-white border border-gray-100 p-4 border-l-4 border-l-${layer.color}-500`}>
-                    <h4 className={`text-xs font-semibold uppercase tracking-widest text-${layer.color}-600 mb-1`}>
-                      {layer.label}
-                    </h4>
-                    <p className="text-sm text-foreground leading-relaxed line-clamp-4">
-                      {world[layer.key]}
-                    </p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <WorldCausalCascade
+                  environment={world.environment}
+                  subsistence={world.subsistence}
+                  organization={world.organization}
+                  tensions={world.tensions}
+                  tone={world.tone}
+                />
+                <WorldFactionGraph
+                  factions={world.factions}
+                  structuredFactions={world.structured_factions}
+                  factionRelations={world.faction_relations}
+                />
               </div>
             </div>
           )}
         </div>
       </div>
 
+      <div className="text-center py-2 text-[rgba(27,28,26,0.2)] font-display tracking-[0.4em] text-sm select-none">
+        ✦ ✦ ✦
+      </div>
       {/* ── Characters Section ── */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
@@ -266,31 +269,26 @@ export default function WorldDetailPage() {
         </div>
 
         {!characters || characters.length === 0 ? (
-          <Card className="border-entity-character/20 bg-entity-character-light/40">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-entity-character/10 p-4 mb-4">
-                <Users className="h-8 w-8 text-entity-character" />
-              </div>
-              <p className="text-lg font-medium text-foreground mb-1">
-                {t('world.detail.noCharactersTitle')}
-              </p>
-              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                {t('world.detail.noCharactersDesc')}
-              </p>
-              <div className="flex gap-3">
-                <Button variant="outline" size="sm" asChild>
-                  <Link to={`/worlds/${id}/characters/create`}>
-                    {t('world.detail.createCharacterManual')}
-                  </Link>
-                </Button>
-                <Button variant="secondary" size="sm" asChild>
-                  <Link to={`/worlds/${id}/characters/create`}>
-                    {t('world.detail.createCharacterAi')}
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="rounded-[4px] bg-[#f7ece6]/50 shadow-ambient px-8 py-12 text-center">
+            <p className="font-display italic text-lg text-[#877270] mb-2">
+              {t('world.detail.noCharactersTitle')}
+            </p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+              {t('world.detail.noCharactersDesc')}
+            </p>
+            <div className="flex justify-center gap-3">
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/worlds/${id}/characters/create`}>
+                  {t('world.detail.createCharacterManual')}
+                </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to={`/worlds/${id}/characters/create`}>
+                  {t('world.detail.createCharacterAi')}
+                </Link>
+              </Button>
+            </div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {characters.map(c => (
@@ -299,30 +297,28 @@ export default function WorldDetailPage() {
                 to={`/worlds/${id}/characters/${c.id}`}
                 className="block"
               >
-                <Card className="border-l-4 border-l-entity-character hover:shadow-md transition-shadow h-full">
-                  <CardContent className="p-4">
-                    <h3 className="font-bold text-foreground">{c.name}</h3>
-                    {c.role && (
-                      <Badge className="mt-1.5 bg-entity-character/10 text-entity-character-muted border-entity-character/20 hover:bg-entity-character/15">
-                        {c.role}
-                      </Badge>
-                    )}
-                    {c.personality && (
-                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                        {c.personality}
-                      </p>
-                    )}
-                    {c.goals && c.goals.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {c.goals.slice(0, 2).map((g: string, i: number) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {g}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <div className="rounded-[4px] bg-[#f7ece6] shadow-ambient p-4 h-full transition-all hover:shadow-ambient-hover">
+                  <h3 className="font-display font-medium text-[#7a2d18]">{c.name}</h3>
+                  {c.role && (
+                    <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-ui uppercase tracking-[0.06em] bg-[rgba(158,61,34,0.1)] text-[#9e3d22]">
+                      {c.role}
+                    </span>
+                  )}
+                  {c.personality && (
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2 font-display italic">
+                      {c.personality}
+                    </p>
+                  )}
+                  {c.goals && c.goals.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {c.goals.slice(0, 2).map((g: string, i: number) => (
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-ui bg-[rgba(27,28,26,0.05)] text-[#6b6860]">
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Link>
             ))}
           </div>
@@ -348,73 +344,66 @@ export default function WorldDetailPage() {
         </div>
 
         {!scenes || scenes.length === 0 ? (
-          <Card className="border-entity-scene/20 bg-entity-scene-light/40">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-entity-scene/10 p-4 mb-4">
-                <Clapperboard className="h-8 w-8 text-entity-scene" />
-              </div>
-              <p className="text-lg font-medium text-foreground mb-1">
-                {t('world.detail.noScenesTitle')}
-              </p>
-              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                {t('world.detail.noScenesDesc')}
-              </p>
-              <div className="flex gap-3">
-                <Button variant="outline" size="sm" asChild>
-                  <Link to={`/worlds/${id}/scenes/create`}>
-                    {t('world.detail.createSceneManual')}
-                  </Link>
-                </Button>
-                <Button variant="secondary" size="sm" asChild>
-                  <Link to={`/worlds/${id}/scenes/create`}>
-                    {t('world.detail.createSceneAi')}
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="rounded-[4px] bg-[#e3f3f3]/50 shadow-ambient px-8 py-12 text-center">
+            <p className="font-display italic text-lg text-[#3d7a7a] mb-2">
+              {t('world.detail.noScenesTitle')}
+            </p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+              {t('world.detail.noScenesDesc')}
+            </p>
+            <div className="flex justify-center gap-3">
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/worlds/${id}/scenes/create`}>
+                  {t('world.detail.createSceneManual')}
+                </Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to={`/worlds/${id}/scenes/create`}>
+                  {t('world.detail.createSceneAi')}
+                </Link>
+              </Button>
+            </div>
+          </div>
         ) : (
           <div className="space-y-3">
             {scenes.map((s, idx) => {
-              const pos = (s as Record<string, unknown>).position as number ?? idx + 1
+              const pos = s.position ?? idx + 1
               return (
                 <Link
                   key={s.id}
                   to={`/worlds/${id}/scenes/${s.id}`}
                   className="block"
                 >
-                  <Card className="border-l-4 border-l-entity-scene hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-entity-scene/10 flex items-center justify-center">
-                        <span className="text-sm font-bold text-entity-scene">{pos}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-foreground">{s.title}</h3>
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                          {s.location && (
-                            <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
-                              {s.location}
-                            </Badge>
-                          )}
-                          {s.time && (
-                            <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
-                              {s.time}
-                            </Badge>
-                          )}
-                          {s.tone && (
-                            <Badge className="bg-entity-scene/10 text-entity-scene-muted border-entity-scene/20 hover:bg-entity-scene/15">
-                              {s.tone}
-                            </Badge>
-                          )}
-                        </div>
-                        {s.context && (
-                          <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
-                            {s.context}
-                          </p>
+                  <div className="rounded-[4px] bg-[#e3f3f3] shadow-ambient p-4 flex items-center gap-4 transition-all hover:shadow-ambient-hover">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-entity-scene/10 flex items-center justify-center">
+                      <span className="text-sm font-bold text-[#155555]">{pos}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-display font-medium text-[#155555]">{s.title}</h3>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {s.location && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-ui bg-[rgba(21,85,85,0.1)] text-[#155555]">
+                            {s.location}
+                          </span>
+                        )}
+                        {s.time && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-ui bg-[rgba(21,85,85,0.1)] text-[#155555]">
+                            {s.time}
+                          </span>
+                        )}
+                        {s.tone && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-ui bg-[rgba(21,85,85,0.1)] text-[#155555]">
+                            {s.tone}
+                          </span>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                      {s.context && (
+                        <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
+                          {s.context}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </Link>
               )
             })}

@@ -49,6 +49,26 @@ export function validateToken() {
 
 // --- Worlds ---
 
+export type PowerBasis = 'military' | 'economic' | 'ritual' | 'land' | 'labor' | 'information'
+export type WorldWoundRelation = 'caused' | 'benefits' | 'suffers' | 'ignores'
+export type FactionRelationType = 'dependency' | 'conflict' | 'instrumentalization'
+
+export interface StructuredFaction {
+  name: string
+  tier: FactionPowerTier
+  power_basis: PowerBasis
+  resource_controlled: string
+  world_wound_relation: WorldWoundRelation
+  internal_pressure: string
+}
+
+export interface FactionRelation {
+  source: string
+  target: string
+  type: FactionRelationType
+  notes: string
+}
+
 export interface World {
   id: number
   name: string
@@ -60,6 +80,8 @@ export interface World {
   organization: string
   tensions: string
   tone: string
+  structured_factions?: StructuredFaction[]
+  faction_relations?: FactionRelation[]
 }
 
 export function getWorlds() {
@@ -121,6 +143,15 @@ export function deleteWorld(id: number) {
 
 // --- World Detail ---
 
+export type ConsciousnessState = 'dormido' | 'inquieto' | 'despierto' | 'explotador' | 'subversivo'
+export type FactionPowerTier   = 0 | 1 | 2
+export type GoalCategory       = 'world_tension' | 'subversive' | 'personal'
+
+export interface StructuredGoal {
+  text: string
+  category: GoalCategory
+}
+
 export interface Character {
   id: number
   name: string
@@ -130,13 +161,19 @@ export interface Character {
   goals: string[]
   world_id: number
   state: Record<string, string>
-  // New derivation fields (optional — backend may not have them yet)
+  // prose derivation fields
   premise?: string
   social_position?: string
   internal_contradiction?: string
   relation_to_collective_lie?: string
   personal_fear?: string
   faction_affiliation?: string
+  // structured fields powering visualizations directly (no heuristics)
+  consciousness_state?: ConsciousnessState
+  faction_power_tier?: FactionPowerTier
+  contradiction_declared?: string
+  contradiction_operative?: string
+  structured_goals?: StructuredGoal[]
 }
 
 export interface Scene {

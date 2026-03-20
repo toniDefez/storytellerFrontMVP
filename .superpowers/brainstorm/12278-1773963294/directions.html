@@ -1,0 +1,655 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Newsreader:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600&family=Work+Sans:wght@400;500&display=swap');
+
+  .directions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .dir-card {
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+  }
+
+  .dir-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  }
+
+  .dir-card.selected {
+    outline: 3px solid #7c3aed;
+    outline-offset: 3px;
+  }
+
+  .dir-label {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+
+  /* === DIRECTION A: Current + polish === */
+  .dir-a {
+    background: #f8f7f4;
+    border: 1px solid #e5e3de;
+  }
+
+  .dir-a .preview-sidebar {
+    background: #0f172a;
+    padding: 16px 12px;
+  }
+
+  .dir-a .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .dir-a .logo-icon {
+    width: 24px;
+    height: 24px;
+    background: #7c3aed;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dir-a .logo-text {
+    color: white;
+    font-family: 'Lora', serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .dir-a .sidebar-item {
+    background: rgba(124, 58, 237, 0.15);
+    color: #c4b5fd;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.6rem;
+    margin-bottom: 4px;
+  }
+
+  .dir-a .content-area {
+    padding: 16px;
+  }
+
+  .dir-a .page-title {
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+
+  .dir-a .page-sub {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.6rem;
+    color: #6b7280;
+    margin-bottom: 12px;
+  }
+
+  .dir-a .world-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .dir-a .card-header {
+    height: 32px;
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  }
+
+  .dir-a .card-body {
+    padding: 8px 10px;
+  }
+
+  .dir-a .card-title {
+    font-family: 'Lora', serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 3px;
+  }
+
+  .dir-a .card-desc {
+    font-size: 0.55rem;
+    color: #9ca3af;
+    font-family: 'Source Sans 3', sans-serif;
+    line-height: 1.4;
+  }
+
+  .dir-a .tag {
+    display: inline-block;
+    background: #ede9fe;
+    color: #7c3aed;
+    font-size: 0.5rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-family: 'Work Sans', sans-serif;
+    margin-top: 4px;
+  }
+
+  /* === DIRECTION B: Living Folio parcial === */
+  .dir-b {
+    background: #faf9f5;
+  }
+
+  .dir-b .preview-sidebar {
+    background: #2f2420;
+    padding: 16px 12px;
+  }
+
+  .dir-b .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .dir-b .logo-icon {
+    width: 24px;
+    height: 24px;
+    background: #712d28;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+  }
+
+  .dir-b .logo-text {
+    color: #faf9f5;
+    font-family: 'Newsreader', serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .dir-b .sidebar-item {
+    color: rgba(250, 249, 245, 0.6);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.6rem;
+    margin-bottom: 3px;
+  }
+
+  .dir-b .sidebar-item.active {
+    background: rgba(113, 45, 40, 0.3);
+    color: #ffb4ab;
+  }
+
+  .dir-b .content-area {
+    padding: 16px;
+    background: #faf9f5;
+  }
+
+  .dir-b .page-title {
+    font-family: 'Newsreader', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1b1c1a;
+    margin-bottom: 2px;
+  }
+
+  .dir-b .page-sub {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.55rem;
+    color: #877270;
+    margin-bottom: 12px;
+    font-style: italic;
+  }
+
+  .dir-b .world-card {
+    background: #ffffff;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 24px rgba(27, 28, 26, 0.06);
+  }
+
+  .dir-b .card-header {
+    height: 36px;
+    background: linear-gradient(135deg, #712d28, #8e443d);
+    display: flex;
+    align-items: flex-end;
+    padding: 4px 8px;
+  }
+
+  .dir-b .card-header-text {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.45rem;
+    font-family: 'Work Sans', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .dir-b .card-body {
+    padding: 8px 10px;
+  }
+
+  .dir-b .card-title {
+    font-family: 'Newsreader', serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #1b1c1a;
+    margin-bottom: 3px;
+  }
+
+  .dir-b .card-desc {
+    font-size: 0.55rem;
+    color: #877270;
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .dir-b .tag {
+    display: inline-block;
+    background: #f4f4f0;
+    color: #544341;
+    font-size: 0.5rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-family: 'Work Sans', sans-serif;
+    margin-top: 4px;
+  }
+
+  /* === DIRECTION C: Full Living Folio === */
+  .dir-c {
+    background: #faf9f5;
+  }
+
+  .dir-c .preview-layout {
+    display: flex;
+    height: 100%;
+  }
+
+  .dir-c .preview-sidebar {
+    background: #2f2420;
+    padding: 14px 10px;
+    width: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dir-c .sidebar-logo-icon {
+    width: 28px;
+    height: 28px;
+    background: #712d28;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Newsreader', serif;
+    font-size: 0.7rem;
+    color: #faf9f5;
+    font-weight: 600;
+  }
+
+  .dir-c .sidebar-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dir-c .sidebar-dot.active {
+    background: rgba(113, 45, 40, 0.35);
+  }
+
+  .dir-c .sidebar-dot svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .dir-c .content-area {
+    flex: 1;
+    padding: 16px 20px;
+    background-image: radial-gradient(circle, #d9c1be33 0.5px, transparent 0.5px);
+    background-size: 20px 20px;
+    background-color: #faf9f5;
+  }
+
+  .dir-c .drop-cap-section {
+    display: flex;
+    gap: 0;
+    margin-bottom: 14px;
+  }
+
+  .dir-c .drop-cap {
+    font-family: 'Newsreader', serif;
+    font-size: 3.2rem;
+    font-weight: 700;
+    color: #712d28;
+    line-height: 0.75;
+    float: left;
+    margin-right: 4px;
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  .dir-c .hero-text {
+    font-family: 'Newsreader', serif;
+    font-size: 0.7rem;
+    color: #1b1c1a;
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .dir-c .hero-title {
+    font-family: 'Newsreader', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1b1c1a;
+    margin-bottom: 2px;
+    letter-spacing: -0.02em;
+  }
+
+  .dir-c .hero-sub {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 0.6rem;
+    color: #877270;
+    margin-bottom: 10px;
+  }
+
+  .dir-c .world-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .dir-c .world-card {
+    background: #ffffff;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(27, 28, 26, 0.06);
+  }
+
+  .dir-c .card-header {
+    height: 30px;
+    background: linear-gradient(135deg, #712d28 0%, #8e443d 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+  }
+
+  .dir-c .card-climate {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.4rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.65);
+  }
+
+  .dir-c .card-body {
+    padding: 8px 10px;
+    background: #ffffff;
+  }
+
+  .dir-c .card-title {
+    font-family: 'Newsreader', serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #1b1c1a;
+    margin-bottom: 2px;
+    letter-spacing: -0.01em;
+  }
+
+  .dir-c .card-desc {
+    font-size: 0.5rem;
+    color: #877270;
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    line-height: 1.4;
+    margin-bottom: 5px;
+  }
+
+  .dir-c .card-footer {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .dir-c .chip {
+    background: #f4f4f0;
+    color: #544341;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.42rem;
+    padding: 1px 5px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Direction descriptions */
+  .dir-info {
+    padding: 12px 14px;
+    border-top: 1px solid rgba(0,0,0,0.07);
+  }
+
+  .dir-name {
+    font-family: 'Lora', serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+    color: #1f2937;
+  }
+
+  .dir-tagline {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.6rem;
+    color: #6b7280;
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+
+  .dir-pills {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.5rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+
+  .pill-effort-low { background: #dcfce7; color: #166534; }
+  .pill-effort-med { background: #fef9c3; color: #854d0e; }
+  .pill-effort-high { background: #fee2e2; color: #991b1b; }
+  .pill-impact-low { background: #f1f5f9; color: #475569; }
+  .pill-impact-med { background: #ede9fe; color: #5b21b6; }
+  .pill-impact-high { background: #fce7f3; color: #9d174d; }
+</style>
+
+<h2>¿Qué dirección de diseño quieres para StoryTeller?</h2>
+<p class="subtitle">Tres propuestas de personalidad — desde polish sutil hasta transformación completa</p>
+
+<div class="directions-grid">
+
+  <!-- DIRECTION A -->
+  <div class="card dir-a option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="dir-label">Conservadora</div>
+    <div class="preview-sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">
+          <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+        </div>
+        <span class="logo-text">StoryTeller</span>
+      </div>
+      <div class="sidebar-item">Mundos</div>
+      <div class="sidebar-item" style="background:transparent;color:rgba(255,255,255,0.3)">Ajustes</div>
+    </div>
+    <div class="content-area">
+      <div class="page-title">Mis Mundos</div>
+      <div class="page-sub">2 mundos creados · Literatura fantástica</div>
+      <div class="world-card">
+        <div class="card-header" style="background:linear-gradient(135deg,#7c3aed,#5b21b6)"></div>
+        <div class="card-body">
+          <div class="card-title">Aethelgard</div>
+          <div class="card-desc">Un reino medieval de magia y política...</div>
+          <span class="tag">Fantasía épica</span>
+        </div>
+      </div>
+      <div class="world-card">
+        <div class="card-header" style="background:linear-gradient(135deg,#06b6d4,#0284c7)"></div>
+        <div class="card-body">
+          <div class="card-title">Terras Altas</div>
+          <div class="card-desc">Civilización acuática entre nieblas...</div>
+          <span class="tag">Sci-fi</span>
+        </div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div class="dir-name">A · Polish Refinado</div>
+      <div class="dir-tagline">Mejora la tipografía, sombras y espaciado. Mantiene el morado y la estructura actual.</div>
+      <div class="dir-pills">
+        <span class="pill pill-effort-low">Esfuerzo bajo</span>
+        <span class="pill pill-impact-low">Impacto moderado</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTION B -->
+  <div class="card dir-b option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="dir-label">Equilibrada</div>
+    <div class="preview-sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">📖</div>
+        <span class="logo-text">StoryTeller</span>
+      </div>
+      <div class="sidebar-item active">Mis Mundos</div>
+      <div class="sidebar-item">Ajustes</div>
+    </div>
+    <div class="content-area">
+      <div class="page-title">Estantería de Mundos</div>
+      <div class="page-sub">Tus universos narrativos</div>
+      <div class="world-card">
+        <div class="card-header">
+          <span class="card-header-text">Fantasía épica · Medieval</span>
+        </div>
+        <div class="card-body">
+          <div class="card-title">Aethelgard</div>
+          <div class="card-desc">Un reino donde la magia y la política danzan en equilibrio frágil...</div>
+          <span class="tag">4 personajes · 2 escenas</span>
+        </div>
+      </div>
+      <div class="world-card">
+        <div class="card-header" style="background: linear-gradient(135deg, #466553, #2f4d3c)">
+          <span class="card-header-text">Ciencia ficción · Oceánico</span>
+        </div>
+        <div class="card-body">
+          <div class="card-title">Terras Altas</div>
+          <div class="card-desc">Civilización acuática entre nieblas eternas...</div>
+          <span class="tag">2 personajes</span>
+        </div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div class="dir-name">B · Living Folio Parcial</div>
+      <div class="dir-tagline">Sidebar oscuro terracota, tipografía Newsreader, colores tierra. Personalidad sin ruptura total.</div>
+      <div class="dir-pills">
+        <span class="pill pill-effort-med">Esfuerzo medio</span>
+        <span class="pill pill-impact-med">Impacto alto</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTION C -->
+  <div class="card dir-c option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="dir-label">Transformación total</div>
+    <div style="display:flex; height: 220px; overflow:hidden;">
+      <div class="preview-sidebar">
+        <div class="sidebar-logo-icon">S</div>
+        <div class="sidebar-dot active">
+          <svg fill="none" viewBox="0 0 24 24" stroke="rgba(255,180,171,0.9)" stroke-width="1.5">
+            <path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+        </div>
+        <div class="sidebar-dot">
+          <svg fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.3)" stroke-width="1.5">
+            <path stroke-linecap="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="hero-title">Estantería de Mundos</div>
+        <div class="hero-sub">Todos los universos que has tejido</div>
+        <div style="display:flex;gap:0;margin-bottom:10px;">
+          <span class="drop-cap">C</span>
+          <span style="font-family:'Newsreader',serif;font-size:0.6rem;color:#544341;line-height:1.5;flex:1;">ada mundo nace de una chispa. Aquí viven los universos que has imaginado, esperando a que los habites de nuevo.</span>
+        </div>
+        <div class="world-cards">
+          <div class="world-card">
+            <div class="card-header" style="background:linear-gradient(135deg,#712d28,#8e443d)">
+              <span class="card-climate">Fantasía Medieval</span>
+            </div>
+            <div class="card-body">
+              <div class="card-title">Aethelgard</div>
+              <div class="card-desc">Donde la magia y la política danzan...</div>
+              <div class="card-footer">
+                <span class="chip">4 personajes</span>
+                <span class="chip">2 escenas</span>
+              </div>
+            </div>
+          </div>
+          <div class="world-card">
+            <div class="card-header" style="background:linear-gradient(135deg,#466553,#2f4d3c)">
+              <span class="card-climate">Sci-fi Oceánico</span>
+            </div>
+            <div class="card-body">
+              <div class="card-title">Terras Altas</div>
+              <div class="card-desc">Entre nieblas eternas y ruinas sumergidas...</div>
+              <div class="card-footer">
+                <span class="chip">2 personajes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div class="dir-name">C · Full Living Folio</div>
+      <div class="dir-tagline">Terracota, textura pergamino, Newsreader, drop caps. La visión completa del "diario literario".</div>
+      <div class="dir-pills">
+        <span class="pill pill-effort-high">Esfuerzo alto</span>
+        <span class="pill pill-impact-high">Impacto máximo</span>
+      </div>
+    </div>
+  </div>
+
+</div>

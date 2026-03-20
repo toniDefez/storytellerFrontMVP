@@ -27,50 +27,52 @@
   --color-chart-5: hsl(var(--chart-5));
 
   /* Semantic entity colors */
-  --color-entity-world: hsl(var(--primary));
-  --color-entity-world-light: hsl(263 80% 95%);
-  --color-entity-character: hsl(25 95% 53%);
-  --color-entity-character-light: hsl(33 100% 96%);
-  --color-entity-character-muted: hsl(25 90% 42%);
-  --color-entity-scene: hsl(199 89% 48%);
-  --color-entity-scene-light: hsl(199 100% 95%);
-  --color-entity-scene-muted: hsl(199 80% 38%);
+  --color-entity-world: hsl(260 38% 40%);
+  --color-entity-world-light: hsl(260 35% 93%);
+  --color-entity-world-muted: hsl(260 30% 58%);
+  --color-entity-character: hsl(17 63% 37%);
+  --color-entity-character-light: hsl(18 55% 94%);
+  --color-entity-character-muted: hsl(17 50% 60%);
+  --color-entity-scene: hsl(180 55% 30%);
+  --color-entity-scene-light: hsl(180 40% 93%);
+  --color-entity-scene-muted: hsl(180 40% 50%);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-display: 'Lora', Georgia, 'Times New Roman', serif;
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-body: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+  --font-ui: 'Work Sans', system-ui, sans-serif;
 }
 
 @layer base {
   :root {
     --background: 40 20% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 263 70% 50%;
+    --foreground: 30 8% 11%;
+    --card: 40 12% 97%;
+    --card-foreground: 30 8% 11%;
+    --popover: 40 12% 97%;
+    --popover-foreground: 30 8% 11%;
+    --primary: 5 47% 30%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 263 80% 95%;
-    --accent-foreground: 263 70% 50%;
+    --secondary: 35 12% 94%;
+    --secondary-foreground: 30 8% 40%;
+    --muted: 35 12% 94%;
+    --muted-foreground: 30 6% 47%;
+    --accent: 35 15% 94%;
+    --accent-foreground: 5 47% 30%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 263 70% 50%;
+    --border: 35 12% 88%;
+    --input: 35 12% 88%;
+    --ring: 5 47% 30%;
     --radius: 0.5rem;
-    --chart-1: 263 70% 50%;
-    --chart-2: 160 84% 39%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 217 91% 60%;
+    --chart-1: 5 47% 30%;
+    --chart-2: 180 55% 30%;
+    --chart-3: 17 63% 37%;
+    --chart-4: 260 38% 40%;
     --chart-5: 0 84% 60%;
   }
 
@@ -83,7 +85,7 @@
     font-family: var(--font-body);
   }
 
-  h1, h2, h3 {
+  h1, h2, h3, h4 {
     font-family: var(--font-display);
   }
 }
@@ -103,7 +105,7 @@ html, body, #root {
 
 /* Global focus styles — high contrast, visible on all backgrounds */
 :focus-visible {
-  outline: 2px solid #7c3aed;
+  outline: 2px solid #712d28;
   outline-offset: 2px;
 }
 
@@ -114,4 +116,57 @@ html, body, #root {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Living Folio utilities ── */
+
+.vellum-texture {
+  background-image: radial-gradient(circle, hsl(35 15% 82% / 0.45) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+.shadow-ambient {
+  box-shadow:
+    0 0 0 1px rgba(27, 28, 26, 0.04),
+    0 2px 6px rgba(27, 28, 26, 0.05),
+    0 8px 24px rgba(27, 28, 26, 0.04);
+}
+
+.shadow-ambient-hover {
+  box-shadow:
+    0 0 0 1px rgba(27, 28, 26, 0.05),
+    0 4px 12px rgba(27, 28, 26, 0.08),
+    0 16px 40px rgba(27, 28, 26, 0.06);
+}
+
+.prose-literary {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: hsl(30 8% 28%);
+}
+
+.prose-drop-cap::first-letter {
+  font-family: var(--font-display);
+  font-size: 5rem;
+  font-weight: 300;
+  font-style: italic;
+  float: left;
+  line-height: 0.78;
+  margin-right: 0.08em;
+  margin-top: 0.06em;
+  color: var(--color-entity-world);
+}
+
+.prose-drop-cap-character::first-letter {
+  font-family: var(--font-display);
+  font-size: 5rem;
+  font-weight: 300;
+  font-style: italic;
+  float: left;
+  line-height: 0.78;
+  margin-right: 0.08em;
+  margin-top: 0.06em;
+  color: var(--color-entity-character);
 }
