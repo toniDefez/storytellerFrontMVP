@@ -64,9 +64,6 @@ export default function CharacterDetailPage() {
     }
   }
 
-  const personalityList = character.personality
-    ? character.personality.split(',').map(item => item.trim()).filter(Boolean)
-    : []
   const stateEntries = Object.entries(character.state || {})
 
   return (
@@ -128,19 +125,10 @@ export default function CharacterDetailPage() {
         <div className="space-y-6">
           <div>
             <h3 className="font-ui text-[10px] font-medium uppercase tracking-[0.1em] text-[#9a8880] mb-2">{t('character.detail.personalitySection')}</h3>
-            {personalityList.length === 0 ? (
-              <p className="text-slate-500 italic">{t('character.detail.noPersonality')}</p>
+            {character.personality ? (
+              <p className="font-display text-sm text-[#2a2826] whitespace-pre-wrap">{character.personality}</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {personalityList.map((trait, index) => (
-                  <span
-                    key={`${trait}-${index}`}
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-ui bg-[rgba(158,61,34,0.1)] text-[#9e3d22]"
-                  >
-                    {trait}
-                  </span>
-                ))}
-              </div>
+              <p className="text-slate-500 italic">{t('character.detail.noPersonality')}</p>
             )}
           </div>
 

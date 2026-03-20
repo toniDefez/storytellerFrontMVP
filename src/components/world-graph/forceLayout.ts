@@ -27,7 +27,10 @@ export function applyForceLayout(
     y: n.position.y,
   }))
 
-  const simLinks = edges.map(e => ({ source: e.source, target: e.target }))
+  const nodeIds = new Set(nodes.map(n => n.id))
+  const simLinks = edges
+    .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
+    .map(e => ({ source: e.source, target: e.target }))
 
   const simulation = d3
     .forceSimulation(simNodes)

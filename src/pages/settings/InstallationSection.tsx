@@ -331,30 +331,6 @@ function SetupSteps() {
   )
 }
 
-function LinkedHeader() {
-  const { t } = useTranslation()
-  return (
-    <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-r from-emerald-500/10 via-primary/10 to-emerald-500/10 px-6 py-5">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_hsl(var(--primary)/0.08),_transparent_70%)]" />
-      <div className="relative flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-500/15 ring-1 ring-emerald-500/20">
-            <CheckCircle2 className="h-5.5 w-5.5 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-0.5">
-              {t('installation.linkedBadge')}
-            </p>
-            <h2 className="text-xl font-bold text-foreground">
-              {t('installation.linkedTitle')}
-            </h2>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // --- Main page ---
 
 export function InstallationSection() {
@@ -379,14 +355,16 @@ export function InstallationSection() {
       >
         <motion.div variants={scaleIn}>
           <Card className="overflow-hidden">
-            <LinkedHeader />
-            <CardHeader className="pt-4">
+            <CardHeader>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                    <Server className="h-5 w-5 text-primary" />
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
+                    <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-0.5">
+                      {t('installation.linkedBadge')}
+                    </p>
                     <p className="text-base font-semibold text-foreground">
                       {installation.machine_name}
                     </p>

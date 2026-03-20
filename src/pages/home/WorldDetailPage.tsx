@@ -207,7 +207,7 @@ export default function WorldDetailPage() {
 
         <div className="bg-card border border-t-0 border-border rounded-b-xl px-8 py-5 space-y-4">
           {world.description && (
-            <p className="prose-drop-cap prose-literary mb-6 overflow-hidden">
+            <p className="prose-drop-cap prose-literary mb-6">
               {world.description}
             </p>
           )}
