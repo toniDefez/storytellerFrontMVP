@@ -7,6 +7,7 @@ import CreateWorldPage from './pages/home/CreateWorldPage'
 import EditWorldPage from './pages/home/EditWorldPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import NotFoundPage from './pages/NotFoundPage'
+import ErrorPage from './pages/ErrorPage'
 import WorldDetailPage from './pages/home/WorldDetailPage'
 import WorldBiblePage from './pages/home/WorldBiblePage'
 import CreateCharacterPage from './pages/characters/CreateCharacterPage.sanderson'
@@ -18,13 +19,15 @@ import SceneDetailPage from './pages/scenes/SceneDetailPage'
 import SettingsPage from './pages/settings/SettingsPage'
 
 export const router = createBrowserRouter([
-  { path: '/', element: <LoginPage /> },
-  { path: '/register', element: <RegisterPage /> },
+  { path: '/', element: <LoginPage />, errorElement: <ErrorPage /> },
+  { path: '/register', element: <RegisterPage />, errorElement: <ErrorPage /> },
   {
     element: <ProtectedRoute />,
+    errorElement: <ErrorPage />,
     children: [
       {
         element: <MainLayout />,
+        errorElement: <ErrorPage />,
         children: [
           { path: 'worlds', element: <HomePage /> },
           { path: 'worlds/create', element: <CreateWorldPage /> },
