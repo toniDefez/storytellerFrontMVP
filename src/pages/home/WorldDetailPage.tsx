@@ -12,7 +12,7 @@ import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { Plus, Users, Clapperboard, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
 import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
 import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
-import { NodeDetailPanel } from '@/components/world-graph/NodeDetailPanel'
+import { GraphSidePanel } from '@/components/world-graph/GraphSidePanel'
 import { PremiseBar } from '@/components/world-graph/PremiseBar'
 import { toast } from 'sonner'
 import { exportWorld } from '../../services/worldExport'
@@ -240,21 +240,22 @@ export default function WorldDetailPage() {
                   />
                 )}
               </div>
-              {graph.selectedNode && (
-                <NodeDetailPanel
-                  node={graph.selectedNode}
-                  worldId={Number(id)}
-                  isExpanding={isExpanding}
-                  onClose={() => graph.selectNode(null)}
-                  onExpand={async () => {
-                    setIsExpanding(true)
-                    try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
-                    finally { setIsExpanding(false) }
-                  }}
-                  onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
-                  onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
-                />
-              )}
+              <GraphSidePanel
+                selectedNode={graph.selectedNode}
+                worldId={Number(id)}
+                isExpanding={isExpanding}
+                chatHistory={graph.chatHistory}
+                chatLoading={graph.chatLoading}
+                onSendMessage={(text) => graph.sendChatMessage(Number(id), text)}
+                onClose={() => graph.selectNode(null)}
+                onExpand={async () => {
+                  setIsExpanding(true)
+                  try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
+                  finally { setIsExpanding(false) }
+                }}
+                onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
+                onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
+              />
             </div>
           </div>
         </div>
