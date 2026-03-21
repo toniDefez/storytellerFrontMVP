@@ -47,94 +47,63 @@ export function validateToken() {
   })
 }
 
-// --- Worlds ---
-
-// --- Structured environment types ---
-export type TerrainFeatureType = 'mountain' | 'plain' | 'valley' | 'plateau' | 'canyon' | 'island' | 'cave' | 'coast' | 'desert' | 'forest' | 'swamp' | 'volcano' | 'glacier' | 'floating'
-
-export interface TerrainFeature {
-  name: string
-  type: TerrainFeatureType
-  description: string
-}
-
-export interface StructuredEnvironment {
-  terrain_features: TerrainFeature[]
-  climate: string
-  water_system: string
-  light_regime: string
-  gravity: string
-  atmosphere: string
-  unique_phenomenon: string
-}
-
-// --- Structured ecosystem types ---
-export type TrophicLevel = 'producer' | 'primary_consumer' | 'secondary_consumer' | 'apex_predator' | 'decomposer'
-export type EcologicalRelationType = 'predation' | 'herbivory' | 'mutualism' | 'parasitism' | 'competition' | 'decomposition'
-
-export interface StructuredOrganism {
-  name: string
-  trophic_level: TrophicLevel
-  habitat: string
-  description: string
-}
-
-export interface EcologicalRelation {
-  source: string
-  target: string
-  type: EcologicalRelationType
-}
-
-export interface ExtractableResource {
-  name: string
-  source: string
-  use: string
-}
-
-export interface StructuredEcosystem {
-  energy_source: string
-  organisms: StructuredOrganism[]
-  relationships: EcologicalRelation[]
-  keystone_species: string
-  extractable_resources: ExtractableResource[]
-}
-
-// --- Structured faction types ---
-export type PowerBasis = 'military' | 'economic' | 'ritual' | 'land' | 'labor' | 'information'
-export type WorldWoundRelation = 'caused' | 'benefits' | 'suffers' | 'ignores'
-export type FactionRelationType = 'dependency' | 'conflict' | 'instrumentalization'
-
-export interface StructuredFaction {
-  name: string
-  tier: FactionPowerTier
-  power_basis: PowerBasis
-  resource_controlled: string
-  world_wound_relation: WorldWoundRelation
-  internal_pressure: string
-}
-
-export interface FactionRelation {
-  source: string
-  target: string
-  type: FactionRelationType
-  notes: string
-}
+// --- World ---
 
 export interface World {
   id: number
   name: string
-  factions: string[]
   description: string
-  core_axis: string
-  environment: string
-  subsistence: string
-  organization: string
-  tensions: string
-  tone: string
-  structured_factions?: StructuredFaction[]
-  faction_relations?: FactionRelation[]
-  structured_environment?: StructuredEnvironment
-  structured_ecosystem?: StructuredEcosystem
+  premise: string
+  root_node_id?: number
+}
+
+// --- World Graph (causal tree) ---
+
+export type NodeDomain = 'core' | 'physical' | 'biological' | 'social' | 'symbolic' | 'technic'
+export type NodeRole = 'state' | 'event' | 'rupture'
+export type EdgeType = 'requires' | 'produces' | 'enables' | 'undermines' | 'gives_rise_to'
+
+export interface NodeContent {
+  description: string
+  causal_summary: string
+}
+
+export interface WorldNode {
+  id: number
+  world_id: number
+  parent_id?: number
+  parent_edge_type?: EdgeType
+  domain: NodeDomain
+  role: NodeRole
+  label: string
+  content: NodeContent
+  position_order: number
+}
+
+export interface WorldGraph {
+  world_id: number
+  premise: string
+  nodes: WorldNode[]
+}
+
+export interface SubtreePreview {
+  node_count: number
+  labels: string[]
+}
+
+export interface TensionOption {
+  id: string
+  label: string
+  description: string
+}
+
+export interface CandidateNode {
+  domain: NodeDomain
+  role: NodeRole
+  label: string
+  description: string
+  causal_summary: string
+  parent_edge_type: EdgeType
 }
 
 export function getWorlds() {
@@ -145,47 +114,14 @@ export function getWorldById(id: number) {
   return request<World>(`/world/get?id=${id}`)
 }
 
-export function createWorld(world: Omit<World, 'id'>) {
-  return request<World>('/world', {
+export function createWorld(name: string, premise: string, description: string) {
+  return request<{ id: number }>('/world', {
     method: 'POST',
-    body: JSON.stringify(world),
+    body: JSON.stringify({ name, premise, description }),
   })
 }
 
-export type WorldLayerType = 'physical' | 'biological' | 'society' | 'synthesis'
-
-export interface DeriveLayerResult {
-  layer: WorldLayerType
-  content: string
-  tensions?: string                        // society layer only
-  name?: string                            // synthesis layer only
-  factions?: string[]                      // synthesis layer only
-  description?: string                     // synthesis layer only
-  structuredFactions?: StructuredFaction[]  // synthesis layer only (camelCase from Go backend)
-  factionRelations?: FactionRelation[]     // synthesis layer only (camelCase from Go backend)
-  structuredEnvironment?: StructuredEnvironment  // physical layer (camelCase from Go backend)
-  structuredEcosystem?: StructuredEcosystem      // biological layer (camelCase from Go backend)
-}
-
-export function deriveWorldLayer(
-  coreAxis: string,
-  layer: WorldLayerType,
-  previousLayers: Partial<Record<WorldLayerType, string>>,
-  layerParameters?: Record<string, string | string[]>,
-) {
-  return request<DeriveLayerResult>('/world/derive-layer', {
-    method: 'POST',
-    body: JSON.stringify({
-      core_axis: coreAxis,
-      layer,
-      previous_layers: previousLayers,
-      physical_parameters: layerParameters,  // backward compat for physical layer
-      layer_parameters: layerParameters,     // generic field for all layers
-    }),
-  })
-}
-
-export function updateWorld(id: number, input: Partial<Omit<World, 'id'>>) {
+export function updateWorld(id: number, input: { name?: string; description?: string; premise?: string }) {
   return request<World>(`/world/update?id=${id}`, {
     method: 'PUT',
     body: JSON.stringify(input),
@@ -196,6 +132,60 @@ export function deleteWorld(id: number) {
   return request<{ status: string }>(`/world/delete?id=${id}`, {
     method: 'DELETE',
   })
+}
+
+// --- World Graph API ---
+
+export function getWorldGraph(worldId: number) {
+  return request<WorldGraph>(`/world/graph?world_id=${worldId}`)
+}
+
+export function interpretTensions(premise: string) {
+  return request<{ options: TensionOption[] }>('/world/interpret-tensions', {
+    method: 'POST',
+    body: JSON.stringify({ premise }),
+  })
+}
+
+export function generateRoot(worldId: number, tension: string) {
+  return request<WorldNode>(`/world/generate-root?world_id=${worldId}`, {
+    method: 'POST',
+    body: JSON.stringify({ tension }),
+  })
+}
+
+export function createNode(worldId: number, node: {
+  parent_id?: number
+  parent_edge_type?: EdgeType
+  domain: NodeDomain
+  role: NodeRole
+  label: string
+  description: string
+  causal_summary: string
+  position_order: number
+}) {
+  return request<WorldNode>(`/world/nodes?world_id=${worldId}`, {
+    method: 'POST',
+    body: JSON.stringify(node),
+  })
+}
+
+export function expandNodeCandidates(worldId: number, nodeId: number) {
+  return request<{ candidates: CandidateNode[] }>(
+    `/world/nodes/expand?world_id=${worldId}&node_id=${nodeId}`,
+    { method: 'POST' },
+  )
+}
+
+export function getSubtreePreview(worldId: number, nodeId: number) {
+  return request<SubtreePreview>(`/world/nodes/subtree?world_id=${worldId}&node_id=${nodeId}`)
+}
+
+export function deleteSubtree(worldId: number, nodeId: number) {
+  return request<{ deleted_ids: number[] }>(
+    `/world/nodes/subtree/delete?world_id=${worldId}&node_id=${nodeId}`,
+    { method: 'DELETE' },
+  )
 }
 
 // --- World Detail ---
@@ -242,16 +232,6 @@ export interface Scene {
   context: string
   world_id: number
   position?: number
-}
-
-export interface WorldDetail {
-  world: World
-  characters: Character[]
-  scenes: Scene[]
-}
-
-export function getWorldDetail(id: number) {
-  return request<WorldDetail>(`/world-detail/get?id=${id}`)
 }
 
 // --- Characters ---
@@ -424,50 +404,6 @@ export function getLinkingToken() {
   return request<{ token: string }>('/installation/linking-token')
 }
 
-// --- World Graph ---
-
-export interface GraphNode {
-  id: string
-  label: string
-  domain: 'physical' | 'biological' | 'social' | 'core'
-  description?: string
-}
-
-export interface GraphEdge {
-  source: string
-  target: string
-  label?: string
-}
-
-export interface WorldGraphData {
-  nodes: GraphNode[]
-  edges: GraphEdge[]
-}
-
-export function generateWorldGraph(phrase: string) {
-  return request<WorldGraphData>('/world/generate-graph', {
-    method: 'POST',
-    body: JSON.stringify({ phrase }),
-  })
-}
-
-export function expandGraphNode(nodeId: string, nodeLabel: string, currentGraph: WorldGraphData) {
-  return request<WorldGraphData>('/world/expand-node', {
-    method: 'POST',
-    body: JSON.stringify({ node_id: nodeId, node_label: nodeLabel, current_graph: currentGraph }),
-  })
-}
-
-export function graphChat(message: string, currentGraph: WorldGraphData) {
-  return request<{ reply: string; patch?: WorldGraphData }>('/world/graph-chat', {
-    method: 'POST',
-    body: JSON.stringify({ message, current_graph: currentGraph }),
-  })
-}
-
-export function createWorldFromGraph(graph: WorldGraphData) {
-  return request<{ id: number }>('/world/create-from-graph', {
-    method: 'POST',
-    body: JSON.stringify({ graph }),
-  })
+export function revokeInstallation() {
+  return request<{ status: string }>('/installation/revoke', { method: 'DELETE' })
 }
