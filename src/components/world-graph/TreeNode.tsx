@@ -4,7 +4,7 @@ import type { Node, NodeProps } from '@xyflow/react'
 import { DOMAIN_COLOR, DOMAIN_LABEL, ROLE_LABEL } from './treeLayout'
 import type { NodeDomain, NodeRole } from '@/services/api'
 
-export interface TreeNodeData {
+export interface TreeNodeData extends Record<string, unknown> {
   label: string
   domain: NodeDomain
   role: NodeRole
