@@ -482,7 +482,10 @@
     "notFoundCode": "404",
     "notFoundTitle": "Page not found",
     "notFoundDesc": "The URL you entered doesn't exist or has been moved. Please check the address or go back to the home page.",
-    "goHome": "Go to home"
+    "unexpectedTitle": "Something went wrong",
+    "unknown": "An unexpected error has occurred.",
+    "goHome": "Go to home",
+    "goBack": "Go back"
   },
   "modal": {
     "defaultConfirm": "Confirm",
@@ -514,9 +517,13 @@
     "osLabel": "Operating system",
     "archLabel": "Architecture",
     "ipLabel": "IP",
-    "lastSeenLabel": "Last seen",
-    "createdAtLabel": "Linked since",
-    "channelIdLabel": "Channel ID",
+    "lastSeenLabel": "Last active",
+    "connectedSinceLabel": "Connected since",
+    "statusReady": "Generator ready",
+    "statusOffline": "Generator offline",
+    "offlineMessage": "Your generator isn't responding. Make sure the app is running on your machine.",
+    "staleWarning": "The generator hasn't responded recently — it may need to be restarted.",
+    "relinkLink": "Changed machines? Re-link your generator",
     "generateToken": "Generate linking token",
     "generating": "Generating...",
     "tokenError": "Could not generate the token.",

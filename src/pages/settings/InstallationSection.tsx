@@ -4,9 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { getLinkingToken, revokeInstallation } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,20 +19,16 @@ import {
   Loader2,
   Copy,
   Check,
-  Monitor,
-  Cpu,
-  Globe,
   Clock,
-  Link2,
-  Server,
   Key,
   Play,
   RefreshCw,
   Zap,
-  CheckCircle2,
   Download,
   Terminal,
   Trash2,
+  AlertTriangle,
+  Cpu,
 } from 'lucide-react'
 
 // --- Animation variants ---
@@ -56,60 +50,35 @@ const scaleIn = {
 
 // --- Helpers ---
 
-function formatDate(iso: string, locale: string): string {
+function relativeTime(iso: string, locale: string): string {
+  if (!iso) return '—'
   const d = new Date(iso)
-  if (isNaN(d.getTime())) return iso
-  return d.toLocaleString(locale === 'en' ? 'en-US' : 'es-ES')
+  if (isNaN(d.getTime())) return '—'
+  const diffMs = Date.now() - d.getTime()
+  const diffMin = Math.floor(diffMs / 60_000)
+  const diffHrs = Math.floor(diffMs / 3_600_000)
+  const diffDays = Math.floor(diffMs / 86_400_000)
+  const isEs = locale !== 'en'
+  if (diffMin < 1) return isEs ? 'ahora mismo' : 'just now'
+  if (diffMin < 60) return isEs ? `hace ${diffMin} min` : `${diffMin} min ago`
+  if (diffHrs < 24) return isEs ? `hace ${diffHrs} h` : `${diffHrs}h ago`
+  return isEs ? `hace ${diffDays} días` : `${diffDays}d ago`
+}
+
+function connectedSince(iso: string, locale: string): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString(locale === 'en' ? 'en-US' : 'es-ES', { month: 'long', year: 'numeric' })
+}
+
+function isStale(iso: string): boolean {
+  if (!iso) return false
+  const diffMin = (Date.now() - new Date(iso).getTime()) / 60_000
+  return diffMin > 15
 }
 
 // --- Sub-components ---
-
-function StatusBadge({ status }: { status: string }) {
-  const isOnline = status.toLowerCase() === 'online' || status.toLowerCase() === 'active'
-  return (
-    <Badge
-      variant="outline"
-      className={
-        isOnline
-          ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-          : 'border-amber-300 bg-amber-50 text-amber-700'
-      }
-    >
-      {isOnline ? (
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-        </span>
-      ) : (
-        <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
-      )}
-      {status}
-    </Badge>
-  )
-}
-
-function DetailRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  value: string
-}) {
-  return (
-    <motion.div
-      variants={fadeUp}
-      className="flex items-center justify-between py-3 border-b border-border last:border-b-0 transition-colors duration-150 hover:bg-accent/50 -mx-2 px-2 rounded-sm"
-    >
-      <div className="flex items-center gap-2.5 text-muted-foreground">
-        <Icon className="h-4 w-4 shrink-0" />
-        <span className="text-sm font-medium">{label}</span>
-      </div>
-      <span className="text-sm text-foreground font-mono tabular-nums">{value}</span>
-    </motion.div>
-  )
-}
 
 function TokenGenerator({
   compact,
@@ -198,12 +167,7 @@ function TokenGenerator({
                 </span>
               </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopy}
-                  className="h-8 gap-1.5"
-                >
+                <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 gap-1.5">
                   <AnimatePresence mode="wait">
                     {copied ? (
                       <motion.span
@@ -269,9 +233,7 @@ function SetupSteps({ token }: { token: string }) {
       title: t('installation.step1Title'),
       content: (
         <>
-          <p className="text-sm text-muted-foreground mb-2">
-            {t('installation.step1Desc')}
-          </p>
+          <p className="text-sm text-muted-foreground mb-2">{t('installation.step1Desc')}</p>
           <a
             href="https://ollama.com/download"
             target="_blank"
@@ -290,9 +252,7 @@ function SetupSteps({ token }: { token: string }) {
       title: t('installation.step2Title'),
       content: (
         <>
-          <p className="text-sm text-muted-foreground mb-2">
-            {t('installation.step2Desc')}
-          </p>
+          <p className="text-sm text-muted-foreground mb-2">{t('installation.step2Desc')}</p>
           <div className={codeBlock}>
             <div className="mb-1"><span className="text-emerald-400">$</span> ollama pull llama3.2</div>
             <div><span className="text-emerald-400">$</span> ollama pull nomic-embed-text</div>
@@ -309,8 +269,8 @@ function SetupSteps({ token }: { token: string }) {
     },
     {
       icon: Play,
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-500',
+      color: 'text-primary',
+      bg: 'bg-primary',
       title: t('installation.step4Title'),
       content: (
         <>
@@ -357,16 +317,12 @@ function SetupSteps({ token }: { token: string }) {
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step.bg} text-white text-xs font-bold shrink-0 shadow-sm`}>
               {i + 1}
             </div>
-            {i < steps.length - 1 && (
-              <div className="w-px flex-1 bg-border mt-1.5" />
-            )}
+            {i < steps.length - 1 && <div className="w-px flex-1 bg-border mt-1.5" />}
           </div>
-          <div className={`flex-1 ${i < steps.length - 1 ? 'pb-6' : 'pb-0'}`}>
+          <div className={`flex-1 min-w-0 ${i < steps.length - 1 ? 'pb-6' : 'pb-0'}`}>
             <div className="flex items-center gap-2 mb-1">
               <step.icon className={`h-4 w-4 ${step.color} shrink-0`} />
-              <h4 className="text-sm font-semibold text-foreground">
-                {step.title}
-              </h4>
+              <h4 className="text-sm font-semibold text-foreground">{step.title}</h4>
             </div>
             {'description' in step && step.description && (
               <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
@@ -379,34 +335,151 @@ function SetupSteps({ token }: { token: string }) {
   )
 }
 
-function LinkedHeader() {
-  const { t } = useTranslation()
+// --- Linked view ---
+
+function LinkedView({
+  installation,
+  onUnlink,
+}: {
+  installation: NonNullable<ReturnType<typeof useInstallation>['installation']>
+  onUnlink: () => void
+}) {
+  const { t, i18n } = useTranslation()
+  const [token, setToken] = useState('')
+  const [showRelink, setShowRelink] = useState(false)
+
+  const isActive = installation.status?.toLowerCase() === 'active'
+  const stale = isActive && isStale(installation.last_seen_at)
+
   return (
-    <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-r from-emerald-500/10 via-primary/10 to-emerald-500/10 px-6 py-5">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_hsl(var(--primary)/0.08),_transparent_70%)]" />
-      <div className="relative flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-500/15 ring-1 ring-emerald-500/20">
-            <CheckCircle2 className="h-5.5 w-5.5 text-emerald-600" />
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
+      <motion.div variants={scaleIn}>
+        <Card className="overflow-hidden">
+          {/* Header */}
+          <div className="relative overflow-hidden bg-gradient-to-r from-primary/8 via-primary/5 to-transparent px-6 py-5 border-b border-border">
+            <div className="flex justify-between items-start gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 ring-1 ring-primary/20 shrink-0">
+                  <Cpu className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className={`inline-flex h-2 w-2 rounded-full ${isActive && !stale ? 'bg-emerald-500' : 'bg-amber-400'} ${isActive && !stale ? 'ring-2 ring-emerald-500/25' : ''}`} />
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {isActive && !stale ? t('installation.statusReady') : t('installation.statusOffline')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-foreground">{installation.machine_name}</h2>
+                    <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded ring-1 ring-border">
+                      v{installation.version}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 shrink-0"
+                onClick={onUnlink}
+              >
+                <Trash2 className="h-4 w-4" />
+                {t('installation.revokeButton')}
+              </Button>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-0.5">
-              {t('installation.linkedBadge')}
-            </p>
-            <h2 className="text-xl font-bold text-foreground">
-              {t('installation.linkedTitle')}
-            </h2>
-          </div>
-        </div>
-      </div>
-    </div>
+
+          <CardContent className="pt-4 space-y-3">
+            {/* Staleness warning */}
+            <AnimatePresence>
+              {stale && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/50 dark:bg-amber-950/30"
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-sm text-amber-700 dark:text-amber-400">{t('installation.staleWarning')}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Offline message */}
+            <AnimatePresence>
+              {!isActive && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/40 px-3 py-2.5"
+                >
+                  <Cpu className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-sm text-muted-foreground">{t('installation.offlineMessage')}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">{t('installation.lastSeenLabel')}</span>
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  {relativeTime(installation.last_seen_at, i18n.language)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Key className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">{t('installation.connectedSinceLabel')}</span>
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  {connectedSince(installation.created_at, i18n.language)}
+                </p>
+              </div>
+            </div>
+
+            {/* Re-link */}
+            <div className="pt-1 border-t border-border">
+              <button
+                onClick={() => setShowRelink(v => !v)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <RefreshCw className="h-3 w-3" />
+                {t('installation.relinkLink')}
+              </button>
+
+              <AnimatePresence>
+                {showRelink && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-3">
+                      <p className="text-xs text-muted-foreground mb-3">{t('installation.relinkDesc')}</p>
+                      <TokenGenerator compact token={token} setToken={setToken} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </motion.div>
   )
 }
 
 // --- Main page ---
 
 export function InstallationSection() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { installation, hasInstallation, loading, resetInstallation } = useInstallation()
 
   const [token, setToken] = useState('')
@@ -438,161 +511,56 @@ export function InstallationSection() {
 
   if (hasInstallation && installation) {
     return (
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate="show"
-        className="space-y-6"
-      >
-        <motion.div variants={scaleIn}>
-          <Card className="overflow-hidden">
-            <div className="flex items-center justify-end px-6 pt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
-                onClick={() => setRevokeDialogOpen(true)}
+      <>
+        <LinkedView installation={installation} onUnlink={() => setRevokeDialogOpen(true)} />
+
+        <AlertDialog open={revokeDialogOpen} onOpenChange={setRevokeDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('installation.revokeDialogTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>{t('installation.revokeDialogDesc')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={revoking}>{t('installation.revokeDialogCancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleRevoke}
+                disabled={revoking}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                <Trash2 className="h-4 w-4" />
-                {t('installation.revokeButton')}
-              </Button>
-            </div>
-            <LinkedHeader />
-            <CardHeader className="pt-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                    <Server className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-foreground">
-                      {installation.machine_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      v{installation.version}
-                    </p>
-                  </div>
-                </div>
-                <StatusBadge status={installation.status} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <motion.div variants={stagger} initial="hidden" animate="show">
-                <DetailRow
-                  icon={Monitor}
-                  label={t('installation.osLabel')}
-                  value={installation.os}
-                />
-                <DetailRow
-                  icon={Cpu}
-                  label={t('installation.archLabel')}
-                  value={installation.arch}
-                />
-                <DetailRow
-                  icon={Globe}
-                  label={t('installation.ipLabel')}
-                  value={`${installation.ip}:${installation.port}`}
-                />
-                <DetailRow
-                  icon={Clock}
-                  label={t('installation.lastSeenLabel')}
-                  value={formatDate(installation.last_seen_at, i18n.language)}
-                />
-                <DetailRow
-                  icon={Link2}
-                  label={t('installation.createdAtLabel')}
-                  value={formatDate(installation.created_at, i18n.language)}
-                />
-              </motion.div>
+                {revoking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {t('installation.revokeDialogConfirm')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-              <div className="mt-5 rounded-lg border bg-muted/40 p-3">
-                <span className="text-xs text-muted-foreground font-medium">
-                  {t('installation.channelIdLabel')}
-                </span>
-                <div className="font-mono text-xs text-foreground break-all mt-1 leading-relaxed">
-                  {installation.channel_id}
-                </div>
-              </div>
-            </CardContent>
-
-            <AlertDialog open={revokeDialogOpen} onOpenChange={setRevokeDialogOpen}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('installation.revokeDialogTitle')}</AlertDialogTitle>
-                  <AlertDialogDescription>{t('installation.revokeDialogDesc')}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={revoking}>{t('installation.revokeDialogCancel')}</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleRevoke}
-                    disabled={revoking}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {revoking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    {t('installation.revokeDialogConfirm')}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            {revokeError && (
-              <p className="text-sm text-destructive text-center">{revokeError}</p>
-            )}
-          </Card>
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-base font-semibold text-foreground">
-                  {t('installation.relinkTitle')}
-                </h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {t('installation.relinkDesc')}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <TokenGenerator compact token={token} setToken={setToken} />
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
+        {revokeError && (
+          <p className="text-sm text-destructive text-center mt-2">{revokeError}</p>
+        )}
+      </>
     )
   }
 
   return (
-    <motion.div
-      variants={stagger}
-      initial="hidden"
-      animate="show"
-      className="space-y-6"
-    >
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={scaleIn}>
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                <Server className="h-5 w-5 text-primary" />
+                <Cpu className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">
-                  {t('installation.setupTitle')}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {t('installation.setupDesc')}
-                </p>
+                <h2 className="text-xl font-bold text-foreground">{t('installation.setupTitle')}</h2>
+                <p className="text-sm text-muted-foreground">{t('installation.setupDesc')}</p>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <SetupSteps token={token} />
-
-            <Separator className="my-6" />
-
-            <TokenGenerator token={token} setToken={setToken} />
+            <div className="mt-6 pt-6 border-t border-border">
+              <TokenGenerator token={token} setToken={setToken} />
+            </div>
           </CardContent>
         </Card>
       </motion.div>

@@ -482,7 +482,10 @@
     "notFoundCode": "404",
     "notFoundTitle": "Página no encontrada",
     "notFoundDesc": "La URL que has introducido no existe o ha sido movida. Por favor, revisa la dirección o vuelve al inicio.",
-    "goHome": "Ir al inicio"
+    "unexpectedTitle": "Algo ha ido mal",
+    "unknown": "Se ha producido un error inesperado.",
+    "goHome": "Ir al inicio",
+    "goBack": "Volver"
   },
   "modal": {
     "defaultConfirm": "Confirmar",
@@ -515,8 +518,12 @@
     "archLabel": "Arquitectura",
     "ipLabel": "IP",
     "lastSeenLabel": "Última conexión",
-    "createdAtLabel": "Vinculada desde",
-    "channelIdLabel": "Channel ID",
+    "connectedSinceLabel": "Vinculado desde",
+    "statusReady": "Generador activo",
+    "statusOffline": "Generador desconectado",
+    "offlineMessage": "El generador no está respondiendo. Asegúrate de que la app está ejecutándose en tu máquina.",
+    "staleWarning": "El generador no responde desde hace un rato. Puede que necesite reiniciarse.",
+    "relinkLink": "¿Cambiaste de máquina? Reconecta tu generador",
     "generateToken": "Generar token de vinculación",
     "generating": "Generando...",
     "tokenError": "No se pudo generar el token.",

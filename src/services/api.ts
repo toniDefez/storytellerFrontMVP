@@ -375,17 +375,11 @@ export function regenerateNarrative(sceneId: number, feedback: string, existingN
 
 export interface Installation {
   id: number
-  user_id: number
   machine_name: string
-  os: string
-  arch: string
   version: string
-  ip: string
-  port: number
   status: string
   last_seen_at: string
   created_at: string
-  channel_id: string
 }
 
 export async function getMyInstallation(): Promise<Installation | null> {
