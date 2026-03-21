@@ -177,6 +177,13 @@ export function expandNodeCandidates(worldId: number, nodeId: number) {
   )
 }
 
+export function graphChat(worldId: number, message: string) {
+  return request<{ reply: string }>(`/world/graph/chat?world_id=${worldId}`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  })
+}
+
 export function getSubtreePreview(worldId: number, nodeId: number) {
   return request<SubtreePreview>(`/world/nodes/subtree?world_id=${worldId}&node_id=${nodeId}`)
 }
