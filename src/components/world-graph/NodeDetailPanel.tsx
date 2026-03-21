@@ -15,7 +15,7 @@ interface NodeDetailPanelProps {
 }
 
 export function NodeDetailPanel({
-  node, worldId: _worldId, isExpanding,
+  node, isExpanding,
   onClose, onExpand, onDeleteSubtree, onDeleteConfirmed,
 }: NodeDetailPanelProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
