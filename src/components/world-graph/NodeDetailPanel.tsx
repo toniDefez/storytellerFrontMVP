@@ -43,7 +43,7 @@ export function NodeDetailPanel({
 
   return (
     <>
-      <div className="w-[280px] shrink-0 border-l border-border flex flex-col bg-card overflow-y-auto">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2 min-w-0">
