@@ -1,12 +1,22 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getLinkingToken } from '../../services/api'
+import { getLinkingToken, revokeInstallation } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Loader2,
   Copy,
@@ -24,6 +34,7 @@ import {
   CheckCircle2,
   Download,
   Terminal,
+  Trash2,
 } from 'lucide-react'
 
 // --- Animation variants ---
@@ -100,9 +111,16 @@ function DetailRow({
   )
 }
 
-function TokenGenerator({ compact }: { compact?: boolean }) {
+function TokenGenerator({
+  compact,
+  token,
+  setToken,
+}: {
+  compact?: boolean
+  token: string
+  setToken: (t: string) => void
+}) {
   const { t } = useTranslation()
-  const [token, setToken] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
@@ -229,10 +247,19 @@ function TokenGenerator({ compact }: { compact?: boolean }) {
   )
 }
 
-function SetupSteps() {
+function SetupSteps({ token }: { token: string }) {
   const { t } = useTranslation()
+  const [commandCopied, setCommandCopied] = useState(false)
 
   const codeBlock = "bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto"
+
+  const dockerCommand = `docker run --name storyteller-generator -e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e RABBIT_URL=amqp://guest:guest@host.docker.internal:5672 -e INSTALLATION_ACCESS_TOKEN=${token || '<tu-token>'} ghcr.io/tonidefez/storyteller-generator`
+
+  const handleCopyCommand = () => {
+    navigator.clipboard.writeText(dockerCommand)
+    setCommandCopied(true)
+    setTimeout(() => setCommandCopied(false), 2000)
+  }
 
   const steps = [
     {
@@ -287,15 +314,36 @@ function SetupSteps() {
       title: t('installation.step4Title'),
       content: (
         <>
-          <p className="text-sm text-muted-foreground mb-2">
-            {t('installation.step4Desc')}
-          </p>
-          <div className={codeBlock}>
-            <span className="text-emerald-400">$</span> docker run --name storyteller-generator -e <span className="text-sky-400">OLLAMA_BASE_URL</span>=<span className="text-amber-300">http://host.docker.internal:11434</span> -e <span className="text-sky-400">RABBIT_URL</span>=<span className="text-amber-300">amqp://guest:guest@host.docker.internal:5672</span> -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=<span className="text-amber-300">{'<tu-token>'}</span>{' '}ghcr.io/tonidefez/storyteller-generator
+          <p className="text-sm text-muted-foreground mb-2">{t('installation.step4Desc')}</p>
+          <div className="relative">
+            <div className={codeBlock}>
+              <span className="text-emerald-400">$</span>{' '}
+              docker run --name storyteller-generator{' '}
+              -e <span className="text-sky-400">OLLAMA_BASE_URL</span>=<span className="text-amber-300">http://host.docker.internal:11434</span>{' '}
+              -e <span className="text-sky-400">RABBIT_URL</span>=<span className="text-amber-300">amqp://guest:guest@host.docker.internal:5672</span>{' '}
+              -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=
+              <span className={token ? 'text-emerald-400' : 'text-amber-300'}>{token || '<tu-token>'}</span>{' '}
+              ghcr.io/tonidefez/storyteller-generator
+            </div>
+            {token && (
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-2">
+                <Button variant="outline" size="sm" onClick={handleCopyCommand} className="w-full gap-1.5">
+                  <AnimatePresence mode="wait">
+                    {commandCopied ? (
+                      <motion.span key="copied" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5 text-emerald-600">
+                        <Check className="h-3.5 w-3.5" />{t('installation.commandCopied')}
+                      </motion.span>
+                    ) : (
+                      <motion.span key="copy" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
+                        <Copy className="h-3.5 w-3.5" />{t('installation.copyCommand')}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </motion.div>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {t('installation.step4Hint')}
-          </p>
+          <p className="text-xs text-muted-foreground mt-2">{t('installation.step4Hint')}</p>
         </>
       ),
     },
@@ -359,7 +407,26 @@ function LinkedHeader() {
 
 export function InstallationSection() {
   const { t, i18n } = useTranslation()
-  const { installation, hasInstallation, loading } = useInstallation()
+  const { installation, hasInstallation, loading, resetInstallation } = useInstallation()
+
+  const [token, setToken] = useState('')
+  const [revoking, setRevoking] = useState(false)
+  const [revokeError, setRevokeError] = useState('')
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false)
+
+  const handleRevoke = async () => {
+    setRevoking(true)
+    setRevokeError('')
+    try {
+      await revokeInstallation()
+      resetInstallation()
+      setRevokeDialogOpen(false)
+    } catch {
+      setRevokeError(t('installation.revokeError'))
+    } finally {
+      setRevoking(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -379,6 +446,17 @@ export function InstallationSection() {
       >
         <motion.div variants={scaleIn}>
           <Card className="overflow-hidden">
+            <div className="flex items-center justify-end px-6 pt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                onClick={() => setRevokeDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                {t('installation.revokeButton')}
+              </Button>
+            </div>
             <LinkedHeader />
             <CardHeader className="pt-4">
               <div className="flex justify-between items-center">
@@ -436,6 +514,30 @@ export function InstallationSection() {
                 </div>
               </div>
             </CardContent>
+
+            <AlertDialog open={revokeDialogOpen} onOpenChange={setRevokeDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('installation.revokeDialogTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('installation.revokeDialogDesc')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={revoking}>{t('installation.revokeDialogCancel')}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleRevoke}
+                    disabled={revoking}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {revoking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {t('installation.revokeDialogConfirm')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {revokeError && (
+              <p className="text-sm text-destructive text-center">{revokeError}</p>
+            )}
           </Card>
         </motion.div>
 
@@ -453,7 +555,7 @@ export function InstallationSection() {
               </p>
             </CardHeader>
             <CardContent>
-              <TokenGenerator compact />
+              <TokenGenerator compact token={token} setToken={setToken} />
             </CardContent>
           </Card>
         </motion.div>
@@ -486,11 +588,11 @@ export function InstallationSection() {
             </div>
           </CardHeader>
           <CardContent>
-            <SetupSteps />
+            <SetupSteps token={token} />
 
             <Separator className="my-6" />
 
-            <TokenGenerator />
+            <TokenGenerator token={token} setToken={setToken} />
           </CardContent>
         </Card>
       </motion.div>

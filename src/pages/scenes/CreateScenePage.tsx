@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { createScene, generateScene, getWorldDetail, getSceneById } from '../../services/api'
+import { createScene, generateScene, getWorldById, getSceneById } from '../../services/api'
 import type { Scene, Character } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import NoInstallationBanner from '../../components/NoInstallationBanner'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { UnsavedChangesDialog } from '@/components/UnsavedChangesDialog'
 import { WorldContextPanel } from '@/components/character-creation/WorldContextPanel'
 import { PillSelect } from '../../components/PillSelect'
 import { FieldGroup } from '@/components/form/FieldGroup'
@@ -51,10 +54,13 @@ export default function CreateScenePage() {
   const [error, setError] = useState('')
   const { hasInstallation, checked: installationChecked } = useInstallation()
 
+  const isDirty = title.trim().length > 0 || location.trim().length > 0 || tone !== '' || time !== '' || context.trim().length > 0
+  const { blocker } = useUnsavedChangesGuard(isDirty)
+
   useEffect(() => {
     if (!worldId) return
     setCharactersLoading(true)
-    getWorldDetail(Number(worldId))
+    getWorldById(Number(worldId))
       .then(data => {
         const raw = data as unknown as Record<string, unknown>
         setCharacters(Array.isArray(raw.characters) ? raw.characters as Character[] : [])
@@ -104,6 +110,11 @@ export default function CreateScenePage() {
     setError('')
     try {
       await createScene({ title, location, time, tone, context, world_id: Number(worldId) })
+      setTitle('')
+      setLocation('')
+      setTime('')
+      setTone('')
+      setContext('')
       navigate(`/worlds/${worldId}`)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('scene.create.error'))
@@ -179,7 +190,22 @@ export default function CreateScenePage() {
             <Tabs defaultValue="manual" onValueChange={v => setMode(v as 'manual' | 'ai')}>
               <TabsList className="mb-6">
                 <TabsTrigger value="manual">{t('scene.create.manualTab')}</TabsTrigger>
-                <TabsTrigger value="ai">{t('scene.create.aiTab')}</TabsTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <TabsTrigger
+                        value="ai"
+                        disabled={!hasInstallation}
+                        style={!hasInstallation ? { pointerEvents: 'none' } : undefined}
+                      >
+                        {t('scene.create.aiTab')}
+                      </TabsTrigger>
+                    </span>
+                  </TooltipTrigger>
+                  {!hasInstallation && (
+                    <TooltipContent>{t('installation.tabDisabledTooltip')}</TooltipContent>
+                  )}
+                </Tooltip>
               </TabsList>
 
               <TabsContent value="manual">
@@ -347,6 +373,7 @@ export default function CreateScenePage() {
           </CardContent>
         </Card>
       </div>
+      <UnsavedChangesDialog blocker={blocker} />
     </div>
   )
 }

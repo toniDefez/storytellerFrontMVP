@@ -1,48 +1,73 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getWorldDetail, deleteWorld } from '../../services/api'
-import type { WorldDetail, World } from '../../services/api'
+import { getWorldById, deleteWorld } from '../../services/api'
+import type { World } from '../../services/api'
+import { useWorldGraph } from '@/hooks/useWorldGraph'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { Plus, Users, Clapperboard, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
-import { WorldCausalCascade } from '@/components/world-detail/WorldCausalCascade'
-import { WorldFactionGraph } from '@/components/world-detail/WorldFactionGraph'
-import type { StructuredFaction, FactionRelation } from '@/services/api'
+import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
+import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
+import { NodeDetailPanel } from '@/components/world-graph/NodeDetailPanel'
+import { PremiseBar } from '@/components/world-graph/PremiseBar'
 import { toast } from 'sonner'
 import { exportWorld } from '../../services/worldExport'
 
 const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
 
 function inferGradient(world: World): string {
-  const text = (world.core_axis || world.description || '').toLowerCase()
+  const text = (world.premise || world.description || '').toLowerCase()
   if (/ceniza|volcan|fuego/.test(text)) return 'from-red-500 to-orange-600'
   if (/hielo|nieve|glaciar/.test(text)) return 'from-cyan-400 to-blue-600'
   if (/agua|oceano|lluvia/.test(text)) return 'from-blue-400 to-indigo-600'
   if (/bosque|selva|verde/.test(text)) return 'from-emerald-400 to-teal-600'
-  if (/desierto|arena|sol/.test(text)) return 'from-amber-400 to-orange-600'
+  if (/desierto|arena|sol|gusano/.test(text)) return 'from-amber-400 to-orange-600'
   if (/oscuridad|sombra/.test(text)) return 'from-slate-600 to-gray-800'
   if (/magia|hechizo/.test(text)) return 'from-violet-500 to-purple-700'
   return DEFAULT_GRADIENT
+}
+
+interface WorldWithRelations extends World {
+  characters?: Array<{
+    id: number
+    name: string
+    role: string
+    personality: string
+    goals: string[]
+  }>
+  scenes?: Array<{
+    id: number
+    title: string
+    location: string
+    time: string
+    tone: string
+    context: string
+    world_id: number
+    position?: number
+  }>
 }
 
 export default function WorldDetailPage() {
   const { t, i18n } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
-  const [detail, setDetail] = useState<WorldDetail | null>(null)
+  const [world, setWorld] = useState<World | null>(null)
+  const [characters, setCharacters] = useState<WorldWithRelations['characters']>([])
+  const [scenes, setScenes] = useState<NonNullable<WorldWithRelations['scenes']>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [isExpanding, setIsExpanding] = useState(false)
+  const graph = useWorldGraph()
 
   useEffect(() => {
-    document.title = `${t('pageTitle.worldDetail', { name: detail?.world?.name ?? '' })} — StoryTeller`
-  }, [t, i18n.language, detail?.world?.name])
+    document.title = `${t('pageTitle.worldDetail', { name: world?.name ?? '' })} — StoryTeller`
+  }, [t, i18n.language, world?.name])
 
   useEffect(() => {
     const worldId = Number(id)
@@ -52,41 +77,21 @@ export default function WorldDetailPage() {
       return
     }
 
-    getWorldDetail(worldId)
-      .then(data => {
-        if (!data || typeof data !== 'object') {
-          throw new Error(t('world.detail.notFound'))
-        }
-
-        const raw = data as unknown as Record<string, unknown>
-        if (!raw.name) {
-          throw new Error(t('world.detail.notFound'))
-        }
-
-        // world-detail/get returns `summary` instead of `description`
-        const normalizedWorld: World = {
-          id: Number(raw.id ?? worldId),
-          name: String(raw.name ?? ''),
-          factions: Array.isArray(raw.factions) ? (raw.factions as string[]) : [],
-          description: String(raw.summary ?? raw.description ?? ''),
-          core_axis: String(raw.core_axis ?? ''),
-          environment: String(raw.environment ?? ''),
-          subsistence: String(raw.subsistence ?? ''),
-          organization: String(raw.organization ?? ''),
-          tensions: String(raw.tensions ?? ''),
-          tone: String(raw.tone ?? ''),
-          structured_factions: Array.isArray(raw.structured_factions) ? raw.structured_factions as StructuredFaction[] : undefined,
-          faction_relations: Array.isArray(raw.faction_relations) ? raw.faction_relations as FactionRelation[] : undefined,
-        }
-
-        setDetail({
-          world: normalizedWorld,
-          characters: Array.isArray(raw.characters) ? raw.characters : [],
-          scenes: Array.isArray(raw.scenes) ? raw.scenes : [],
-        })
+    Promise.all([
+      getWorldById(worldId),
+      graph.loadGraph(worldId),
+    ])
+      .then(([w]) => {
+        setWorld(w)
+        document.title = `${w.name} — StoryTeller`
+        // getWorldById may return extra fields from the backend
+        const raw = w as unknown as Record<string, unknown>
+        setCharacters(Array.isArray(raw.characters) ? raw.characters as WorldWithRelations['characters'] : [])
+        setScenes(Array.isArray(raw.scenes) ? raw.scenes as NonNullable<WorldWithRelations['scenes']> : [])
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, t])
 
   const handleExport = async () => {
@@ -120,7 +125,7 @@ export default function WorldDetailPage() {
       </Alert>
     </div>
   )
-  if (!detail?.world) {
+  if (!world) {
     return (
       <div className="flex justify-center items-center h-96">
         <Alert variant="destructive" className="max-w-md">
@@ -130,8 +135,7 @@ export default function WorldDetailPage() {
     )
   }
 
-  const { world, characters, scenes: rawScenes } = detail
-  const scenes = [...(rawScenes || [])].sort((a, b) => {
+  const sortedScenes = [...(scenes || [])].sort((a, b) => {
     const posA = a.position ?? 0
     const posB = b.position ?? 0
     if (posA !== posB) return posA - posB
@@ -207,43 +211,52 @@ export default function WorldDetailPage() {
 
         <div className="bg-card border border-t-0 border-border rounded-b-xl px-8 py-5 space-y-4">
           {world.description && (
-            <p className="prose-drop-cap prose-literary mb-6 overflow-hidden">
+            <p className="prose-drop-cap prose-literary mb-4 overflow-hidden">
               {world.description}
             </p>
           )}
-          {world.factions && world.factions.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">{t('world.detail.factionsInline')}</span>
-              {world.factions.map(f => (
-                <Badge key={f} variant="outline" className="text-sm">
-                  {f}
-                </Badge>
-              ))}
-            </div>
+          {world.premise && (
+            <p className="text-sm text-muted-foreground italic mb-4">
+              "{world.premise}"
+            </p>
           )}
 
-          {/* World visualization */}
-          {world.core_axis && (
-            <div className="mt-6">
-              <p className="text-sm text-muted-foreground italic mb-4">
-                "{world.core_axis}"
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <WorldCausalCascade
-                  environment={world.environment}
-                  subsistence={world.subsistence}
-                  organization={world.organization}
-                  tensions={world.tensions}
-                  tone={world.tone}
+          {/* World graph canvas */}
+          <div className="mt-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
+            <PremiseBar premise={world.premise} />
+            <div className="flex" style={{ height: 480 }}>
+              <div className="flex-1 relative min-w-0">
+                <CausalTreeCanvas
+                  nodes={graph.nodes}
+                  selectedNodeId={graph.selectedNode?.id}
+                  onSelectNode={graph.selectNode}
                 />
-                <WorldFactionGraph
-                  factions={world.factions}
-                  structuredFactions={world.structured_factions}
-                  factionRelations={world.faction_relations}
-                />
+                {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
+                  <GhostCandidates
+                    candidates={graph.ghostCandidates}
+                    parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
+                    onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
+                    onDismiss={graph.dismissGhosts}
+                  />
+                )}
               </div>
+              {graph.selectedNode && (
+                <NodeDetailPanel
+                  node={graph.selectedNode}
+                  worldId={Number(id)}
+                  isExpanding={isExpanding}
+                  onClose={() => graph.selectNode(null)}
+                  onExpand={async () => {
+                    setIsExpanding(true)
+                    try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
+                    finally { setIsExpanding(false) }
+                  }}
+                  onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
+                  onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
+                />
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -332,7 +345,7 @@ export default function WorldDetailPage() {
             <Clapperboard className="h-5 w-5" />
             {t('world.detail.scenesSection')}
             <span className="text-base font-normal text-muted-foreground">
-              ({scenes?.length || 0})
+              ({sortedScenes?.length || 0})
             </span>
           </h2>
           <Button variant="secondary" size="sm" asChild>
@@ -343,7 +356,7 @@ export default function WorldDetailPage() {
           </Button>
         </div>
 
-        {!scenes || scenes.length === 0 ? (
+        {!sortedScenes || sortedScenes.length === 0 ? (
           <div className="rounded-[4px] bg-[#e3f3f3]/50 shadow-ambient px-8 py-12 text-center">
             <p className="font-display italic text-lg text-[#3d7a7a] mb-2">
               {t('world.detail.noScenesTitle')}
@@ -366,7 +379,7 @@ export default function WorldDetailPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {scenes.map((s, idx) => {
+            {sortedScenes.map((s, idx) => {
               const pos = s.position ?? idx + 1
               return (
                 <Link

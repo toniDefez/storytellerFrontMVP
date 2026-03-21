@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getSceneById, updateScene } from '../../services/api'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { UnsavedChangesDialog } from '@/components/UnsavedChangesDialog'
 import { PillSelect } from '../../components/PillSelect'
 import { FieldGroup } from '@/components/form/FieldGroup'
 import { SectionDivider } from '@/components/form/SectionDivider'
@@ -14,6 +16,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { toast } from 'sonner'
+
+interface SceneBaseline {
+  title: string
+  location: string
+  time: string
+  tone: string
+  context: string
+}
 
 const TIME_VALUES = ['Amanecer', 'Manana', 'Mediodia', 'Tarde', 'Anochecer', 'Noche', 'Medianoche']
 const TONE_VALUES = ['Epico', 'Misterioso', 'Sombrio', 'Romantico', 'Tenso', 'Comico', 'Tragico', 'Pacifico', 'Ominoso', 'Intimo']
@@ -32,6 +42,18 @@ export default function EditScenePage() {
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState('')
   const [sceneTitle, setSceneTitle] = useState('')
+  const [baseline, setBaseline] = useState<SceneBaseline | null>(null)
+
+  const isDirty =
+    baseline !== null && (
+      title !== baseline.title ||
+      location !== baseline.location ||
+      time !== baseline.time ||
+      tone !== baseline.tone ||
+      context !== baseline.context
+    )
+
+  const { blocker } = useUnsavedChangesGuard(isDirty)
 
   useEffect(() => {
     document.title = `${t('pageTitle.editScene')} — StoryTeller`
@@ -53,6 +75,13 @@ export default function EditScenePage() {
         setTone(data.tone)
         setContext(data.context)
         setSceneTitle(data.title)
+        setBaseline({
+          title: data.title,
+          location: data.location,
+          time: data.time,
+          tone: data.tone,
+          context: data.context,
+        })
       })
       .catch(err => setError(err instanceof Error ? err.message : t('scene.detail.deleteError')))
       .finally(() => setFetching(false))
@@ -81,6 +110,7 @@ export default function EditScenePage() {
         context,
       })
       toast.success(t('scene.edit.successTitle'), { description: t('scene.edit.successDesc') })
+      setBaseline({ title, location, time, tone, context })
       navigate(`/worlds/${worldId}/scenes/${sceneId}`)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('scene.edit.error'))
@@ -92,6 +122,7 @@ export default function EditScenePage() {
   if (fetching) return <DetailSkeleton />
 
   return (
+    <>
     <div className="flex justify-center items-start min-h-[80vh] py-4">
       <div className="w-full max-w-2xl mx-auto">
         <PageBreadcrumb items={[
@@ -152,5 +183,7 @@ export default function EditScenePage() {
         </Card>
       </div>
     </div>
+    <UnsavedChangesDialog blocker={blocker} />
+    </>
   )
 }

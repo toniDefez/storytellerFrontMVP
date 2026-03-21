@@ -3,17 +3,16 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { ArrowLeft, BookOpen, MapPin, Clock, Music, Users, Clapperboard } from 'lucide-react'
-import { getWorldDetail, getSceneDetail, getSceneNarrative } from '../../services/api'
+import { getWorldById, getSceneDetail, getSceneNarrative } from '../../services/api'
 import type { World, Character, Scene, Event, SceneNarrative } from '../../services/api'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 
 const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
 
 function inferGradient(world: World): string {
-  const text = (world.core_axis || world.description || '').toLowerCase()
+  const text = (world.premise || world.description || '').toLowerCase()
   if (/ceniza|volcan|fuego/.test(text)) return 'from-red-500 to-orange-600'
   if (/hielo|nieve|glaciar/.test(text)) return 'from-cyan-400 to-blue-600'
   if (/agua|oceano|lluvia/.test(text)) return 'from-blue-400 to-indigo-600'
@@ -67,30 +66,19 @@ export default function WorldBiblePage() {
 
     async function fetchData() {
       try {
-        const data = await getWorldDetail(worldId)
+        const data = await getWorldById(worldId)
         if (!data || typeof data !== 'object') {
           throw new Error(t('world.detail.notFound'))
         }
 
-        const raw = data as unknown as Record<string, unknown>
-        if (!raw.name) {
+        if (!data.name) {
           throw new Error(t('world.detail.notFound'))
         }
 
-        const normalizedWorld: World = {
-          id: Number(raw.id ?? worldId),
-          name: String(raw.name ?? ''),
-          factions: Array.isArray(raw.factions) ? (raw.factions as string[]) : [],
-          description: String(raw.summary ?? raw.description ?? ''),
-          core_axis: String(raw.core_axis ?? ''),
-          environment: String(raw.environment ?? ''),
-          subsistence: String(raw.subsistence ?? ''),
-          organization: String(raw.organization ?? ''),
-          tensions: String(raw.tensions ?? ''),
-          tone: String(raw.tone ?? ''),
-        }
+        setWorld(data)
 
-        setWorld(normalizedWorld)
+        // getWorldById may return extra fields from the backend
+        const raw = data as unknown as Record<string, unknown>
         setCharacters(Array.isArray(raw.characters) ? raw.characters as Character[] : [])
 
         const rawScenes: Scene[] = Array.isArray(raw.scenes) ? raw.scenes as Scene[] : []
@@ -146,14 +134,6 @@ export default function WorldBiblePage() {
 
   const gradient = inferGradient(world)
 
-  const layers = [
-    { key: 'environment' as const, label: t('world.create.layerEnvironment'), borderColor: 'border-l-emerald-500', titleColor: 'text-emerald-700' },
-    { key: 'subsistence' as const, label: t('world.create.layerSubsistence'), borderColor: 'border-l-amber-500', titleColor: 'text-amber-700' },
-    { key: 'organization' as const, label: t('world.create.layerOrganization'), borderColor: 'border-l-blue-500', titleColor: 'text-blue-700' },
-    { key: 'tensions' as const, label: t('world.create.layerTensions'), borderColor: 'border-l-rose-500', titleColor: 'text-rose-700' },
-    { key: 'tone' as const, label: t('world.create.layerTone'), borderColor: 'border-l-violet-500', titleColor: 'text-violet-700' },
-  ].filter(l => world[l.key])
-
   return (
     <article className="max-w-3xl mx-auto pb-20 mt-8 px-4">
       {/* Back link */}
@@ -183,9 +163,9 @@ export default function WorldBiblePage() {
             <h1 className="text-5xl font-bold text-white font-[var(--font-display)] leading-tight tracking-tight">
               {world.name}
             </h1>
-            {world.core_axis && (
+            {world.premise && (
               <p className="mt-4 text-white/80 text-lg italic font-[var(--font-display)] max-w-xl mx-auto leading-relaxed">
-                "{world.core_axis}"
+                "{world.premise}"
               </p>
             )}
           </div>
@@ -206,59 +186,6 @@ export default function WorldBiblePage() {
           <p className="text-foreground/90 text-lg leading-relaxed font-[var(--font-display)]">
             {world.description}
           </p>
-        </motion.section>
-      )}
-
-      {/* ── Rules Section ── */}
-      {layers.length > 0 && (
-        <motion.section
-          className="mb-14"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-40px' }}
-        >
-          <SectionHeading>{t('bible.rulesSection')}</SectionHeading>
-          <div className="space-y-4">
-            {layers.map(layer => (
-              <motion.div
-                key={layer.key}
-                variants={itemVariants}
-                className={`rounded-xl bg-white border border-gray-100 p-5 border-l-4 ${layer.borderColor} shadow-sm`}
-              >
-                <h4 className={`text-xs font-semibold uppercase tracking-[0.15em] ${layer.titleColor} mb-2`}>
-                  {layer.label}
-                </h4>
-                <p className="text-foreground/85 leading-relaxed font-[var(--font-display)]">
-                  {world[layer.key]}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-      )}
-
-      {/* ── Factions Section ── */}
-      {world.factions && world.factions.length > 0 && (
-        <motion.section
-          className="mb-14"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-40px' }}
-        >
-          <SectionHeading>{t('bible.factionsSection')}</SectionHeading>
-          <div className="flex flex-wrap gap-3">
-            {world.factions.map(faction => (
-              <motion.div key={faction} variants={itemVariants}>
-                <Badge
-                  className="text-sm px-4 py-2 bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 font-[var(--font-display)]"
-                >
-                  {faction}
-                </Badge>
-              </motion.div>
-            ))}
-          </div>
         </motion.section>
       )}
 
@@ -303,14 +230,14 @@ export default function WorldBiblePage() {
                     {character.name}
                   </h3>
                   {character.role && (
-                    <Badge className="bg-entity-character/10 text-entity-character border-entity-character/20">
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-entity-character/10 text-entity-character border border-entity-character/20">
                       {character.role}
-                    </Badge>
+                    </span>
                   )}
                   {character.faction_affiliation && (
-                    <Badge className="bg-rose-50 text-rose-600 border-rose-200 text-xs">
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-600 border border-rose-200">
                       {character.faction_affiliation}
-                    </Badge>
+                    </span>
                   )}
                 </div>
 

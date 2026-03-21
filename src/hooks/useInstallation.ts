@@ -27,10 +27,15 @@ export function useInstallation() {
     return () => clearInterval(interval)
   }, [check])
 
+  const resetInstallation = useCallback(() => {
+    setInstallation(null)
+  }, [])
+
   return {
     installation,
     hasInstallation: installation !== null,
     loading,
     checked,
+    resetInstallation,
   }
 }

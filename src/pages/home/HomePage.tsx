@@ -217,9 +217,8 @@ export default function HomePage() {
             <WorldCard
               id={world.id}
               name={world.name}
-              factions={world.factions}
               description={world.description}
-              core_axis={world.core_axis}
+              premise={world.premise}
             />
           </motion.div>
         ))}

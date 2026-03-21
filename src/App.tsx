@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import LoginPage from './pages/login/LoginPage'
 import MainLayout from './layouts/MainLayout'
 import RegisterPage from './pages/register/RegisterPage'
@@ -17,35 +17,31 @@ import EditScenePage from './pages/scenes/EditScenePage'
 import SceneDetailPage from './pages/scenes/SceneDetailPage'
 import SettingsPage from './pages/settings/SettingsPage'
 
-function App() {
-  return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-
-      {/* Protected routes with layout */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<MainLayout />}>
-          <Route path="worlds" element={<HomePage />} />
-          <Route path="worlds/create" element={<CreateWorldPage />} />
-          <Route path="worlds/:id" element={<WorldDetailPage />} />
-          <Route path="worlds/:id/bible" element={<WorldBiblePage />} />
-          <Route path="worlds/:id/edit" element={<EditWorldPage />} />
-          <Route path="worlds/:id/characters/create" element={<CreateCharacterPage />} />
-          <Route path="worlds/:worldId/characters/:characterId" element={<CharacterDetailPage />} />
-          <Route path="worlds/:worldId/characters/:characterId/edit" element={<EditCharacterPage />} />
-          <Route path="worlds/:id/scenes/create" element={<CreateScenePage />} />
-          <Route path="worlds/:worldId/scenes/:sceneId" element={<SceneDetailPage />} />
-          <Route path="worlds/:worldId/scenes/:sceneId/edit" element={<EditScenePage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="settings/installation" element={<Navigate to="/settings?tab=installation" replace />} />
-        </Route>
-      </Route>
-
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
-  )
-}
-
-export default App
+export const router = createBrowserRouter([
+  { path: '/', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <MainLayout />,
+        children: [
+          { path: 'worlds', element: <HomePage /> },
+          { path: 'worlds/create', element: <CreateWorldPage /> },
+          { path: 'worlds/:id', element: <WorldDetailPage /> },
+          { path: 'worlds/:id/bible', element: <WorldBiblePage /> },
+          { path: 'worlds/:id/edit', element: <EditWorldPage /> },
+          { path: 'worlds/:id/characters/create', element: <CreateCharacterPage /> },
+          { path: 'worlds/:worldId/characters/:characterId', element: <CharacterDetailPage /> },
+          { path: 'worlds/:worldId/characters/:characterId/edit', element: <EditCharacterPage /> },
+          { path: 'worlds/:id/scenes/create', element: <CreateScenePage /> },
+          { path: 'worlds/:worldId/scenes/:sceneId', element: <SceneDetailPage /> },
+          { path: 'worlds/:worldId/scenes/:sceneId/edit', element: <EditScenePage /> },
+          { path: 'settings', element: <SettingsPage /> },
+          { path: 'settings/installation', element: <Navigate to="/settings?tab=installation" replace /> },
+        ],
+      },
+    ],
+  },
+  { path: '*', element: <NotFoundPage /> },
+])

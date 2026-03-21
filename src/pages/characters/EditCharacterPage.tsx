@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getCharacterById, updateCharacter } from '../../services/api'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { UnsavedChangesDialog } from '@/components/UnsavedChangesDialog'
 import { PillSelect, MultiPillSelect } from '../../components/PillSelect'
 import { FieldGroup } from '@/components/form/FieldGroup'
 import { SectionDivider } from '@/components/form/SectionDivider'
@@ -14,6 +16,20 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { toast } from 'sonner'
+
+interface CharacterBaseline {
+  name: string
+  role: string
+  personalityTags: string[]
+  background: string
+  goals: string[]
+  premise: string
+  socialPosition: string
+  internalContradiction: string
+  relationToCollectiveLie: string
+  personalFear: string
+  factionAffiliation: string
+}
 
 const ROLE_VALUES = ['Guerrero', 'Mago', 'Picaro', 'Explorador', 'Sanador', 'Mercader', 'Noble', 'Sacerdote', 'Villano', 'Artesano'] as const
 const PERSONALITY_VALUES = ['Valiente', 'Astuto', 'Compasivo', 'Arrogante', 'Misterioso', 'Leal', 'Vengativo', 'Ingenuo', 'Sabio', 'Impulsivo', 'Reservado', 'Temerario'] as const
@@ -40,6 +56,24 @@ export default function EditCharacterPage() {
   const [charName, setCharName] = useState('')
   const [originalState, setOriginalState] = useState<Record<string, string>>({})
   const [originalWorldId, setOriginalWorldId] = useState<number>(0)
+  const [baseline, setBaseline] = useState<CharacterBaseline | null>(null)
+
+  const isDirty =
+    baseline !== null && (
+      name !== baseline.name ||
+      role !== baseline.role ||
+      personalityTags.join(',') !== baseline.personalityTags.join(',') ||
+      background !== baseline.background ||
+      goals.join(',') !== baseline.goals.join(',') ||
+      premise !== baseline.premise ||
+      socialPosition !== baseline.socialPosition ||
+      internalContradiction !== baseline.internalContradiction ||
+      relationToCollectiveLie !== baseline.relationToCollectiveLie ||
+      personalFear !== baseline.personalFear ||
+      factionAffiliation !== baseline.factionAffiliation
+    )
+
+  const { blocker } = useUnsavedChangesGuard(isDirty)
 
   useEffect(() => {
     document.title = `${t('pageTitle.editCharacter')} — StoryTeller`
@@ -69,6 +103,19 @@ export default function EditCharacterPage() {
         setCharName(data.name)
         setOriginalState(data.state || {})
         setOriginalWorldId(data.world_id)
+        setBaseline({
+          name: data.name,
+          role: data.role,
+          personalityTags: data.personality ? data.personality.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+          background: data.background,
+          goals: data.goals?.length ? data.goals : [''],
+          premise: data.premise ?? '',
+          socialPosition: data.social_position ?? '',
+          internalContradiction: data.internal_contradiction ?? '',
+          relationToCollectiveLie: data.relation_to_collective_lie ?? '',
+          personalFear: data.personal_fear ?? '',
+          factionAffiliation: data.faction_affiliation ?? '',
+        })
       })
       .catch(err => setError(err instanceof Error ? err.message : t('character.detail.notFound')))
       .finally(() => setFetching(false))
@@ -117,6 +164,7 @@ export default function EditCharacterPage() {
         ...(factionAffiliation && { faction_affiliation: factionAffiliation }),
       })
       toast.success(t('character.edit.successTitle'), { description: t('character.edit.successDesc') })
+      setBaseline({ name, role, personalityTags, background, goals, premise, socialPosition, internalContradiction, relationToCollectiveLie, personalFear, factionAffiliation })
       navigate(`/worlds/${worldId}/characters/${characterId}`)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('character.edit.error'))
@@ -128,6 +176,7 @@ export default function EditCharacterPage() {
   if (fetching) return <DetailSkeleton />
 
   return (
+    <>
     <div className="flex justify-center items-start min-h-[80vh] py-4">
       <div className="w-full max-w-2xl mx-auto">
         <PageBreadcrumb items={[
@@ -231,5 +280,7 @@ export default function EditCharacterPage() {
         </Card>
       </div>
     </div>
+    <UnsavedChangesDialog blocker={blocker} />
+    </>
   )
 }

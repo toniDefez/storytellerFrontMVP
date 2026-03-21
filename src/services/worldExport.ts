@@ -1,5 +1,5 @@
 import {
-  getWorldDetail,
+  getWorldById,
   getSceneDetail,
   createWorld,
   createCharacter,
@@ -16,14 +16,8 @@ export interface StoryTellerExport {
     exported_at: string
     world: {
       name: string
-      factions: string[]
       description: string
-      core_axis: string
-      environment: string
-      subsistence: string
-      organization: string
-      tensions: string
-      tone: string
+      premise: string
     }
     characters: Array<{
       name: string
@@ -69,28 +63,16 @@ export function validateExportVersion(data: StoryTellerExport): boolean {
 // ── Export ──
 
 export async function exportWorld(worldId: number): Promise<void> {
-  // Fetch world detail — returns a flat object, needs normalization
-  const rawData = await getWorldDetail(worldId)
-  const raw = rawData as unknown as Record<string, unknown>
+  const worldData = await getWorldById(worldId)
 
-  if (!raw || !raw.name) {
+  if (!worldData || !worldData.name) {
     throw new Error('World not found')
   }
 
-  // Normalize world (same logic as WorldDetailPage)
-  const normalizedWorld: World = {
-    id: Number(raw.id ?? worldId),
-    name: String(raw.name ?? ''),
-    factions: Array.isArray(raw.factions) ? (raw.factions as string[]) : [],
-    description: String(raw.summary ?? raw.description ?? ''),
-    core_axis: String(raw.core_axis ?? ''),
-    environment: String(raw.environment ?? ''),
-    subsistence: String(raw.subsistence ?? ''),
-    organization: String(raw.organization ?? ''),
-    tensions: String(raw.tensions ?? ''),
-    tone: String(raw.tone ?? ''),
-  }
+  const world: World = worldData
 
+  // getWorldById may return extra fields from the backend
+  const raw = worldData as unknown as Record<string, unknown>
   const characters: Character[] = Array.isArray(raw.characters)
     ? (raw.characters as Character[])
     : []
@@ -122,15 +104,9 @@ export async function exportWorld(worldId: number): Promise<void> {
       version: '1.0',
       exported_at: new Date().toISOString(),
       world: {
-        name: normalizedWorld.name,
-        factions: normalizedWorld.factions,
-        description: normalizedWorld.description,
-        core_axis: normalizedWorld.core_axis,
-        environment: normalizedWorld.environment,
-        subsistence: normalizedWorld.subsistence,
-        organization: normalizedWorld.organization,
-        tensions: normalizedWorld.tensions,
-        tone: normalizedWorld.tone,
+        name: world.name,
+        description: world.description,
+        premise: world.premise,
       },
       characters: characters.map((c) => ({
         name: c.name,
@@ -158,7 +134,7 @@ export async function exportWorld(worldId: number): Promise<void> {
     },
   }
 
-  downloadJson(exportData, `${normalizedWorld.name}-storyteller.json`)
+  downloadJson(exportData, `${world.name}-storyteller.json`)
 }
 
 function downloadJson(data: unknown, filename: string): void {
@@ -184,17 +160,11 @@ export async function importWorld(data: StoryTellerExport): Promise<ImportResult
     const { world, characters, scenes } = data.storyteller_export
 
     // 1. Create world
-    const createdWorld = await createWorld({
-      name: world.name,
-      factions: world.factions ?? [],
-      description: world.description ?? '',
-      core_axis: world.core_axis ?? '',
-      environment: world.environment ?? '',
-      subsistence: world.subsistence ?? '',
-      organization: world.organization ?? '',
-      tensions: world.tensions ?? '',
-      tone: world.tone ?? '',
-    })
+    const createdWorld = await createWorld(
+      world.name,
+      world.premise ?? '',
+      world.description ?? '',
+    )
 
     const worldId = createdWorld.id
 

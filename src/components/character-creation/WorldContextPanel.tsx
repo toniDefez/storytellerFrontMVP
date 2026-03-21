@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Globe, Loader2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { getWorldById } from '@/services/api'
 import type { World } from '@/services/api'
 
@@ -45,8 +44,7 @@ export function WorldContextPanel({ worldId, world: externalWorld }: WorldContex
 
   if (!world) return null
 
-  const hasFactions = world.factions && world.factions.length > 0
-  const hasCoreAxis = !!world.core_axis
+  const hasPremise = !!world.premise
   const hasDescription = !!world.description
 
   return (
@@ -91,14 +89,14 @@ export function WorldContextPanel({ worldId, world: externalWorld }: WorldContex
             className="overflow-hidden"
           >
             <div className="px-5 pb-4 pt-1 space-y-3">
-              {/* Core axis */}
-              {hasCoreAxis && (
+              {/* Premise */}
+              {hasPremise && (
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-purple-600/60 mb-1">
-                    {t('world.create.coreAxisLabel')}
+                    Premisa
                   </p>
                   <p className="text-sm text-foreground/80 leading-relaxed italic font-[var(--font-display)]">
-                    {world.core_axis}
+                    {world.premise}
                   </p>
                 </div>
               )}
@@ -108,82 +106,6 @@ export function WorldContextPanel({ worldId, world: externalWorld }: WorldContex
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {world.description}
                 </p>
-              )}
-
-              {/* World layers */}
-              {world.environment && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600/60 mb-1">
-                    {t('world.create.layerEnvironmentLabel')}
-                  </p>
-                  <p className="text-sm text-foreground/80 leading-relaxed">
-                    {world.environment}
-                  </p>
-                </div>
-              )}
-
-              {world.subsistence && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600/60 mb-1">
-                    {t('world.create.layerSubsistenceLabel')}
-                  </p>
-                  <p className="text-sm text-foreground/80 leading-relaxed">
-                    {world.subsistence}
-                  </p>
-                </div>
-              )}
-
-              {world.organization && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-600/60 mb-1">
-                    {t('world.create.layerOrganizationLabel')}
-                  </p>
-                  <p className="text-sm text-foreground/80 leading-relaxed">
-                    {world.organization}
-                  </p>
-                </div>
-              )}
-
-              {world.tensions && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-rose-600/60 mb-1">
-                    {t('world.create.layerTensionsLabel')}
-                  </p>
-                  <p className="text-sm text-foreground/80 leading-relaxed">
-                    {world.tensions}
-                  </p>
-                </div>
-              )}
-
-              {world.tone && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600/60 mb-1">
-                    {t('world.create.layerToneLabel')}
-                  </p>
-                  <p className="text-sm text-foreground/80 leading-relaxed">
-                    {world.tone}
-                  </p>
-                </div>
-              )}
-
-              {/* Factions */}
-              {hasFactions && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-purple-600/60 mb-1.5">
-                    {t('world.factionsLabel')}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {world.factions.map((faction, idx) => (
-                      <Badge
-                        key={`${faction}-${idx}`}
-                        variant="outline"
-                        className="bg-purple-50 text-purple-700 border-purple-200 text-xs"
-                      >
-                        {faction}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
               )}
             </div>
           </motion.div>

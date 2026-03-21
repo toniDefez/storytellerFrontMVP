@@ -535,7 +535,26 @@
     "step4Hint": "The generator will automatically connect to Ollama and your account. The first run may take a few seconds to pull the image.",
     "bannerTitle": "Local installation not detected",
     "bannerDesc": "To generate AI content you need a local installation linked to your account.",
-    "bannerLink": "Set up installation"
+    "bannerLink": "Set up installation",
+    "copyCommand": "Copy command",
+    "commandCopied": "Copied",
+    "revokeButton": "Unlink installation",
+    "revokeDialogTitle": "Unlink installation",
+    "revokeDialogDesc": "This will unlink the generator from your account. Continue?",
+    "revokeDialogCancel": "Cancel",
+    "revokeDialogConfirm": "Unlink",
+    "revokeError": "Failed to unlink. Please try again.",
+    "guardTitle": "Generator not linked",
+    "guardDesc": "This page requires the StoryTeller local generator. Link it from settings to continue.",
+    "guardGoSettings": "Go to settings",
+    "guardGoBack": "Go back",
+    "tabDisabledTooltip": "Requires linked generator"
+  },
+  "guard": {
+    "unsavedTitle": "Leave without saving?",
+    "unsavedDesc": "Your changes will be lost.",
+    "unsavedStay": "Stay",
+    "unsavedLeave": "Leave"
   },
   "physical": {
     "water": {

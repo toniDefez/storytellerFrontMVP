@@ -10,6 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { useInstallation } from '@/hooks/useInstallation'
 import NoInstallationBanner from '@/components/NoInstallationBanner'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
+import { UnsavedChangesDialog } from '@/components/UnsavedChangesDialog'
 import { WorldContextPanel } from '@/components/character-creation/WorldContextPanel'
 import { FactionOrbitMap } from '@/components/character-creation/FactionOrbitMap'
 import { ConsciousnessPlane } from '@/components/character-creation/ConsciousnessPlane'
@@ -152,6 +155,9 @@ export default function CreateCharacterPageSanderson() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const isDirty = premise.trim().length > 0 || phase !== 'premise'
+  const { blocker } = useUnsavedChangesGuard(isDirty)
+
   // Rotating placeholder
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
   useEffect(() => {
@@ -227,6 +233,7 @@ export default function CreateCharacterPageSanderson() {
         personal_fear:             character.personal_fear,
         faction_affiliation:       character.faction_affiliation,
       })
+      setPremise('')
       navigate(`/worlds/${worldId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('character.create.error'))
@@ -336,19 +343,35 @@ export default function CreateCharacterPageSanderson() {
                     </div>
                   </div>
 
-                  <Button
-                    type="button" size="lg"
-                    className="w-full font-semibold tracking-wide
-                               bg-gradient-to-r from-amber-600 to-orange-500
-                               hover:from-amber-700 hover:to-orange-600
-                               hover:shadow-lg hover:shadow-amber-500/20 hover:-translate-y-0.5
-                               transition-all duration-200"
-                    disabled={!premise.trim() || !hasInstallation}
-                    onClick={handleDerive}
-                  >
-                    <User className="w-4 h-4 mr-2" />
-                    {t('character.create.deriveButton')}
-                  </Button>
+                  {!hasInstallation ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="block w-full">
+                          <Button
+                            type="button"
+                            size="lg"
+                            className="w-full font-semibold tracking-wide bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-700 hover:to-orange-600 hover:shadow-lg hover:shadow-amber-500/20 hover:-translate-y-0.5 transition-all duration-200 pointer-events-none"
+                            disabled
+                          >
+                            <User className="w-4 h-4 mr-2" />
+                            {t('character.create.deriveButton')}
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>{t('installation.tabDisabledTooltip')}</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="w-full font-semibold tracking-wide bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-700 hover:to-orange-600 hover:shadow-lg hover:shadow-amber-500/20 hover:-translate-y-0.5 transition-all duration-200"
+                      disabled={!premise.trim()}
+                      onClick={handleDerive}
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      {t('character.create.deriveButton')}
+                    </Button>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -400,7 +423,7 @@ export default function CreateCharacterPageSanderson() {
                     delay={0.05}
                   >
                     <FactionOrbitMap
-                      factions={world?.factions ?? []}
+                      factions={[]}
                       factionAffiliation={character.faction_affiliation}
                       socialPosition={character.social_position}
                       role={character.role}
@@ -465,7 +488,7 @@ export default function CreateCharacterPageSanderson() {
                       goals={character.goals ?? []}
                       personalFear={character.personal_fear}
                       internalContradiction={character.internal_contradiction}
-                      tensions={world?.tensions}
+                      tensions={undefined}
                     />
                   </LayerShell>
 
@@ -514,6 +537,7 @@ export default function CreateCharacterPageSanderson() {
           </div>
         </div>
       </div>
+      <UnsavedChangesDialog blocker={blocker} />
     </div>
   )
 }

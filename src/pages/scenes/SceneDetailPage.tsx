@@ -8,7 +8,7 @@ import {
   generateEvents,
   getSceneNarrative,
   regenerateNarrative,
-  getWorldDetail,
+  getWorldById,
 } from '../../services/api'
 import type { SceneDetail, Character, Event as StoryEvent } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -73,11 +73,12 @@ export default function SceneDetailPage() {
     setLoading(true)
     Promise.all([
       getSceneDetail(Number(sceneId)),
-      getWorldDetail(Number(worldId)),
+      getWorldById(Number(worldId)),
     ])
       .then(([sceneDetail, worldDetail]) => {
         setDetail(sceneDetail)
-        setWorldCharacters(worldDetail.characters || [])
+        const raw = worldDetail as unknown as Record<string, unknown>
+        setWorldCharacters(Array.isArray(raw.characters) ? raw.characters as Character[] : [])
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))

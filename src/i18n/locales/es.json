@@ -535,7 +535,26 @@
     "step4Hint": "El generador se conectará automáticamente a Ollama y a tu cuenta. La primera vez tardará unos segundos en descargar la imagen.",
     "bannerTitle": "Instalación local no detectada",
     "bannerDesc": "Para generar contenido con IA necesitas tener una instalación local vinculada a tu cuenta.",
-    "bannerLink": "Configurar instalación"
+    "bannerLink": "Configurar instalación",
+    "copyCommand": "Copiar comando",
+    "commandCopied": "Copiado",
+    "revokeButton": "Desvincular instalación",
+    "revokeDialogTitle": "Desvincular instalación",
+    "revokeDialogDesc": "Esto desvinculará el generador de tu cuenta. ¿Continuar?",
+    "revokeDialogCancel": "Cancelar",
+    "revokeDialogConfirm": "Desvincular",
+    "revokeError": "Error al desvincular. Inténtalo de nuevo.",
+    "guardTitle": "Generador no vinculado",
+    "guardDesc": "Esta página requiere el generador local de StoryTeller. Vincúlalo desde la configuración para continuar.",
+    "guardGoSettings": "Ir a configuración",
+    "guardGoBack": "Volver",
+    "tabDisabledTooltip": "Requiere generador vinculado"
+  },
+  "guard": {
+    "unsavedTitle": "¿Salir sin guardar?",
+    "unsavedDesc": "Perderás los cambios realizados.",
+    "unsavedStay": "Quedarme",
+    "unsavedLeave": "Salir"
   },
   "physical": {
     "water": {
