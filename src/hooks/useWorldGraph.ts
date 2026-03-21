@@ -6,7 +6,13 @@ import {
   createNode,
   deleteSubtree,
   getSubtreePreview,
+  graphChat,
 } from '@/services/api'
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  text: string
+}
 
 export interface UseWorldGraphReturn {
   nodes: WorldNode[]
@@ -32,6 +38,9 @@ export interface UseWorldGraphReturn {
   }) => Promise<WorldNode>
   removeSubtree: (worldId: number, nodeId: number) => Promise<{ count: number; labels: string[] }>
   deleteConfirmed: (worldId: number, nodeId: number) => Promise<void>
+  chatHistory: ChatMessage[]
+  chatLoading: boolean
+  sendChatMessage: (worldId: number, text: string) => Promise<void>
 }
 
 export function useWorldGraph(): UseWorldGraphReturn {
@@ -42,6 +51,8 @@ export function useWorldGraph(): UseWorldGraphReturn {
   const [selectedNode, setSelectedNode] = useState<WorldNode | null>(null)
   const [ghostCandidates, setGhostCandidates] = useState<CandidateNode[]>([])
   const [ghostParentId, setGhostParentId] = useState<number | null>(null)
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+  const [chatLoading, setChatLoading] = useState(false)
 
   const loadGraph = useCallback(async (worldId: number) => {
     setLoading(true)
@@ -149,10 +160,25 @@ export function useWorldGraph(): UseWorldGraphReturn {
     }
   }, [])
 
+  const sendChatMessage = useCallback(async (worldId: number, text: string) => {
+    setChatHistory(prev => [...prev, { role: 'user', text }])
+    setChatLoading(true)
+    try {
+      const res = await graphChat(worldId, text)
+      setChatHistory(prev => [...prev, { role: 'assistant', text: res.reply }])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error en el chat'
+      setChatHistory(prev => [...prev, { role: 'assistant', text: `⚠️ ${msg}` }])
+    } finally {
+      setChatLoading(false)
+    }
+  }, [])
+
   return {
     nodes, premise, loading, error,
     selectedNode, ghostCandidates, ghostParentId,
     loadGraph, selectNode, expandNode, confirmCandidate,
     dismissGhosts, addNodeManually, removeSubtree, deleteConfirmed,
+    chatHistory, chatLoading, sendChatMessage,
   }
 }
