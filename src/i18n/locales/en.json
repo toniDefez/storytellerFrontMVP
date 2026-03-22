@@ -692,5 +692,25 @@
       "nomad_sages": { "name": "The Wandering Sages", "desc": "Oral knowledge, caravans of scholars, power in what you know" },
       "fractured_coexistence": { "name": "Fractured Coexistence", "desc": "Multiple species attempting coexistence, laws nobody fully respects" }
     }
+  },
+  "graph": {
+    "addChildManual": "Add child manually",
+    "editNode": "Edit node",
+    "expandAI": "Expand with AI",
+    "deleteSubtree": "Delete subtree",
+    "createRoot": "Create root manually",
+    "newChildOf": "New child of",
+    "editing": "Editing",
+    "nodeName": "Node name",
+    "relation": "Relation to parent",
+    "domain": "Domain",
+    "role": "Role",
+    "description": "Description",
+    "optional": "(optional)",
+    "createNode": "Create node",
+    "saveChanges": "Save changes",
+    "fillWithAI": "Fill with AI",
+    "clearSuggestion": "✕ Clear suggestion",
+    "aiSuggestions": "AI suggestions"
   }
 }

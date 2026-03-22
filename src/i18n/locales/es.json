@@ -692,5 +692,25 @@
       "nomad_sages": { "name": "Los Sabios Errantes", "desc": "Conocimiento oral, caravanas de eruditos, poder en lo que sabes" },
       "fractured_coexistence": { "name": "La Coexistencia Rota", "desc": "Multiples especies intentando convivir, leyes que nadie respeta del todo" }
     }
+  },
+  "graph": {
+    "addChildManual": "Añadir hijo manual",
+    "editNode": "Editar nodo",
+    "expandAI": "Expandir con IA",
+    "deleteSubtree": "Eliminar subárbol",
+    "createRoot": "Crear raíz manualmente",
+    "newChildOf": "Nuevo hijo de",
+    "editing": "Editando",
+    "nodeName": "Nombre del nodo",
+    "relation": "Relación con el padre",
+    "domain": "Dominio",
+    "role": "Rol",
+    "description": "Descripción",
+    "optional": "(opcional)",
+    "createNode": "Crear nodo",
+    "saveChanges": "Guardar cambios",
+    "fillWithAI": "Rellenar con IA",
+    "clearSuggestion": "✕ Limpiar sugerencia",
+    "aiSuggestions": "Sugerencias IA"
   }
 }
