@@ -18,7 +18,7 @@ interface GraphSidePanelProps {
 }
 
 export function GraphSidePanel({
-  selectedNode, worldId, isExpanding,
+  selectedNode, isExpanding,
   chatHistory, chatLoading,
   onSendMessage, onClose, onExpand, onDeleteSubtree, onDeleteConfirmed,
 }: GraphSidePanelProps) {
@@ -141,7 +141,6 @@ export function GraphSidePanel({
       {activeTab === 'node' && selectedNode && (
         <NodeDetailPanel
           node={selectedNode}
-          worldId={worldId}
           isExpanding={isExpanding}
           onClose={() => { onClose(); setActiveTab('chat') }}
           onExpand={onExpand}

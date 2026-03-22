@@ -248,7 +248,6 @@ export default function CreateWorldPage() {
                 {graph.selectedNode && (
                   <NodeDetailPanel
                     node={graph.selectedNode}
-                    worldId={worldId!}
                     isExpanding={isExpanding}
                     onClose={() => graph.selectNode(null)}
                     onExpand={handleExpand}

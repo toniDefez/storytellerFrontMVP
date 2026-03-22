@@ -168,7 +168,7 @@ export function useWorldGraph(): UseWorldGraphReturn {
       setChatHistory(prev => [...prev, { role: 'assistant', text: res.reply }])
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error en el chat'
-      setChatHistory(prev => [...prev, { role: 'assistant', text: `⚠️ ${msg}` }])
+      setChatHistory(prev => [...prev, { role: 'assistant', text: `Error: ${msg}` }])
     } finally {
       setChatLoading(false)
     }

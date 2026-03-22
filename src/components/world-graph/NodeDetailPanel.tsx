@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 
 interface NodeDetailPanelProps {
   node: WorldNode
-  worldId: number
   isExpanding: boolean
   onClose: () => void
   onExpand: () => void
