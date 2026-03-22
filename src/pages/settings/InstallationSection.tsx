@@ -30,6 +30,7 @@ import {
   Trash2,
   AlertTriangle,
   Cpu,
+  type LucideIcon,
 } from 'lucide-react'
 
 // --- Animation variants ---
@@ -78,6 +79,12 @@ function isStale(iso: string): boolean {
   const diffMin = (Date.now() - new Date(iso).getTime()) / 60_000
   return diffMin > 15
 }
+
+// --- Types ---
+
+type WizardStep =
+  | { icon: LucideIcon; color: string; bg: string; title: string; content: React.ReactNode }
+  | { icon: LucideIcon; color: string; bg: string; title: string; description: string }
 
 // --- Sub-components ---
 
@@ -212,13 +219,13 @@ function TokenGenerator({
   )
 }
 
-function SetupSteps({ token }: { token: string }) {
+function SetupSteps({ token, selectedModel }: { token: string; selectedModel: string }) {
   const { t } = useTranslation()
   const [commandCopied, setCommandCopied] = useState(false)
 
   const codeBlock = "bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto"
 
-  const dockerCommand = `docker run --name storyteller-generator -e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e RABBIT_URL=amqp://guest:guest@host.docker.internal:5672 -e INSTALLATION_ACCESS_TOKEN=${token || '<tu-token>'} ghcr.io/tonidefez/storyteller-generator`
+  const dockerCommand = `docker run --name storyteller-generator -e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e RABBIT_URL=amqp://guest:guest@host.docker.internal:5672 -e INSTALLATION_ACCESS_TOKEN=${token || '<tu-token>'} -e OLLAMA_MODEL=${selectedModel} ghcr.io/tonidefez/storyteller-generator`
 
   const handleCopyCommand = () => {
     navigator.clipboard.writeText(dockerCommand)
@@ -255,7 +262,21 @@ function SetupSteps({ token }: { token: string }) {
         <>
           <p className="text-sm text-muted-foreground mb-2">{t('installation.step2Desc')}</p>
           <div className={codeBlock}>
-            <div className="mb-1"><span className="text-emerald-400">$</span> ollama pull llama3.2</div>
+            <div className="mb-1">
+              <span className="text-emerald-400">$</span>{' '}
+              <span>ollama pull </span>
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={selectedModel}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {selectedModel}
+                </motion.span>
+              </AnimatePresence>
+            </div>
             <div><span className="text-emerald-400">$</span> ollama pull nomic-embed-text</div>
           </div>
         </>
@@ -284,7 +305,20 @@ function SetupSteps({ token }: { token: string }) {
               -e <span className="text-sky-400">RABBIT_URL</span>=<span className="text-amber-300">amqp://guest:guest@host.docker.internal:5672</span>{' '}
               -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=
               <span className={token ? 'text-emerald-400' : 'text-amber-300'}>{token || '<tu-token>'}</span>{' '}
-              ghcr.io/tonidefez/storyteller-generator
+              -e <span className="text-sky-400">OLLAMA_MODEL</span>=
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={selectedModel}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="text-amber-300"
+                >
+                  {selectedModel}
+                </motion.span>
+              </AnimatePresence>{' '}
+              <span>ghcr.io/tonidefez/storyteller-generator</span>
             </div>
             {token && (
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-2">
@@ -308,7 +342,7 @@ function SetupSteps({ token }: { token: string }) {
         </>
       ),
     },
-  ] as const
+  ] as WizardStep[]
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show">
