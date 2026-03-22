@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useEffect } from 'react'
 import {
   ReactFlow,
   Background,
@@ -74,8 +74,11 @@ export function CausalTreeCanvas({ nodes: worldNodes, selectedNodeId, onSelectNo
     [worldNodes, selectedNodeId],
   )
 
-  const [nodes, , onNodesChange] = useNodesState(flowNodes)
-  const [edges, , onEdgesChange] = useEdgesState(flowEdges)
+  const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
+
+  useEffect(() => { setNodes(flowNodes) }, [flowNodes, setNodes])
+  useEffect(() => { setEdges(flowEdges) }, [flowEdges, setEdges])
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
@@ -108,7 +111,6 @@ export function CausalTreeCanvas({ nodes: worldNodes, selectedNodeId, onSelectNo
 
   return (
     <ReactFlow
-      key={worldNodes.length}
       nodes={nodes}
       edges={edges}
       onNodesChange={onNodesChange}
