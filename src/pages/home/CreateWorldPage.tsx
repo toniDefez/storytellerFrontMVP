@@ -11,7 +11,7 @@ import { TensionSelector } from '@/components/world-graph/TensionSelector'
 import { PremiseBar } from '@/components/world-graph/PremiseBar'
 import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
 import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
-import { NodeDetailPanel } from '@/components/world-graph/NodeDetailPanel'
+import { GraphSidePanel } from '@/components/world-graph/GraphSidePanel'
 import { useWorldGraph } from '@/hooks/useWorldGraph'
 import { useInstallation } from '@/hooks/useInstallation'
 import {
@@ -245,16 +245,17 @@ export default function CreateWorldPage() {
                   )}
                 </div>
 
-                {graph.selectedNode && (
-                  <NodeDetailPanel
-                    node={graph.selectedNode}
-                    isExpanding={isExpanding}
-                    onClose={() => graph.selectNode(null)}
-                    onExpand={handleExpand}
-                    onDeleteSubtree={() => graph.removeSubtree(worldId!, graph.selectedNode!.id)}
-                    onDeleteConfirmed={() => graph.deleteConfirmed(worldId!, graph.selectedNode!.id)}
-                  />
-                )}
+                <GraphSidePanel
+                  selectedNode={graph.selectedNode}
+                  isExpanding={isExpanding}
+                  chatHistory={graph.chatHistory}
+                  chatLoading={graph.chatLoading}
+                  onSendMessage={(text) => graph.sendChatMessage(worldId!, text)}
+                  onClose={() => graph.selectNode(null)}
+                  onExpand={handleExpand}
+                  onDeleteSubtree={() => graph.removeSubtree(worldId!, graph.selectedNode!.id)}
+                  onDeleteConfirmed={() => graph.deleteConfirmed(worldId!, graph.selectedNode!.id)}
+                />
               </div>
             </div>
 
