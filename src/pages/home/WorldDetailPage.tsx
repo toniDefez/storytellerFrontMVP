@@ -17,17 +17,17 @@ import { PremiseBar } from '@/components/world-graph/PremiseBar'
 import { toast } from 'sonner'
 import { exportWorld } from '../../services/worldExport'
 
-const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
+const DEFAULT_GRADIENT = 'from-violet-600 to-purple-800'
 
 function inferGradient(world: World): string {
   const text = (world.premise || world.description || '').toLowerCase()
-  if (/ceniza|volcan|fuego/.test(text)) return 'from-red-500 to-orange-600'
-  if (/hielo|nieve|glaciar/.test(text)) return 'from-cyan-400 to-blue-600'
-  if (/agua|oceano|lluvia/.test(text)) return 'from-blue-400 to-indigo-600'
-  if (/bosque|selva|verde/.test(text)) return 'from-emerald-400 to-teal-600'
-  if (/desierto|arena|sol|gusano/.test(text)) return 'from-amber-400 to-orange-600'
-  if (/oscuridad|sombra/.test(text)) return 'from-slate-600 to-gray-800'
-  if (/magia|hechizo/.test(text)) return 'from-violet-500 to-purple-700'
+  if (/ceniza|volcan|fuego/.test(text)) return 'from-red-600 to-orange-700'
+  if (/hielo|nieve|glaciar/.test(text)) return 'from-cyan-500 to-blue-700'
+  if (/agua|oceano|lluvia/.test(text)) return 'from-blue-500 to-indigo-700'
+  if (/bosque|selva|verde/.test(text)) return 'from-emerald-500 to-teal-700'
+  if (/desierto|arena|sol|gusano/.test(text)) return 'from-amber-500 to-orange-700'
+  if (/oscuridad|sombra/.test(text)) return 'from-slate-600 to-slate-900'
+  if (/magia|hechizo/.test(text)) return 'from-violet-500 to-purple-800'
   return DEFAULT_GRADIENT
 }
 
@@ -84,7 +84,6 @@ export default function WorldDetailPage() {
       .then(([w]) => {
         setWorld(w)
         document.title = `${w.name} — StoryTeller`
-        // getWorldById may return extra fields from the backend
         const raw = w as unknown as Record<string, unknown>
         setCharacters(Array.isArray(raw.characters) ? raw.characters as WorldWithRelations['characters'] : [])
         setScenes(Array.isArray(raw.scenes) ? raw.scenes as NonNullable<WorldWithRelations['scenes']> : [])
@@ -158,118 +157,133 @@ export default function WorldDetailPage() {
         onCancel={() => setShowConfirmDelete(false)}
       />
 
-      {/* ── Hero Section ── */}
-      <div className="rounded-xl overflow-hidden shadow-lg">
-        <div className={`bg-gradient-to-br ${gradient} px-8 py-10 relative`}>
-          <div className="absolute top-4 right-4 flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/80 hover:text-white hover:bg-white/15"
-              asChild
-            >
-              <Link to={`/worlds/${id}/bible`}>
-                <BookOpen className="h-4 w-4 mr-1.5" />
-                {t('bible.viewBible')}
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/80 hover:text-white hover:bg-white/15"
-              onClick={handleExport}
-              disabled={exporting}
-            >
-              <Download className="h-4 w-4 mr-1.5" />
-              {exporting ? t('importExport.exporting') : t('importExport.exportButton')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/80 hover:text-white hover:bg-white/15"
-              asChild
-            >
-              <Link to={`/worlds/${id}/edit`}>
-                <Pencil className="h-4 w-4 mr-1.5" />
-                {t('world.detail.editButton')}
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/80 hover:text-white hover:bg-white/15"
-              onClick={() => setShowConfirmDelete(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-1.5" />
-              {t('world.detail.deleteButton')}
-            </Button>
-          </div>
-          <h1 className="text-[2.5rem] font-display font-normal tracking-[-0.03em] leading-tight text-white">
-            {world.name}
-          </h1>
+      {/* ── Hero: gradient standalone, no card body ───────────────────── */}
+      <div className={`bg-gradient-to-br ${gradient} rounded-xl px-8 py-14 relative overflow-hidden`}>
+        {/* Actions */}
+        <div className="absolute top-5 right-5 flex gap-1.5">
+          <Button variant="ghost" size="sm" className="text-white/75 hover:text-white hover:bg-white/15" asChild>
+            <Link to={`/worlds/${id}/bible`}>
+              <BookOpen className="h-4 w-4 mr-1.5" />
+              {t('bible.viewBible')}
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white/75 hover:text-white hover:bg-white/15"
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            {exporting ? t('importExport.exporting') : t('importExport.exportButton')}
+          </Button>
+          <Button variant="ghost" size="sm" className="text-white/75 hover:text-white hover:bg-white/15" asChild>
+            <Link to={`/worlds/${id}/edit`}>
+              <Pencil className="h-4 w-4 mr-1.5" />
+              {t('world.detail.editButton')}
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white/75 hover:text-white hover:bg-white/15 hover:text-red-300"
+            onClick={() => setShowConfirmDelete(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            {t('world.detail.deleteButton')}
+          </Button>
         </div>
 
-        <div className="bg-card border border-t-0 border-border rounded-b-xl px-8 py-5 space-y-4">
-          {world.description && (
-            <p className="prose-drop-cap prose-literary mb-4 overflow-hidden">
-              {world.description}
-            </p>
-          )}
-          {world.premise && (
-            <p className="text-sm text-muted-foreground italic mb-4">
-              "{world.premise}"
-            </p>
-          )}
+        {/* World name */}
+        <h1
+          className="text-[3.5rem] font-normal tracking-[-0.03em] leading-tight text-white"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          {world.name}
+        </h1>
 
-          {/* World graph canvas */}
-          <div className="mt-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
-            <PremiseBar premise={world.premise} />
-            <div className="flex" style={{ height: 'max(calc(100vh - 380px), 480px)' }}>
-              <div className="flex-1 relative min-w-0">
-                <CausalTreeCanvas
-                  nodes={graph.nodes}
-                  selectedNodeId={graph.selectedNode?.id}
-                  onSelectNode={graph.selectNode}
-                />
-                {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
-                  <GhostCandidates
-                    candidates={graph.ghostCandidates}
-                    parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
-                    onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
-                    onDismiss={graph.dismissGhosts}
-                  />
-                )}
-              </div>
-              <GraphSidePanel
-                selectedNode={graph.selectedNode}
-                isExpanding={isExpanding}
-                chatHistory={graph.chatHistory}
-                chatLoading={graph.chatLoading}
-                onSendMessage={(text) => graph.sendChatMessage(Number(id), text)}
-                onClose={() => graph.selectNode(null)}
-                onExpand={async () => {
-                  setIsExpanding(true)
-                  try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
-                  finally { setIsExpanding(false) }
-                }}
-                onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
-                onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
+        {/* Premise beneath name */}
+        {world.premise && (
+          <p
+            className="text-white/55 italic mt-3 text-[15px] leading-relaxed max-w-2xl"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            "{world.premise}"
+          </p>
+        )}
+
+        {/* Subtle vignette at bottom */}
+        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
+      </div>
+
+      {/* ── Description prose: directly on page, no wrapper ───────────── */}
+      {world.description && (
+        <p className="prose-drop-cap prose-literary overflow-hidden max-w-3xl">
+          {world.description}
+        </p>
+      )}
+
+      {/* ── Graph canvas: standalone section, no nesting ──────────────── */}
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ border: '1px solid hsl(35 12% 86% / 0.7)' }}
+      >
+        <PremiseBar premise={world.premise} />
+        <div className="flex" style={{ height: 'max(calc(100vh - 360px), 520px)' }}>
+          <div className="flex-1 relative min-w-0">
+            <CausalTreeCanvas
+              nodes={graph.nodes}
+              worldId={Number(id) || null}
+              selectedNodeId={graph.selectedNode?.id}
+              onSelectNode={graph.selectNode}
+              onAddNode={async () => {}}
+            />
+            {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
+              <GhostCandidates
+                candidates={graph.ghostCandidates}
+                parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
+                onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
+                onDismiss={graph.dismissGhosts}
               />
-            </div>
+            )}
           </div>
+          <GraphSidePanel
+            selectedNode={graph.selectedNode}
+            isExpanding={isExpanding}
+            chatHistory={graph.chatHistory}
+            chatLoading={graph.chatLoading}
+            onSendMessage={(text) => graph.sendChatMessage(Number(id), text)}
+            onClose={() => graph.selectNode(null)}
+            onExpand={async () => {
+              setIsExpanding(true)
+              try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
+              finally { setIsExpanding(false) }
+            }}
+            onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
+            onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
+          />
         </div>
       </div>
 
-      <div className="text-center py-2 text-[rgba(27,28,26,0.2)] font-display tracking-[0.4em] text-sm select-none">
-        ✦ ✦ ✦
+      {/* ── Section divider ───────────────────────────────────────────── */}
+      <div className="flex items-center gap-4 py-4 select-none">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+        <span
+          className="tracking-[0.5em] text-xs"
+          style={{ fontFamily: 'var(--font-display)', color: 'rgba(27,28,26,0.25)' }}
+        >
+          ✦ ✦ ✦
+        </span>
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       </div>
-      {/* ── Characters Section ── */}
+
+      {/* ── Characters Section ────────────────────────────────────────── */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-entity-character flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-entity-character flex items-center gap-2.5">
             <Users className="h-5 w-5" />
             {t('world.detail.charactersSection')}
-            <span className="text-base font-normal text-muted-foreground">
+            <span className="text-sm font-normal text-muted-foreground">
               ({characters?.length || 0})
             </span>
           </h2>
@@ -305,11 +319,7 @@ export default function WorldDetailPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {characters.map(c => (
-              <Link
-                key={c.id}
-                to={`/worlds/${id}/characters/${c.id}`}
-                className="block"
-              >
+              <Link key={c.id} to={`/worlds/${id}/characters/${c.id}`} className="block">
                 <div className="rounded-[4px] bg-[#f7ece6] shadow-ambient p-4 h-full transition-all hover:shadow-ambient-hover">
                   <h3 className="font-display font-medium text-[#7a2d18]">{c.name}</h3>
                   {c.role && (
@@ -338,13 +348,13 @@ export default function WorldDetailPage() {
         )}
       </section>
 
-      {/* ── Scenes Section ── */}
+      {/* ── Scenes Section ────────────────────────────────────────────── */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-entity-scene flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-entity-scene flex items-center gap-2.5">
             <Clapperboard className="h-5 w-5" />
             {t('world.detail.scenesSection')}
-            <span className="text-base font-normal text-muted-foreground">
+            <span className="text-sm font-normal text-muted-foreground">
               ({sortedScenes?.length || 0})
             </span>
           </h2>
@@ -382,11 +392,7 @@ export default function WorldDetailPage() {
             {sortedScenes.map((s, idx) => {
               const pos = s.position ?? idx + 1
               return (
-                <Link
-                  key={s.id}
-                  to={`/worlds/${id}/scenes/${s.id}`}
-                  className="block"
-                >
+                <Link key={s.id} to={`/worlds/${id}/scenes/${s.id}`} className="block">
                   <div className="rounded-[4px] bg-[#e3f3f3] shadow-ambient p-4 flex items-center gap-4 transition-all hover:shadow-ambient-hover">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-entity-scene/10 flex items-center justify-center">
                       <span className="text-sm font-bold text-[#155555]">{pos}</span>

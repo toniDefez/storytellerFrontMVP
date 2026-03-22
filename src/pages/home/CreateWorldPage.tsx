@@ -157,8 +157,10 @@ export default function CreateWorldPage() {
             <div className="flex-1 relative min-w-0">
               <CausalTreeCanvas
                 nodes={graph.nodes}
+                worldId={worldId}
                 selectedNodeId={graph.selectedNode?.id}
                 onSelectNode={graph.selectNode}
+                onAddNode={async () => {}}
               />
               {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
                 <GhostCandidates
