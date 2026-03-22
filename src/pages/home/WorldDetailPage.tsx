@@ -242,7 +242,6 @@ export default function WorldDetailPage() {
               </div>
               <GraphSidePanel
                 selectedNode={graph.selectedNode}
-                worldId={Number(id)}
                 isExpanding={isExpanding}
                 chatHistory={graph.chatHistory}
                 chatLoading={graph.chatLoading}

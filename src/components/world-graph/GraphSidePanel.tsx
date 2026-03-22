@@ -6,7 +6,6 @@ import { NodeDetailPanel } from './NodeDetailPanel'
 
 interface GraphSidePanelProps {
   selectedNode: WorldNode | null
-  worldId: number
   isExpanding: boolean
   chatHistory: ChatMessage[]
   chatLoading: boolean
