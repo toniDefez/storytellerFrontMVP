@@ -224,7 +224,7 @@ export default function WorldDetailPage() {
           {/* World graph canvas */}
           <div className="mt-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
             <PremiseBar premise={world.premise} />
-            <div className="flex" style={{ height: 480 }}>
+            <div className="flex" style={{ height: 'max(calc(100vh - 380px), 480px)' }}>
               <div className="flex-1 relative min-w-0">
                 <CausalTreeCanvas
                   nodes={graph.nodes}

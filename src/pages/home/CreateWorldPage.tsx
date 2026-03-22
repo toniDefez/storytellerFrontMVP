@@ -136,6 +136,61 @@ export default function CreateWorldPage() {
     )
   }
 
+  // Full-screen canvas mode — breaks out of MainLayout padding
+  if (step === 'canvas') {
+    return (
+      <div className="-mx-6 md:-mx-8 -mt-6 md:-mt-8 flex flex-col" style={{ height: '100vh' }}>
+        <div className="px-6 md:px-8 pt-4 shrink-0">
+          <PageBreadcrumb items={[
+            { label: t('nav.worlds'), href: '/worlds' },
+            { label: t('world.create.title') },
+          ]} />
+          {(pageError || graph.error) && (
+            <Alert variant="destructive" className="mb-2">
+              <AlertDescription>{pageError || graph.error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+        <div className="flex-1 min-h-0 flex flex-col">
+          <PremiseBar premise={premise} />
+          <div className="flex flex-1 min-h-0">
+            <div className="flex-1 relative min-w-0">
+              <CausalTreeCanvas
+                nodes={graph.nodes}
+                selectedNodeId={graph.selectedNode?.id}
+                onSelectNode={graph.selectNode}
+              />
+              {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
+                <GhostCandidates
+                  candidates={graph.ghostCandidates}
+                  parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
+                  onConfirm={c => graph.confirmCandidate(worldId!, graph.ghostParentId!, c)}
+                  onDismiss={graph.dismissGhosts}
+                />
+              )}
+            </div>
+            <GraphSidePanel
+              selectedNode={graph.selectedNode}
+              isExpanding={isExpanding}
+              chatHistory={graph.chatHistory}
+              chatLoading={graph.chatLoading}
+              onSendMessage={(text) => graph.sendChatMessage(worldId!, text)}
+              onClose={() => graph.selectNode(null)}
+              onExpand={handleExpand}
+              onDeleteSubtree={() => graph.removeSubtree(worldId!, graph.selectedNode!.id)}
+              onDeleteConfirmed={() => graph.deleteConfirmed(worldId!, graph.selectedNode!.id)}
+            />
+          </div>
+        </div>
+        <div className="shrink-0 px-6 md:px-8 py-3 flex justify-end border-t border-border/30 bg-background">
+          <Button onClick={handleFinish} disabled={graph.nodes.length === 0}>
+            Ir al mundo →
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-[80vh] py-4 px-4">
       <div className="w-full max-w-5xl mx-auto">
@@ -233,50 +288,6 @@ export default function CreateWorldPage() {
               >
                 Saltar y empezar sin IA
               </button>
-            </div>
-          </div>
-        )}
-
-        {step === 'canvas' && (
-          <div className="space-y-0">
-            <div className="rounded-xl border border-border/50 overflow-hidden bg-background shadow-sm">
-              <PremiseBar premise={premise} />
-              <div className="flex" style={{ height: 560 }}>
-                <div className="flex-1 relative min-w-0">
-                  <CausalTreeCanvas
-                    nodes={graph.nodes}
-                    selectedNodeId={graph.selectedNode?.id}
-                    onSelectNode={graph.selectNode}
-                  />
-
-                  {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
-                    <GhostCandidates
-                      candidates={graph.ghostCandidates}
-                      parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
-                      onConfirm={c => graph.confirmCandidate(worldId!, graph.ghostParentId!, c)}
-                      onDismiss={graph.dismissGhosts}
-                    />
-                  )}
-                </div>
-
-                <GraphSidePanel
-                  selectedNode={graph.selectedNode}
-                  isExpanding={isExpanding}
-                  chatHistory={graph.chatHistory}
-                  chatLoading={graph.chatLoading}
-                  onSendMessage={(text) => graph.sendChatMessage(worldId!, text)}
-                  onClose={() => graph.selectNode(null)}
-                  onExpand={handleExpand}
-                  onDeleteSubtree={() => graph.removeSubtree(worldId!, graph.selectedNode!.id)}
-                  onDeleteConfirmed={() => graph.deleteConfirmed(worldId!, graph.selectedNode!.id)}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-3">
-              <Button onClick={handleFinish} disabled={graph.nodes.length === 0}>
-                Ir al mundo →
-              </Button>
             </div>
           </div>
         )}
