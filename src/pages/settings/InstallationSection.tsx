@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ModelSelector, MODELS } from './ModelSelector.js'
+import { ModelSelector, MODELS } from './ModelSelector'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getLinkingToken, revokeInstallation } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
