@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ModelSelector, MODELS } from './ModelSelector.js'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getLinkingToken, revokeInstallation } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -487,6 +488,18 @@ export function InstallationSection() {
   const [revokeError, setRevokeError] = useState('')
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false)
 
+  const STORAGE_KEY = 'storyteller_ollama_model'
+
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    return stored && MODELS.some(m => m.tag === stored) ? stored : 'qwen2.5:7b'
+  })
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model)
+    localStorage.setItem(STORAGE_KEY, model)
+  }
+
   const handleRevoke = async () => {
     setRevoking(true)
     setRevokeError('')
@@ -557,7 +570,10 @@ export function InstallationSection() {
             </div>
           </CardHeader>
           <CardContent>
-            <SetupSteps token={token} />
+            <div className="mb-6">
+              <ModelSelector value={selectedModel} onChange={handleModelChange} />
+            </div>
+            <SetupSteps token={token} selectedModel={selectedModel} />
             <div className="mt-6 pt-6 border-t border-border">
               <TokenGenerator token={token} setToken={setToken} />
             </div>
