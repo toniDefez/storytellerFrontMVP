@@ -102,7 +102,7 @@ export interface CandidateNode {
   role: NodeRole
   label: string
   description: string
-  edge_type: EdgeType
+  parent_edge_type: EdgeType
 }
 
 export function getWorlds() {

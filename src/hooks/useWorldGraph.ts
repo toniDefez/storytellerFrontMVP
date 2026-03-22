@@ -99,7 +99,7 @@ export function useWorldGraph(): UseWorldGraphReturn {
     try {
       const newNode = await createNode(worldId, {
         parent_id: parentId,
-        parent_edge_type: candidate.edge_type,
+        parent_edge_type: candidate.parent_edge_type,
         domain: candidate.domain,
         role: candidate.role,
         label: candidate.label,
