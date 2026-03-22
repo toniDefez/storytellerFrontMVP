@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Loader2, Globe, Server } from 'lucide-react'
@@ -30,6 +31,7 @@ export default function CreateWorldPage() {
   const graph = useWorldGraph()
 
   const [step, setStep] = useState<Step>('premise')
+  const [name, setName] = useState('')
   const [premise, setPremise] = useState('')
   const [worldId, setWorldId] = useState<number | null>(null)
   const [tensionOptions, setTensionOptions] = useState<TensionOption[]>([])
@@ -44,11 +46,11 @@ export default function CreateWorldPage() {
 
   const handlePremiseSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!premise.trim()) return
+    if (!name.trim() || !premise.trim()) return
     setPageError('')
     setLoadingTensions(true)
     try {
-      const { id } = await createWorld('Nuevo mundo', premise.trim(), '')
+      const { id } = await createWorld(name.trim(), premise.trim(), '')
       setWorldId(id)
       if (hasInstallation) {
         const result = await interpretTensions(premise.trim())
@@ -165,6 +167,19 @@ export default function CreateWorldPage() {
               <form onSubmit={handlePremiseSubmit} className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground mb-2 block">
+                    Nombre del mundo
+                  </label>
+                  <Input
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Ej: Arrakis, La Tierra Media, Westeros..."
+                    required
+                    autoFocus
+                    maxLength={100}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">
                     La premisa de tu mundo
                   </label>
                   <Textarea
@@ -173,7 +188,6 @@ export default function CreateWorldPage() {
                     className="min-h-[90px] resize-none text-base"
                     placeholder="Ej: Es un desierto y hay gusanos gigantes que producen una especia alucinógena..."
                     required
-                    autoFocus
                   />
                 </div>
 
@@ -193,7 +207,7 @@ export default function CreateWorldPage() {
                   ))}
                 </div>
 
-                <Button type="submit" size="lg" className="w-full" disabled={loadingTensions || !premise.trim()}>
+                <Button type="submit" size="lg" className="w-full" disabled={loadingTensions || !name.trim() || !premise.trim()}>
                   {loadingTensions
                     ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analizando premisa...</>
                     : 'Continuar →'
