@@ -386,6 +386,7 @@ export interface Installation {
   status: string
   last_seen_at: string
   created_at: string
+  model?: string
 }
 
 export async function getMyInstallation(): Promise<Installation | null> {
