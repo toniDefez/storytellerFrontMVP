@@ -475,6 +475,15 @@ function LinkedView({
                   {connectedSince(installation.created_at, i18n.language)}
                 </p>
               </div>
+              <div className="col-span-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">{t('installation.modelLabel')}</span>
+                </div>
+                <p className="text-sm font-medium text-foreground font-mono">
+                  {installation.model || '—'}
+                </p>
+              </div>
             </div>
 
             {/* Re-link */}
