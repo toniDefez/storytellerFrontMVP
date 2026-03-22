@@ -55,7 +55,7 @@ export function GhostCandidates({ candidates, parentLabel, onConfirm, onDismiss 
                 {c.description}
               </p>
               <p className="text-[9px] text-muted-foreground/70 mt-1 italic">
-                ↳ {EDGE_LABEL[c.parent_edge_type] ?? c.parent_edge_type}
+                ↳ {EDGE_LABEL[c.edge_type] ?? c.edge_type}
               </p>
             </button>
           )

@@ -102,8 +102,7 @@ export interface CandidateNode {
   role: NodeRole
   label: string
   description: string
-  causal_summary: string
-  parent_edge_type: EdgeType
+  edge_type: EdgeType
 }
 
 export function getWorlds() {
@@ -161,7 +160,7 @@ export function createNode(worldId: number, node: {
   role: NodeRole
   label: string
   description: string
-  causal_summary: string
+  causal_summary?: string
   position_order: number
 }) {
   return request<WorldNode>(`/world/nodes?world_id=${worldId}`, {
