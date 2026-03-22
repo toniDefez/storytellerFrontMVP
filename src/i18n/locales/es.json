@@ -555,7 +555,15 @@
     "guardDesc": "Esta página requiere el generador local de StoryTeller. Vincúlalo desde la configuración para continuar.",
     "guardGoSettings": "Ir a configuración",
     "guardGoBack": "Volver",
-    "tabDisabledTooltip": "Requiere generador vinculado"
+    "tabDisabledTooltip": "Requiere generador vinculado",
+    "modelSelectorTitle": "Elige tu modelo de generación",
+    "modelSelectorSubtitle": "Todos los modelos se ejecutan localmente via Ollama.",
+    "modelRecommended": "Un buen punto de partida",
+    "modelFast": "Rápido y ligero",
+    "modelBalanced": "Equilibrado",
+    "modelRich": "Rico y detallado",
+    "modelRamBadge": "{{ram}} RAM",
+    "modelLabel": "Modelo"
   },
   "guard": {
     "unsavedTitle": "¿Salir sin guardar?",

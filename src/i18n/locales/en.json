@@ -555,7 +555,15 @@
     "guardDesc": "This page requires the StoryTeller local generator. Link it from settings to continue.",
     "guardGoSettings": "Go to settings",
     "guardGoBack": "Go back",
-    "tabDisabledTooltip": "Requires linked generator"
+    "tabDisabledTooltip": "Requires linked generator",
+    "modelSelectorTitle": "Choose your generation model",
+    "modelSelectorSubtitle": "All models run locally via Ollama.",
+    "modelRecommended": "A good place to start",
+    "modelFast": "Fast & Light",
+    "modelBalanced": "Balanced",
+    "modelRich": "Rich & Detailed",
+    "modelRamBadge": "{{ram}} RAM",
+    "modelLabel": "Model"
   },
   "guard": {
     "unsavedTitle": "Leave without saving?",
