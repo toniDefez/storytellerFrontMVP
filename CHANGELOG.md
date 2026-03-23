@@ -1,3 +1,13 @@
+# [1.6.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.5.0...v1.6.0) (2026-03-23)
+
+
+### Features
+
+* add collapsed state and animation infrastructure to MainLayout ([fe77f0c](https://github.com/toniDefez/storytellerFrontMVP/commit/fe77f0c4b52ec642ff62737061f6e920a75fe65e))
+* add i18n keys for sidebar collapse toggle ([0ae7900](https://github.com/toniDefez/storytellerFrontMVP/commit/0ae7900daf5c958aa7c831792c2e95c449fed4f4))
+* collapsible icon-rail sidebar with localStorage persistence ([5eed08a](https://github.com/toniDefez/storytellerFrontMVP/commit/5eed08a33f5f5567a2f459ee8f78d72551bd0619))
+* update Sidebar component for collapsed state ([599b05a](https://github.com/toniDefez/storytellerFrontMVP/commit/599b05a6f96800d0a5e28511c14abe2349f71848))
+
 # [1.5.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.4.0...v1.5.0) (2026-03-23)
 
 
