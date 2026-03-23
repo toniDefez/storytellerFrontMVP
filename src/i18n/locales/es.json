@@ -17,7 +17,9 @@
   "nav": {
     "worlds": "Mundos",
     "settings": "Configuración",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "collapseSidebar": "Contraer menú",
+    "expandSidebar": "Expandir menú"
   },
   "a11y": {
     "skipToContent": "Saltar al contenido principal",
