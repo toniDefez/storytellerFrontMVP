@@ -197,7 +197,7 @@ export function expandNodeCandidates(worldId: number, nodeId: number) {
 }
 
 export function graphChat(worldId: number, message: string) {
-  return request<{ reply: string }>(`/world/graph/chat?world_id=${worldId}`, {
+  return request<{ reply: string; created_nodes?: WorldNode[] }>(`/world/graph/chat?world_id=${worldId}`, {
     method: 'POST',
     body: JSON.stringify({ message }),
   })

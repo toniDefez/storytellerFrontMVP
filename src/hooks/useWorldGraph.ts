@@ -4,6 +4,7 @@ import {
   getWorldGraph,
   expandNodeCandidates,
   createNode,
+  updateNode,
   deleteSubtree,
   getSubtreePreview,
   graphChat,
@@ -35,6 +36,12 @@ export interface UseWorldGraphReturn {
     label: string
     description: string
     causalSummary: string
+  }) => Promise<WorldNode>
+  updateNodeManually: (worldId: number, nodeId: number, input: {
+    label: string
+    domain: NodeDomain
+    role: NodeRole
+    description: string
   }) => Promise<WorldNode>
   removeSubtree: (worldId: number, nodeId: number) => Promise<{ count: number; labels: string[] }>
   deleteConfirmed: (worldId: number, nodeId: number) => Promise<void>
@@ -106,10 +113,12 @@ export function useWorldGraph(): UseWorldGraphReturn {
         description: candidate.description,
         position_order: nodes.filter(n => n.parent_id === parentId).length,
       })
-      setNodes(prev => [...prev, newNode])
+      // Patch parent_edge_type locally in case the server doesn't echo it back
+      const patched = { ...newNode, parent_edge_type: newNode.parent_edge_type ?? candidate.parent_edge_type }
+      setNodes(prev => [...prev, patched])
       setGhostCandidates([])
       setGhostParentId(null)
-      setSelectedNode(newNode)
+      setSelectedNode(patched)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error añadiendo nodo')
     } finally {
@@ -136,9 +145,28 @@ export function useWorldGraph(): UseWorldGraphReturn {
       causal_summary: input.causalSummary,
       position_order: nodes.filter(n => n.parent_id === (input.parentId ?? null)).length,
     })
-    setNodes(prev => [...prev, newNode])
-    return newNode
+    // Patch parent_edge_type locally in case the server doesn't echo it back
+    const patched = { ...newNode, parent_edge_type: newNode.parent_edge_type ?? input.parentEdgeType }
+    setNodes(prev => [...prev, patched])
+    return patched
   }, [nodes])
+
+  const updateNodeManually = useCallback(async (
+    worldId: number,
+    nodeId: number,
+    input: { label: string; domain: NodeDomain; role: NodeRole; description: string }
+  ) => {
+    const updated = await updateNode(worldId, nodeId, {
+      label: input.label,
+      domain: input.domain,
+      role: input.role,
+      description: input.description,
+      causal_summary: input.description,
+    })
+    setNodes(prev => prev.map(n => n.id === nodeId ? updated : n))
+    setSelectedNode(updated)
+    return updated
+  }, [])
 
   const removeSubtree = useCallback(async (worldId: number, nodeId: number) => {
     const preview = await getSubtreePreview(worldId, nodeId)
@@ -165,6 +193,9 @@ export function useWorldGraph(): UseWorldGraphReturn {
     try {
       const res = await graphChat(worldId, text)
       setChatHistory(prev => [...prev, { role: 'assistant', text: res.reply }])
+      if (res.created_nodes && res.created_nodes.length > 0) {
+        setNodes(prev => [...prev, ...res.created_nodes!])
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error en el chat'
       setChatHistory(prev => [...prev, { role: 'assistant', text: `Error: ${msg}` }])
@@ -177,7 +208,7 @@ export function useWorldGraph(): UseWorldGraphReturn {
     nodes, premise, loading, error,
     selectedNode, ghostCandidates, ghostParentId,
     loadGraph, selectNode, expandNode, confirmCandidate,
-    dismissGhosts, addNodeManually, removeSubtree, deleteConfirmed,
+    dismissGhosts, addNodeManually, updateNodeManually, removeSubtree, deleteConfirmed,
     chatHistory, chatLoading, sendChatMessage,
   }
 }
