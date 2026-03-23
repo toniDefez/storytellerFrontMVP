@@ -81,6 +81,10 @@ export default function WorldDetailPage() {
   }, [id, graph])
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [id])
+
+  useEffect(() => {
     document.title = `${t('pageTitle.worldDetail', { name: world?.name ?? '' })} — StoryTeller`
   }, [t, i18n.language, world?.name])
 

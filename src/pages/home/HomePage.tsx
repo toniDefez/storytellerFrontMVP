@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { WorldCardSkeleton } from '@/components/skeletons/WorldCardSkeleton'
 import ConfirmModal from '../../components/ConfirmModal'
-import { Plus, Globe, Upload } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   validateExportFile,
@@ -20,12 +20,16 @@ import type { StoryTellerExport } from '../../services/worldExport'
 
 const container = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
 }
 
 const cardVariant = {
-  hidden: { opacity: 0, y: 20 },
-  show:   { opacity: 1, y: 0 },
+  hidden: { opacity: 0, scale: 0.88 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+  },
 }
 
 export default function HomePage() {
@@ -100,7 +104,7 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
         {Array.from({ length: 6 }).map((_, i) => (
           <WorldCardSkeleton key={i} />
         ))}
@@ -145,17 +149,25 @@ export default function HomePage() {
   if (worlds.length === 0) {
     return (
       <motion.div
-        className="flex flex-col items-center justify-center min-h-[70vh]"
+        className="flex flex-col items-center justify-center min-h-[70vh] text-center"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
         {importElements}
-        <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center mb-6">
-          <Globe className="w-7 h-7 text-primary" />
-        </div>
-        <h2 className="font-[var(--font-display)] text-2xl font-bold text-foreground mb-2">{t('home.emptyTitle')}</h2>
-        <p className="text-sm text-muted-foreground mb-8 text-center max-w-xs leading-relaxed">
+        <p
+          className="text-[11px] tracking-[0.35em] uppercase mb-5"
+          style={{ color: 'hsl(260 30% 58%)' }}
+        >
+          StoryTeller
+        </p>
+        <h2
+          className="text-4xl font-normal tracking-[-0.02em] mb-4 leading-tight"
+          style={{ fontFamily: 'var(--font-display)', color: 'hsl(30 8% 11%)' }}
+        >
+          {t('home.emptyTitle')}
+        </h2>
+        <p className="text-base text-muted-foreground mb-10 max-w-sm leading-relaxed">
           {t('home.emptyDescription')}
         </p>
         <div className="flex gap-3">
@@ -186,8 +198,13 @@ export default function HomePage() {
       {importElements}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-[var(--font-display)] text-2xl font-bold text-foreground">{t('home.title')}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{t('home.worldCount', { count: worlds.length })}</p>
+          <h1
+            className="text-3xl font-normal tracking-[-0.02em]"
+            style={{ fontFamily: 'var(--font-display)', color: 'hsl(30 8% 11%)' }}
+          >
+            {t('home.title')}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">{t('home.worldCount', { count: worlds.length })}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -206,7 +223,7 @@ export default function HomePage() {
       </div>
 
       <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         variants={container}
         initial="hidden"
         animate="show"

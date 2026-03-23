@@ -9,46 +9,100 @@ interface WorldCardProps {
   premise?: string
 }
 
-const DEFAULT_HEADER = 'from-violet-500 to-purple-600'
+interface ClimateInfo {
+  gradient: string
+  label: string
+}
 
-function inferHeaderGradient(premise?: string, description?: string): string {
+function inferClimate(premise?: string, description?: string): ClimateInfo {
   const text = (premise || description || '').toLowerCase()
-  if (/ceniza|volcan|fuego/.test(text)) return 'from-red-500 to-orange-500'
-  if (/hielo|nieve|glaciar/.test(text)) return 'from-cyan-400 to-blue-500'
-  if (/agua|oceano|lluvia/.test(text)) return 'from-blue-400 to-indigo-500'
-  if (/bosque|selva|verde/.test(text)) return 'from-emerald-400 to-teal-500'
-  if (/desierto|arena|sol|gusano/.test(text)) return 'from-amber-400 to-orange-500'
-  if (/oscuridad|sombra/.test(text)) return 'from-slate-500 to-gray-700'
-  if (/magia|hechizo/.test(text)) return 'from-violet-400 to-purple-500'
-  return DEFAULT_HEADER
+  if (/ceniza|volcan|fuego/.test(text))
+    return { gradient: 'from-red-900 via-red-700 to-orange-700', label: 'Volcánico' }
+  if (/hielo|nieve|glaciar/.test(text))
+    return { gradient: 'from-slate-800 via-cyan-700 to-blue-800', label: 'Glacial' }
+  if (/agua|oceano|lluvia/.test(text))
+    return { gradient: 'from-blue-900 via-blue-700 to-indigo-800', label: 'Oceánico' }
+  if (/bosque|selva|verde/.test(text))
+    return { gradient: 'from-emerald-900 via-emerald-700 to-teal-800', label: 'Selvático' }
+  if (/desierto|arena|sol|gusano/.test(text))
+    return { gradient: 'from-amber-900 via-amber-600 to-orange-700', label: 'Desértico' }
+  if (/oscuridad|sombra/.test(text))
+    return { gradient: 'from-gray-950 via-slate-800 to-gray-900', label: 'Umbral' }
+  if (/magia|hechizo/.test(text))
+    return { gradient: 'from-violet-900 via-violet-700 to-purple-900', label: 'Arcano' }
+  return { gradient: 'from-violet-950 via-purple-800 to-indigo-900', label: 'Etéreo' }
 }
 
 const WorldCard: React.FC<WorldCardProps> = ({ id, name, description, premise }) => {
   const navigate = useNavigate()
-  const headerGradient = inferHeaderGradient(premise, description)
+  const { gradient, label } = inferClimate(premise, description)
+  const blurb = premise || description
 
   return (
     <motion.div
-      className="rounded-[4px] bg-card shadow-ambient cursor-pointer overflow-hidden"
-      whileHover={{ y: -3, boxShadow: '0 0 0 1px rgba(27,28,26,0.05), 0 4px 12px rgba(27,28,26,0.08), 0 16px 40px rgba(27,28,26,0.06)' }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+      className="rounded-[4px] cursor-pointer overflow-hidden relative group"
+      style={{ aspectRatio: '16 / 10' }}
+      whileHover="hovered"
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 24 }}
       onClick={() => navigate(`/worlds/${id}`)}
     >
-      <div className={`bg-gradient-to-br ${headerGradient} px-5 pt-5 pb-7 relative`}>
-        <h3 className="text-lg font-bold text-white leading-tight drop-shadow-sm font-[var(--font-display)]">{name}</h3>
-        {premise && (
-          <p className="text-xs text-white/70 italic mt-1.5 line-clamp-2 leading-relaxed font-[var(--font-display)]">
-            "{premise}"
-          </p>
-        )}
-        <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-b from-transparent to-white/10" />
+      {/* ── Gradient background — zooms on hover ── */}
+      <motion.div
+        className={`absolute inset-0 bg-gradient-to-br ${gradient}`}
+        variants={{
+          hovered: { scale: 1.07, transition: { duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] } },
+        }}
+      />
+
+      {/* ── Permanent bottom vignette — keeps name readable ── */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
+
+      {/* ── Top fade ── */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/25 to-transparent pointer-events-none" />
+
+      {/* ── Climate label — top right ── */}
+      <div className="absolute top-4 right-4 z-10">
+        <span
+          className="text-[9px] tracking-[0.32em] uppercase font-semibold text-white/40"
+          style={{ fontFamily: 'var(--font-ui)' }}
+        >
+          {label}
+        </span>
       </div>
 
-      <div className="px-5 pt-3 pb-5">
-        {description && !premise && (
-          <p className="text-xs italic font-display text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{description}</p>
-        )}
+      {/* ── Hover overlay — slides up with premise ── */}
+      {blurb && (
+        <motion.div
+          className="absolute inset-x-0 bottom-0 px-5 pb-14 pt-16 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.5) 60%, transparent 100%)',
+          }}
+          variants={{
+            hovered: { opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] } },
+          }}
+          initial={{ opacity: 0, y: 12 }}
+        >
+          <p
+            className="text-white/80 text-sm leading-relaxed line-clamp-3"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            {blurb}
+          </p>
+        </motion.div>
+      )}
+
+      {/* ── World name — always visible ── */}
+      <div className="absolute inset-x-0 bottom-0 px-5 pb-4 z-10">
+        <h3
+          className="text-[1.5rem] font-bold text-white leading-tight line-clamp-1 break-all"
+          style={{
+            fontFamily: 'var(--font-display)',
+            textShadow: '0 1px 16px rgba(0,0,0,0.6)',
+          }}
+        >
+          {name}
+        </h3>
       </div>
     </motion.div>
   )
