@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.2.0...v1.3.0) (2026-03-23)
+
+
+### Features
+
+* bold UX pass — auth split-screen, world cards as portals, graph layout cleanup ([e3abf9d](https://github.com/toniDefez/storytellerFrontMVP/commit/e3abf9d8ee49fe1521cdd9f7c28586f6407be21a))
+
 # [1.2.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.1.0...v1.2.0) (2026-03-23)
 
 
