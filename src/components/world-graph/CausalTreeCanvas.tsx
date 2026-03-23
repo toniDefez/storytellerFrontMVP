@@ -170,7 +170,7 @@ export function CausalTreeCanvas({
 
   if (worldNodes.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-50/50 text-center p-8">
+      <div className="flex-1 flex items-center justify-center bg-[hsl(40_20%_97%)] text-center p-8">
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground font-display italic">
             El árbol está vacío
@@ -207,10 +207,10 @@ export function CausalTreeCanvas({
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.25 }}
-        className="bg-slate-50/50"
+        className="bg-[hsl(40_20%_97%)]"
         nodesDraggable={false}
       >
-        <Background color="#e2e8f0" gap={20} />
+        <Background color="#d8cfc4" gap={24} size={1} />
         <Controls />
         <MiniMap
           nodeColor={n => DOMAIN_COLOR[(n.data as TreeNodeData).domain] ?? '#a855f7'}

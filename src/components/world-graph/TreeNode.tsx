@@ -39,27 +39,33 @@ export const TreeNode = memo(function TreeNode({
       {/* Node card */}
       <div
         className={`
-          w-[180px] rounded-lg border bg-card shadow-sm transition-all
-          ${data.isSelected ? 'ring-2 ring-primary shadow-md' : 'hover:shadow-md'}
+          w-[180px] rounded-[4px] border bg-card shadow-sm transition-all
+          ${data.isSelected ? 'shadow-md' : 'hover:shadow-md'}
         `}
-        style={{ borderColor: color + '60' }}
+        style={{
+          borderColor: color + '60',
+          ...(data.isSelected ? { outline: `2px solid ${color}`, outlineOffset: '1px' } : {}),
+        }}
       >
-        <div className="h-1 w-full rounded-t-lg" style={{ backgroundColor: color }} />
+        <div className="h-[3px] w-full rounded-t-[4px]" style={{ backgroundColor: color }} />
         <div className="px-3 py-2.5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <span
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide text-white"
+              className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-semibold uppercase tracking-wide text-white"
               style={{ backgroundColor: color }}
             >
               {DOMAIN_LABEL[data.domain] ?? data.domain}
             </span>
             {data.role !== 'state' && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wide bg-muted text-muted-foreground">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-medium uppercase tracking-wide bg-muted text-muted-foreground">
                 {ROLE_LABEL[data.role] ?? data.role}
               </span>
             )}
           </div>
-          <p className="text-sm font-semibold text-foreground leading-tight line-clamp-2">
+          <p
+            className="text-sm font-semibold text-foreground leading-tight line-clamp-2"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
             {data.label}
           </p>
         </div>
@@ -70,7 +76,8 @@ export const TreeNode = memo(function TreeNode({
         <div className="flex flex-col items-center mt-1.5">
           <button
             onClick={handlePlusClick}
-            className="w-5 h-5 rounded-full flex items-center justify-center bg-primary text-primary-foreground shadow-sm hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm hover:scale-110 transition-transform focus:outline-none"
+            style={{ backgroundColor: color }}
             aria-label="Añadir nodo hijo"
           >
             <Plus className="w-3 h-3" />

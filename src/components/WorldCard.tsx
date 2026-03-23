@@ -40,69 +40,74 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, description, premise })
 
   return (
     <motion.div
-      className="rounded-[4px] cursor-pointer overflow-hidden relative group"
-      style={{ aspectRatio: '16 / 10' }}
+      className="rounded-[4px] cursor-pointer overflow-hidden flex h-[140px] shadow-ambient"
       whileHover="hovered"
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       onClick={() => navigate(`/worlds/${id}`)}
+      style={{ borderBottom: '1px solid hsl(35 12% 88%)' }}
     >
-      {/* ── Gradient background — zooms on hover ── */}
-      <motion.div
-        className={`absolute inset-0 bg-gradient-to-br ${gradient}`}
-        variants={{
-          hovered: { scale: 1.07, transition: { duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] } },
-        }}
-      />
-
-      {/* ── Permanent bottom vignette — keeps name readable ── */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
-
-      {/* ── Top fade ── */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/25 to-transparent pointer-events-none" />
-
-      {/* ── Climate label — top right ── */}
-      <div className="absolute top-4 right-4 z-10">
-        <span
-          className="text-[9px] tracking-[0.32em] uppercase font-semibold text-white/40"
-          style={{ fontFamily: 'var(--font-ui)' }}
-        >
-          {label}
-        </span>
+      {/* Left — gradient atmosphere panel */}
+      <div className="w-52 shrink-0 relative overflow-hidden">
+        <motion.div
+          className={`absolute inset-0 bg-gradient-to-br ${gradient}`}
+          variants={{
+            hovered: { scale: 1.08, transition: { duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] } },
+          }}
+        />
+        {/* Bottom vignette keeps label readable */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+        {/* Climate label */}
+        <div className="absolute bottom-3 left-4 z-10">
+          <span
+            className="text-[8px] tracking-[0.3em] uppercase font-semibold text-white/50"
+            style={{ fontFamily: 'var(--font-ui)' }}
+          >
+            {label}
+          </span>
+        </div>
       </div>
 
-      {/* ── Hover overlay — slides up with premise ── */}
-      {blurb && (
-        <motion.div
-          className="absolute inset-x-0 bottom-0 px-5 pb-14 pt-16 pointer-events-none"
-          style={{
-            background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.5) 60%, transparent 100%)',
-          }}
-          variants={{
-            hovered: { opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] } },
-          }}
-          initial={{ opacity: 0, y: 12 }}
-        >
-          <p
-            className="text-white/80 text-sm leading-relaxed line-clamp-3"
+      {/* Right — warm info panel */}
+      <div
+        className="flex-1 flex flex-col justify-between px-6 py-4"
+        style={{ background: 'hsl(40 12% 97%)' }}
+      >
+        <div>
+          <h3
+            className="text-[1.2rem] font-bold text-foreground leading-tight line-clamp-1 mb-2"
             style={{ fontFamily: 'var(--font-display)' }}
           >
-            {blurb}
-          </p>
-        </motion.div>
-      )}
+            {name}
+          </h3>
+          {blurb && (
+            <p
+              className="text-sm italic text-muted-foreground leading-relaxed line-clamp-2"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              {blurb}
+            </p>
+          )}
+        </div>
 
-      {/* ── World name — always visible ── */}
-      <div className="absolute inset-x-0 bottom-0 px-5 pb-4 z-10">
-        <h3
-          className="text-[1.5rem] font-bold text-white leading-tight line-clamp-1 break-all"
-          style={{
-            fontFamily: 'var(--font-display)',
-            textShadow: '0 1px 16px rgba(0,0,0,0.6)',
-          }}
-        >
-          {name}
-        </h3>
+        {/* "Explorar →" footer */}
+        <div className="flex items-center justify-between mt-2">
+          <span
+            className="text-[9px] tracking-[0.25em] uppercase text-muted-foreground/50"
+            style={{ fontFamily: 'var(--font-ui)' }}
+          >
+            Mundo
+          </span>
+          <motion.span
+            className="text-xs font-medium"
+            style={{ fontFamily: 'var(--font-ui)', color: 'hsl(260 38% 40%)' }}
+            variants={{
+              hovered: { x: 4, transition: { duration: 0.2 } },
+            }}
+          >
+            Explorar →
+          </motion.span>
+        </div>
       </div>
     </motion.div>
   )
