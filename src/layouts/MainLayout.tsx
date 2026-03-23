@@ -31,36 +31,60 @@ function NavItem({ to, labelKey, Icon }: { to: string; labelKey: string; Icon: R
   )
 }
 
-function Sidebar({ onLogout }: { onLogout: () => void }) {
+function Sidebar({ onLogout, collapsed, onToggle }: {
+  onLogout: () => void
+  collapsed: boolean
+  onToggle: () => void
+}) {
   const { t } = useTranslation()
 
   return (
-    <aside aria-label={t('a11y.sidebar')} className="flex flex-col h-full bg-[#100d16] border-r border-[#1c1926]/60 w-60">
+    <aside aria-label={t('a11y.sidebar')} className="flex flex-col h-full bg-[#100d16] border-r border-[#1c1926]/60">
       {/* Logo */}
-      <div className="px-5 pt-7 pb-6">
+      <div className="px-3 pt-7 pb-6 overflow-hidden whitespace-nowrap">
         <div className="flex items-center gap-2.5">
           <span className="font-display italic text-[#e8d5c8] text-base font-normal tracking-tight">
-            StoryTeller
+            {collapsed ? 'ST' : 'StoryTeller'}
           </span>
         </div>
       </div>
 
       {/* Nav */}
       <nav aria-label={t('a11y.sidebarNav')} className="flex-1 px-3 space-y-1">
-        <p className="text-[10px] font-semibold text-[#5a4a72] uppercase tracking-widest px-4 mb-3">{t('a11y.sidebarNav')}</p>
+        {!collapsed && (
+          <p className="text-[10px] font-semibold text-[#5a4a72] uppercase tracking-widest px-4 mb-3">{t('a11y.sidebarNav')}</p>
+        )}
         {NAV_ITEM_DEFS.map(item => (
-          <NavItem key={item.to} {...item} />
+          <NavItem key={item.to} {...item} collapsed={collapsed} />
         ))}
       </nav>
+
+      {/* Toggle */}
+      <div className="px-3 pb-2">
+        <button
+          onClick={onToggle}
+          className="hidden md:flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-[#5a4a72] hover:text-[#8a7a9e] hover:bg-white/[0.04] rounded-sm transition-all duration-150"
+          aria-label={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
+          title={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
+        >
+          {collapsed
+            ? <PanelLeftOpen className="w-4 h-4 shrink-0" />
+            : <PanelLeftClose className="w-4 h-4 shrink-0" />
+          }
+          {!collapsed && <span>{t('nav.collapseSidebar')}</span>}
+        </button>
+      </div>
 
       {/* Logout */}
       <div className="px-3 pb-6 border-t border-[#1c1926]/60 pt-4">
         <button
           onClick={onLogout}
-          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-[#5a4a72] hover:text-[#8a7a9e] hover:bg-white/[0.04] rounded-sm transition-all duration-150"
+          aria-label={t('nav.logout')}
+          title={t('nav.logout')}
+          className={`flex items-center gap-2.5 w-full py-2.5 text-sm text-[#5a4a72] hover:text-[#8a7a9e] hover:bg-white/[0.04] rounded-sm transition-all duration-150 ${collapsed ? 'justify-center px-2' : 'px-4'}`}
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          {t('nav.logout')}
+          {!collapsed && t('nav.logout')}
         </button>
       </div>
     </aside>
