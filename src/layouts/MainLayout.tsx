@@ -10,7 +10,7 @@ const NAV_ITEM_DEFS = [
   { to: '/settings', labelKey: 'nav.settings', Icon: Settings },
 ]
 
-function NavItem({ to, labelKey, Icon }: { to: string; labelKey: string; Icon: React.FC<{ className?: string }> }) {
+function NavItem({ to, labelKey, Icon, collapsed }: { to: string; labelKey: string; Icon: React.FC<{ className?: string }>; collapsed: boolean }) {
   const { t } = useTranslation()
   const location = useLocation()
   const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
@@ -18,7 +18,11 @@ function NavItem({ to, labelKey, Icon }: { to: string; labelKey: string; Icon: R
   return (
     <Link
       to={to}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-sm text-sm font-medium transition-all duration-150 ${
+      aria-label={collapsed ? t(labelKey) : undefined}
+      title={collapsed ? t(labelKey) : undefined}
+      className={`flex items-center gap-3 py-2.5 rounded-sm text-sm font-medium transition-all duration-150 ${
+        collapsed ? 'justify-center px-2' : 'px-4'
+      } ${
         isActive
           ? 'border-l-2 border-entity-world-muted bg-entity-world/[0.12] text-[#e8d5c8]'
           : 'text-[#8a7a9e] hover:text-[#c9b8ae] hover:bg-white/[0.04] border border-transparent'
@@ -26,7 +30,7 @@ function NavItem({ to, labelKey, Icon }: { to: string; labelKey: string; Icon: R
       aria-current={isActive ? 'page' : undefined}
     >
       <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-entity-world-muted' : ''}`} />
-      {t(labelKey)}
+      {!collapsed && t(labelKey)}
     </Link>
   )
 }
