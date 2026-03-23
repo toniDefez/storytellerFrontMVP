@@ -12,13 +12,13 @@ import { TensionSelector } from '@/components/world-graph/TensionSelector'
 import { PremiseBar } from '@/components/world-graph/PremiseBar'
 import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
 import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
-import { GraphSidePanel } from '@/components/world-graph/GraphSidePanel'
 import { useWorldGraph } from '@/hooks/useWorldGraph'
 import { useInstallation } from '@/hooks/useInstallation'
 import {
   createWorld,
   interpretTensions,
   generateRoot,
+  suggestPremises,
   type TensionOption,
   type WorldNode,
 } from '@/services/api'
@@ -41,10 +41,21 @@ export default function CreateWorldPage() {
   const [loadingRoot, setLoadingRoot] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
   const [pageError, setPageError] = useState('')
+  const [premiseSuggestions, setPremiseSuggestions] = useState<string[]>([])
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
 
   useEffect(() => {
     document.title = `Crear Mundo — StoryTeller`
   }, [i18n.language])
+
+  useEffect(() => {
+    if (!hasInstallation || installLoading) return
+    setLoadingSuggestions(true)
+    suggestPremises()
+      .then(r => setPremiseSuggestions(r.premises ?? []))
+      .catch(() => setPremiseSuggestions([]))
+      .finally(() => setLoadingSuggestions(false))
+  }, [hasInstallation, installLoading])
 
   const handlePremiseSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,6 +109,16 @@ export default function CreateWorldPage() {
       label: input.label,
       description: input.description,
       causalSummary: input.description,
+    })
+  }, [worldId, graph])
+
+  const handleUpdateNode = useCallback(async (input: NodeFormInput, nodeId: number) => {
+    if (!worldId) return
+    await graph.updateNodeManually(worldId, nodeId, {
+      label: input.label,
+      domain: input.domain,
+      role: input.role,
+      description: input.description,
     })
   }, [worldId, graph])
 
@@ -168,35 +189,30 @@ export default function CreateWorldPage() {
         </div>
         <div className="flex-1 min-h-0 flex flex-col">
           <PremiseBar premise={premise} />
-          <div className="flex flex-1 min-h-0">
-            <div className="flex-1 relative min-w-0">
-              <CausalTreeCanvas
-                nodes={graph.nodes}
-                worldId={worldId}
-                selectedNodeId={graph.selectedNode?.id}
-                onSelectNode={graph.selectNode}
-                onAddNode={handleAddNode}
-              />
-              {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
-                <GhostCandidates
-                  candidates={graph.ghostCandidates}
-                  parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
-                  onConfirm={c => graph.confirmCandidate(worldId!, graph.ghostParentId!, c)}
-                  onDismiss={graph.dismissGhosts}
-                />
-              )}
-            </div>
-            <GraphSidePanel
+          <div className="flex-1 relative min-h-0">
+            <CausalTreeCanvas
+              nodes={graph.nodes}
+              worldId={worldId}
               selectedNode={graph.selectedNode}
+              onSelectNode={graph.selectNode}
+              onAddNode={handleAddNode}
+              onUpdateNode={handleUpdateNode}
               isExpanding={isExpanding}
               chatHistory={graph.chatHistory}
               chatLoading={graph.chatLoading}
               onSendMessage={(text) => graph.sendChatMessage(worldId!, text)}
-              onClose={() => graph.selectNode(null)}
               onExpand={handleExpand}
               onDeleteSubtree={() => graph.removeSubtree(worldId!, graph.selectedNode!.id)}
               onDeleteConfirmed={() => graph.deleteConfirmed(worldId!, graph.selectedNode!.id)}
             />
+            {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
+              <GhostCandidates
+                candidates={graph.ghostCandidates}
+                parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
+                onConfirm={c => graph.confirmCandidate(worldId!, graph.ghostParentId!, c)}
+                onDismiss={graph.dismissGhosts}
+              />
+            )}
           </div>
         </div>
         <div className="shrink-0 px-6 md:px-8 py-3 flex justify-end border-t border-border/30 bg-background">
@@ -263,21 +279,25 @@ export default function CreateWorldPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-2 pt-1">
-                  {[
-                    'Un archipiélago volcánico donde los espíritus del fuego gobiernan y los humanos son sus sacerdotes',
-                    'Una megaciudad subterránea que huyó de la superficie hace siglos y olvidó cómo es el sol',
-                  ].map(example => (
-                    <button
-                      key={example}
-                      type="button"
-                      onClick={() => setPremise(example)}
-                      className="text-left text-[11px] text-muted-foreground bg-accent/50 hover:bg-accent rounded-lg p-2.5 transition-colors leading-relaxed"
-                    >
-                      {example}
-                    </button>
-                  ))}
-                </div>
+                {loadingSuggestions ? (
+                  <div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Generando ideas...
+                  </div>
+                ) : premiseSuggestions.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2 pt-1">
+                    {premiseSuggestions.map(example => (
+                      <button
+                        key={example}
+                        type="button"
+                        onClick={() => setPremise(example)}
+                        className="text-left text-[11px] text-muted-foreground bg-accent/50 hover:bg-accent rounded-lg p-2.5 transition-colors leading-relaxed"
+                      >
+                        {example}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
 
                 <Button type="submit" size="lg" className="w-full" disabled={loadingTensions || !name.trim() || !premise.trim()}>
                   {loadingTensions

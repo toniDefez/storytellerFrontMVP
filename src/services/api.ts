@@ -139,6 +139,13 @@ export function getWorldGraph(worldId: number) {
   return request<WorldGraph>(`/world/graph?world_id=${worldId}`)
 }
 
+export function suggestPremises() {
+  return request<{ premises: string[] }>('/world/suggest-premises', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
 export function interpretTensions(premise: string) {
   return request<{ options: TensionOption[] }>('/world/interpret-tensions', {
     method: 'POST',
@@ -166,6 +173,19 @@ export function createNode(worldId: number, node: {
   return request<WorldNode>(`/world/nodes?world_id=${worldId}`, {
     method: 'POST',
     body: JSON.stringify(node),
+  })
+}
+
+export function updateNode(worldId: number, nodeId: number, data: {
+  label: string
+  domain: NodeDomain
+  role: NodeRole
+  description: string
+  causal_summary: string
+}) {
+  return request<WorldNode>(`/world/nodes?world_id=${worldId}&node_id=${nodeId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
   })
 }
 
