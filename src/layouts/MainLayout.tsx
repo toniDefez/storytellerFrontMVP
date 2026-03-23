@@ -1,9 +1,9 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Globe, Settings, LogOut, Menu } from 'lucide-react'
+import { Globe, Settings, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 
 const NAV_ITEM_DEFS = [
   { to: '/worlds', labelKey: 'nav.worlds', Icon: Globe },
@@ -72,6 +72,20 @@ export default function MainLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
+  const sidebarSpring = prefersReducedMotion
+    ? { duration: 0 }
+    : { type: 'spring' as const, stiffness: 300, damping: 30 }
+
+  const [collapsed, setCollapsed] = useState<boolean>(
+    () => localStorage.getItem('sidebar_collapsed') === 'true'
+  )
+
+  const handleToggle = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    localStorage.setItem('sidebar_collapsed', String(next))
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -89,20 +103,31 @@ export default function MainLayout() {
       </a>
 
       {/* Sidebar desktop */}
-      <div className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-60 z-20">
-        <Sidebar onLogout={handleLogout} />
-      </div>
+      <motion.div
+        className="hidden md:flex md:flex-col md:fixed md:inset-y-0 z-20 overflow-hidden"
+        animate={{ width: collapsed ? 48 : 240 }}
+        transition={sidebarSpring}
+      >
+        <Sidebar onLogout={handleLogout} collapsed={collapsed} onToggle={handleToggle} />
+      </motion.div>
 
       {/* Sidebar mobile */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-60">
           <SheetTitle className="sr-only">{t('a11y.sidebarNav')}</SheetTitle>
-          <Sidebar onLogout={handleLogout} />
+          <Sidebar onLogout={handleLogout} collapsed={false} onToggle={() => {}} />
         </SheetContent>
       </Sheet>
 
       {/* Main */}
-      <main id="main-content" aria-label={t('a11y.mainContent')} className="flex-1 md:ml-60 min-h-screen vellum-texture">
+      <motion.main
+        id="main-content"
+        aria-label={t('a11y.mainContent')}
+        className="flex-1 min-h-screen vellum-texture"
+        animate={{ marginLeft: collapsed ? 48 : 240 }}
+        transition={sidebarSpring}
+        onAnimationComplete={() => window.dispatchEvent(new Event('resize'))}
+      >
         {/* Mobile topbar */}
         <div className="md:hidden flex items-center gap-4 bg-[#100d16] border-b border-[#1c1926] px-4 py-3 sticky top-0 z-20">
           <button
@@ -119,14 +144,14 @@ export default function MainLayout() {
         {/* Page content */}
         <motion.div
           key={location.pathname}
-          className="p-6 md:p-8 max-w-6xl mx-auto"
+          className="p-6 md:p-8 max-w-6xl ml-0"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
         >
           <Outlet />
         </motion.div>
-      </main>
+      </motion.main>
     </div>
   )
 }
