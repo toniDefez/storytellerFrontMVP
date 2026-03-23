@@ -1,8 +1,9 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getWorldById, deleteWorld } from '../../services/api'
-import type { World } from '../../services/api'
+import type { World, WorldNode } from '../../services/api'
+import type { NodeFormInput } from '@/components/world-graph/NodeFormDialog'
 import { useWorldGraph } from '@/hooks/useWorldGraph'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Button } from '@/components/ui/button'
@@ -64,6 +65,20 @@ export default function WorldDetailPage() {
   const [exporting, setExporting] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
   const graph = useWorldGraph()
+
+  const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
+    const wid = Number(id)
+    if (!id || Number.isNaN(wid)) return
+    await graph.addNodeManually(wid, {
+      parentId: parentNode?.id,
+      parentEdgeType: input.parentEdgeType,
+      domain: input.domain,
+      role: input.role,
+      label: input.label,
+      description: input.description,
+      causalSummary: input.description,
+    })
+  }, [id, graph])
 
   useEffect(() => {
     document.title = `${t('pageTitle.worldDetail', { name: world?.name ?? '' })} — StoryTeller`
@@ -233,10 +248,10 @@ export default function WorldDetailPage() {
           <div className="flex-1 relative min-w-0">
             <CausalTreeCanvas
               nodes={graph.nodes}
-              worldId={Number(id) || null}
+              worldId={Number(id)}
               selectedNodeId={graph.selectedNode?.id}
               onSelectNode={graph.selectNode}
-              onAddNode={async () => {}}
+              onAddNode={handleAddNode}
             />
             {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
               <GhostCandidates

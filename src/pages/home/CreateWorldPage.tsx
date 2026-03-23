@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,9 @@ import {
   interpretTensions,
   generateRoot,
   type TensionOption,
+  type WorldNode,
 } from '@/services/api'
+import type { NodeFormInput } from '@/components/world-graph/NodeFormDialog'
 
 type Step = 'premise' | 'tension' | 'canvas'
 
@@ -85,6 +87,19 @@ export default function CreateWorldPage() {
       setStep('canvas')
     }
   }
+
+  const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
+    if (!worldId) return
+    await graph.addNodeManually(worldId, {
+      parentId: parentNode?.id,
+      parentEdgeType: input.parentEdgeType,
+      domain: input.domain,
+      role: input.role,
+      label: input.label,
+      description: input.description,
+      causalSummary: input.description,
+    })
+  }, [worldId, graph])
 
   const handleExpand = async () => {
     if (!worldId || !graph.selectedNode) return
@@ -160,7 +175,7 @@ export default function CreateWorldPage() {
                 worldId={worldId}
                 selectedNodeId={graph.selectedNode?.id}
                 onSelectNode={graph.selectNode}
-                onAddNode={async () => {}}
+                onAddNode={handleAddNode}
               />
               {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
                 <GhostCandidates
