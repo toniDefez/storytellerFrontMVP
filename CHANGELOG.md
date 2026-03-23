@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.3.0...v1.4.0) (2026-03-23)
+
+
+### Features
+
+* editorial WorldCard layout + graph visual polish ([54a36ce](https://github.com/toniDefez/storytellerFrontMVP/commit/54a36cef1a89f2d179b347ffb341ba0c4769165c))
+
 # [1.3.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.2.0...v1.3.0) (2026-03-23)
 
 
