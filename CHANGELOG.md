@@ -1,3 +1,17 @@
+# [1.5.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.4.0...v1.5.0) (2026-03-23)
+
+
+### Bug Fixes
+
+* **world:** show fallback premises when AI suggestions unavailable ([b7ef531](https://github.com/toniDefez/storytellerFrontMVP/commit/b7ef531235343c1fb898acacde0bb653474ecd69))
+
+
+### Features
+
+* **world-graph:** apply chat-created nodes to graph state ([911e067](https://github.com/toniDefez/storytellerFrontMVP/commit/911e067ea7d99f8cf862aa22bcdbf5a77b66d5e6))
+* **world-graph:** integrate side panel into canvas, add node edit support ([5b7cb8f](https://github.com/toniDefez/storytellerFrontMVP/commit/5b7cb8f46a7c6a5567ae5135ac71d952610e0870))
+* **world:** AI-generated premise suggestions on create page ([54145ad](https://github.com/toniDefez/storytellerFrontMVP/commit/54145ad1fdd282c3b84154a80964ffb910d61591))
+
 # [1.4.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.3.0...v1.4.0) (2026-03-23)
 
 
