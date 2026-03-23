@@ -19,6 +19,8 @@ import { GraphActionsContext } from './GraphActionsContext'
 import { NodeFormDialog } from './NodeFormDialog'
 import type { NodeFormInput } from './NodeFormDialog'
 import { NodeContextMenu } from './NodeContextMenu'
+import { GraphSidePanel } from './GraphSidePanel'
+import type { ChatMessage } from '@/hooks/useWorldGraph'
 
 // NodeMouseHandler is not in @xyflow/react's public exports — define inline:
 type NodeMouseHandler = (e: React.MouseEvent, node: Node) => void
@@ -28,7 +30,9 @@ const nodeTypes = { tree: TreeNode }
 interface FormState {
   anchorPosition: { x: number; y: number }
   parentNode: WorldNode | null
-  mode: 'create'
+  mode: 'create' | 'edit'
+  editingNode?: WorldNode
+  editingNodeHasChildren?: boolean
 }
 
 interface ContextMenuState {
@@ -40,9 +44,18 @@ interface ContextMenuState {
 interface CausalTreeCanvasProps {
   nodes: WorldNode[]
   worldId: number | null
-  selectedNodeId?: number
+  selectedNode: WorldNode | null
   onSelectNode: (node: WorldNode | null) => void
   onAddNode: (input: NodeFormInput, parentNode: WorldNode | null) => Promise<void>
+  onUpdateNode: (input: NodeFormInput, nodeId: number) => Promise<void>
+  // GraphSidePanel props
+  isExpanding: boolean
+  chatHistory: ChatMessage[]
+  chatLoading: boolean
+  onSendMessage: (text: string) => void
+  onExpand: () => Promise<void>
+  onDeleteSubtree: () => Promise<{ count: number; labels: string[] }>
+  onDeleteConfirmed: () => Promise<void>
 }
 
 function buildFlowGraph(
@@ -89,11 +102,20 @@ function buildFlowGraph(
 export function CausalTreeCanvas({
   nodes: worldNodes,
   worldId,
-  selectedNodeId,
+  selectedNode,
   onSelectNode,
   onAddNode,
+  onUpdateNode,
+  isExpanding,
+  chatHistory,
+  chatLoading,
+  onSendMessage,
+  onExpand,
+  onDeleteSubtree,
+  onDeleteConfirmed,
 }: CausalTreeCanvasProps) {
   const { t } = useTranslation()
+  const selectedNodeId = selectedNode?.id
 
   const [ctxHintCount, setCtxHintCount] = useState(() =>
     parseInt(localStorage.getItem('graph_ctx_hint_count') ?? '0', 10)
@@ -122,6 +144,18 @@ export function CausalTreeCanvas({
     setFormState({ anchorPosition: screenAnchor, parentNode, mode: 'create' })
     setContextMenu(null)
   }, [])
+
+  const openEditForm = useCallback((node: WorldNode, screenAnchor: { x: number; y: number }) => {
+    const hasChildren = worldNodes.some(n => n.parent_id === node.id)
+    setFormState({
+      anchorPosition: screenAnchor,
+      parentNode: null,
+      mode: 'edit',
+      editingNode: node,
+      editingNodeHasChildren: hasChildren,
+    })
+    setContextMenu(null)
+  }, [worldNodes])
 
   // GraphActionsContext handler — called from TreeNode "+" button
   const handlePlusClick = useCallback((nodeId: string, screenAnchor: { x: number; y: number }) => {
@@ -162,93 +196,122 @@ export function CausalTreeCanvas({
 
   const handleFormConfirm = useCallback(async (input: NodeFormInput) => {
     if (!worldId) return
-    await onAddNode(input, formState?.parentNode ?? null)
-  }, [worldId, onAddNode, formState])
+    if (formState?.mode === 'edit' && formState.editingNode) {
+      await onUpdateNode(input, formState.editingNode.id)
+    } else {
+      await onAddNode(input, formState?.parentNode ?? null)
+    }
+  }, [worldId, onAddNode, onUpdateNode, formState])
 
   // Context menu actions
   const ctxNode = contextMenu ? nodeMap.get(Number(contextMenu.nodeId)) : null
 
-  if (worldNodes.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[hsl(40_20%_97%)] text-center p-8">
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground font-display italic">
-            El árbol está vacío
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Genera el nodo raíz para empezar
-          </p>
-          {worldId != null && (
-            <button
-              onClick={() => openCreateForm(null, {
-                x: window.innerWidth / 2 - 148,
-                y: 80,
-              })}
-              className="text-xs text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
-            >
-              {t('graph.createRoot')}
-            </button>
-          )}
-        </div>
+  const canvasContent = worldNodes.length === 0 ? (
+    <div className="flex-1 flex items-center justify-center bg-[hsl(40_20%_97%)] text-center p-8">
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground font-display italic">
+          El árbol está vacío
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Genera el nodo raíz para empezar
+        </p>
+        {worldId != null && (
+          <button
+            onClick={() => openCreateForm(null, {
+              x: window.innerWidth / 2 - 148,
+              y: 80,
+            })}
+            className="text-xs text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+          >
+            {t('graph.createRoot')}
+          </button>
+        )}
       </div>
-    )
-  }
+    </div>
+  ) : (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onNodeClick={handleNodeClick}
+      onPaneClick={handlePaneClick}
+      onNodeContextMenu={handleNodeContextMenu}
+      nodeTypes={nodeTypes}
+      fitView
+      fitViewOptions={{ padding: 0.25 }}
+      className="bg-[hsl(40_20%_97%)]"
+      nodesDraggable={false}
+    >
+      <Background color="#d8cfc4" gap={24} size={1} />
+      <Controls />
+      <MiniMap
+        nodeColor={n => DOMAIN_COLOR[(n.data as TreeNodeData).domain] ?? '#a855f7'}
+        className="!bg-background/90 !border-border/50"
+      />
+    </ReactFlow>
+  )
 
   return (
     <GraphActionsContext.Provider value={graphActions}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeClick={handleNodeClick}
-        onPaneClick={handlePaneClick}
-        onNodeContextMenu={handleNodeContextMenu}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.25 }}
-        className="bg-[hsl(40_20%_97%)]"
-        nodesDraggable={false}
-      >
-        <Background color="#d8cfc4" gap={24} size={1} />
-        <Controls />
-        <MiniMap
-          nodeColor={n => DOMAIN_COLOR[(n.data as TreeNodeData).domain] ?? '#a855f7'}
-          className="!bg-background/90 !border-border/50"
-        />
-      </ReactFlow>
+      <div className="flex h-full">
+        <div className="flex-1 relative min-w-0">
+          {canvasContent}
 
-      {contextMenu && ctxNode && (
-        <NodeContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          onEdit={() => {
-            // Edit mode is Phase 2 — no-op for now
-            setContextMenu(null)
-          }}
-          onAddChild={() => openCreateForm(ctxNode, { x: contextMenu.x, y: contextMenu.y })}
-          onExpandAI={() => {
-            // Triggers existing expand flow via side panel — user clicks "Expandir" there
-            setContextMenu(null)
-          }}
-          onDeleteSubtree={() => {
-            // Existing delete flow is in NodeDetailPanel
-            setContextMenu(null)
-          }}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
+          {contextMenu && ctxNode && (
+            <NodeContextMenu
+              x={contextMenu.x}
+              y={contextMenu.y}
+              onEdit={() => {
+                if (ctxNode) openEditForm(ctxNode, { x: contextMenu.x, y: contextMenu.y })
+              }}
+              onAddChild={() => openCreateForm(ctxNode, { x: contextMenu.x, y: contextMenu.y })}
+              onExpandAI={() => {
+                // Triggers existing expand flow via side panel — user clicks "Expandir" there
+                setContextMenu(null)
+              }}
+              onDeleteSubtree={() => {
+                // Existing delete flow is in NodeDetailPanel
+                setContextMenu(null)
+              }}
+              onClose={() => setContextMenu(null)}
+            />
+          )}
 
-      {formState && worldId != null && (
-        <NodeFormDialog
-          mode={formState.mode}
-          worldId={worldId}
-          parentNode={formState.parentNode}
-          anchorPosition={formState.anchorPosition}
-          onConfirm={handleFormConfirm}
-          onClose={() => setFormState(null)}
+          {formState && worldId != null && (
+            <NodeFormDialog
+              mode={formState.mode}
+              worldId={worldId}
+              parentNode={formState.parentNode}
+              editingNode={formState.editingNode}
+              editingNodeHasChildren={formState.editingNodeHasChildren}
+              anchorPosition={formState.anchorPosition}
+              onConfirm={handleFormConfirm}
+              onClose={() => setFormState(null)}
+            />
+          )}
+        </div>
+
+        <GraphSidePanel
+          selectedNode={selectedNode}
+          isExpanding={isExpanding}
+          chatHistory={chatHistory}
+          chatLoading={chatLoading}
+          onSendMessage={onSendMessage}
+          onClose={() => onSelectNode(null)}
+          onEditNode={() => {
+            if (selectedNode) {
+              openEditForm(selectedNode, {
+                x: window.innerWidth / 2 - 132,
+                y: 80,
+              })
+            }
+          }}
+          onExpand={onExpand}
+          onDeleteSubtree={onDeleteSubtree}
+          onDeleteConfirmed={onDeleteConfirmed}
         />
-      )}
+      </div>
     </GraphActionsContext.Provider>
   )
 }

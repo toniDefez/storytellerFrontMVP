@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, Sparkles, Loader2 } from 'lucide-react'
+import { X, Sparkles, Loader2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -21,6 +21,7 @@ interface NodeFormDialogProps {
   worldId: number
   parentNode: WorldNode | null
   editingNode?: WorldNode
+  editingNodeHasChildren?: boolean
   anchorPosition: { x: number; y: number }
   onConfirm: (input: NodeFormInput) => Promise<void>
   onClose: () => void
@@ -31,9 +32,10 @@ const ROLES: NodeRole[] = ['state', 'event', 'rupture']
 const EDGE_TYPES: EdgeType[] = ['produces', 'requires', 'enables', 'undermines', 'gives_rise_to']
 
 export function NodeFormDialog({
-  mode, worldId, parentNode, editingNode,
+  mode, worldId, parentNode, editingNode, editingNodeHasChildren,
   anchorPosition, onConfirm, onClose,
 }: NodeFormDialogProps) {
+  const structureLocked = mode === 'edit' && editingNodeHasChildren
   const { t } = useTranslation()
   const dialogRef = useRef<HTMLDivElement>(null)
 
@@ -165,16 +167,18 @@ export function NodeFormDialog({
 
         {/* Domain */}
         <div>
-          <label className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground block mb-1.5">
+          <label className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1 mb-1.5">
             {t('graph.domain')}
+            {structureLocked && <Lock className="w-2.5 h-2.5" />}
           </label>
           <div className="flex flex-wrap gap-1">
             {DOMAINS.map(d => (
               <button
                 key={d}
                 type="button"
-                onClick={() => setDomain(d)}
-                className="text-[9px] px-2 py-0.5 rounded-full border transition-all font-medium"
+                onClick={() => !structureLocked && setDomain(d)}
+                disabled={structureLocked}
+                className="text-[9px] px-2 py-0.5 rounded-full border transition-all font-medium disabled:cursor-not-allowed disabled:opacity-60"
                 style={domain === d
                   ? { background: DOMAIN_COLOR[d], borderColor: DOMAIN_COLOR[d], color: 'white' }
                   : { borderColor: (DOMAIN_COLOR[d] ?? '#a855f7') + '60', color: DOMAIN_COLOR[d] ?? '#a855f7' }
@@ -188,16 +192,18 @@ export function NodeFormDialog({
 
         {/* Role */}
         <div>
-          <label className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground block mb-1.5">
+          <label className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1 mb-1.5">
             {t('graph.role')}
+            {structureLocked && <Lock className="w-2.5 h-2.5" />}
           </label>
           <div className="flex gap-1">
             {ROLES.map(r => (
               <button
                 key={r}
                 type="button"
-                onClick={() => setRole(r)}
-                className={`text-[9px] px-2.5 py-0.5 rounded-full border transition-all ${
+                onClick={() => !structureLocked && setRole(r)}
+                disabled={structureLocked}
+                className={`text-[9px] px-2.5 py-0.5 rounded-full border transition-all disabled:cursor-not-allowed ${
                   role === r
                     ? 'bg-foreground text-background border-foreground'
                     : 'border-border text-muted-foreground hover:border-foreground/40'
@@ -207,6 +213,11 @@ export function NodeFormDialog({
               </button>
             ))}
           </div>
+          {structureLocked && (
+            <p className="text-[9px] text-muted-foreground mt-1.5 leading-relaxed">
+              Este nodo tiene hijos derivados de su contexto. Cambiar el dominio o rol rompería su coherencia narrativa.
+            </p>
+          )}
         </div>
 
         {/* Description */}

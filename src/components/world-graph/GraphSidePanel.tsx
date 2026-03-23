@@ -11,6 +11,7 @@ interface GraphSidePanelProps {
   chatLoading: boolean
   onSendMessage: (text: string) => void
   onClose: () => void
+  onEditNode: () => void
   onExpand: () => void
   onDeleteSubtree: () => Promise<{ count: number; labels: string[] }>
   onDeleteConfirmed: () => Promise<void>
@@ -19,7 +20,7 @@ interface GraphSidePanelProps {
 export function GraphSidePanel({
   selectedNode, isExpanding,
   chatHistory, chatLoading,
-  onSendMessage, onClose, onExpand, onDeleteSubtree, onDeleteConfirmed,
+  onSendMessage, onClose, onEditNode, onExpand, onDeleteSubtree, onDeleteConfirmed,
 }: GraphSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'chat' | 'node'>('chat')
   const [input, setInput] = useState('')
@@ -142,6 +143,7 @@ export function GraphSidePanel({
           node={selectedNode}
           isExpanding={isExpanding}
           onClose={() => { onClose(); setActiveTab('chat') }}
+          onEdit={onEditNode}
           onExpand={onExpand}
           onDeleteSubtree={onDeleteSubtree}
           onDeleteConfirmed={onDeleteConfirmed}

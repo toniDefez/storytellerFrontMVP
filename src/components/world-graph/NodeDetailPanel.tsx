@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Trash2, Maximize2, Loader2, AlertTriangle } from 'lucide-react'
+import { X, Trash2, Maximize2, Loader2, AlertTriangle, Pencil } from 'lucide-react'
 import type { WorldNode } from '@/services/api'
 import { DOMAIN_COLOR, DOMAIN_LABEL, ROLE_LABEL, EDGE_LABEL } from './treeLayout'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ interface NodeDetailPanelProps {
   node: WorldNode
   isExpanding: boolean
   onClose: () => void
+  onEdit: () => void
   onExpand: () => void
   onDeleteSubtree: () => Promise<{ count: number; labels: string[] }>
   onDeleteConfirmed: () => Promise<void>
@@ -15,7 +16,7 @@ interface NodeDetailPanelProps {
 
 export function NodeDetailPanel({
   node, isExpanding,
-  onClose, onExpand, onDeleteSubtree, onDeleteConfirmed,
+  onClose, onEdit, onExpand, onDeleteSubtree, onDeleteConfirmed,
 }: NodeDetailPanelProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [subtreePreview, setSubtreePreview] = useState<{ count: number; labels: string[] } | null>(null)
@@ -104,6 +105,13 @@ export function NodeDetailPanel({
 
         {/* Actions */}
         <div className="px-4 py-3 border-t border-border space-y-2 shrink-0">
+          <button
+            onClick={onEdit}
+            className="w-full flex items-center justify-center gap-2 text-xs font-medium border border-border rounded-lg py-2 hover:bg-accent/50 transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Editar nodo
+          </button>
           {!isRoot && (
             <button
               onClick={onExpand}

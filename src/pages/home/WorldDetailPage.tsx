@@ -13,8 +13,6 @@ import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { Plus, Users, Clapperboard, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
 import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
 import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
-import { GraphSidePanel } from '@/components/world-graph/GraphSidePanel'
-import { PremiseBar } from '@/components/world-graph/PremiseBar'
 import { toast } from 'sonner'
 import { exportWorld } from '../../services/worldExport'
 
@@ -77,6 +75,17 @@ export default function WorldDetailPage() {
       label: input.label,
       description: input.description,
       causalSummary: input.description,
+    })
+  }, [id, graph])
+
+  const handleUpdateNode = useCallback(async (input: NodeFormInput, nodeId: number) => {
+    const wid = Number(id)
+    if (!id || Number.isNaN(wid)) return
+    await graph.updateNodeManually(wid, nodeId, {
+      label: input.label,
+      domain: input.domain,
+      role: input.role,
+      description: input.description,
     })
   }, [id, graph])
 
@@ -162,9 +171,7 @@ export default function WorldDetailPage() {
   const gradient = inferGradient(world)
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 mt-8">
-      <PageBreadcrumb items={[{ label: t('nav.worlds'), href: '/worlds' }, { label: world.name }]} />
-
+    <div>
       <ConfirmModal
         open={showConfirmDelete}
         title={t('world.detail.deleteTitle')}
@@ -176,103 +183,72 @@ export default function WorldDetailPage() {
         onCancel={() => setShowConfirmDelete(false)}
       />
 
-      {/* ── Hero: gradient standalone, no card body ───────────────────── */}
-      <div className={`bg-gradient-to-br ${gradient} rounded-xl px-8 py-14 relative overflow-hidden`}>
-        {/* Actions */}
-        <div className="absolute top-5 right-5 flex gap-1.5">
-          <Button variant="ghost" size="sm" className="text-white/75 hover:text-white hover:bg-white/15" asChild>
-            <Link to={`/worlds/${id}/bible`}>
-              <BookOpen className="h-4 w-4 mr-1.5" />
-              {t('bible.viewBible')}
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white/75 hover:text-white hover:bg-white/15"
-            onClick={handleExport}
-            disabled={exporting}
-          >
-            <Download className="h-4 w-4 mr-1.5" />
-            {exporting ? t('importExport.exporting') : t('importExport.exportButton')}
-          </Button>
-          <Button variant="ghost" size="sm" className="text-white/75 hover:text-white hover:bg-white/15" asChild>
-            <Link to={`/worlds/${id}/edit`}>
-              <Pencil className="h-4 w-4 mr-1.5" />
-              {t('world.detail.editButton')}
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white/75 hover:text-white hover:bg-white/15 hover:text-red-300"
-            onClick={() => setShowConfirmDelete(true)}
-          >
-            <Trash2 className="h-4 w-4 mr-1.5" />
-            {t('world.detail.deleteButton')}
-          </Button>
-        </div>
-
-        {/* World name */}
-        <h1
-          className="text-[3.5rem] font-normal tracking-[-0.03em] leading-tight text-white"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          {world.name}
-        </h1>
-
-        {/* Premise beneath name */}
-        {world.premise && (
-          <p
-            className="text-white/55 italic mt-3 text-[15px] leading-relaxed max-w-2xl"
+      {/* ── Compact header ────────────────────────────────────────────── */}
+      <div className="mb-4">
+        <PageBreadcrumb items={[{ label: t('nav.worlds'), href: '/worlds' }, { label: world.name }]} />
+        <div className={`bg-gradient-to-r ${gradient} rounded-[4px] px-6 py-5 mt-3 relative overflow-hidden`}>
+          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
+          {/* Actions */}
+          <div className="absolute top-3 right-3 flex gap-1">
+            <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/15 h-8 text-xs" asChild>
+              <Link to={`/worlds/${id}/bible`}>
+                <BookOpen className="h-3.5 w-3.5 mr-1" />
+                {t('bible.viewBible')}
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/15 h-8 text-xs" onClick={handleExport} disabled={exporting}>
+              <Download className="h-3.5 w-3.5 mr-1" />
+              {exporting ? t('importExport.exporting') : t('importExport.exportButton')}
+            </Button>
+            <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/15 h-8 text-xs" asChild>
+              <Link to={`/worlds/${id}/edit`}>
+                <Pencil className="h-3.5 w-3.5 mr-1" />
+                {t('world.detail.editButton')}
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/15 hover:text-red-300 h-8 text-xs" onClick={() => setShowConfirmDelete(true)}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              {t('world.detail.deleteButton')}
+            </Button>
+          </div>
+          <h1
+            className="text-[2rem] font-normal tracking-[-0.03em] leading-tight text-white pr-64"
             style={{ fontFamily: 'var(--font-display)' }}
           >
-            "{world.premise}"
-          </p>
-        )}
-
-        {/* Subtle vignette at bottom */}
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
+            {world.name}
+          </h1>
+          {world.premise && (
+            <p
+              className="text-white/50 italic mt-1 text-sm leading-relaxed line-clamp-1 pr-64"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              "{world.premise}"
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* ── Description prose: directly on page, no wrapper ───────────── */}
-      {world.description && (
-        <p className="prose-drop-cap prose-literary overflow-hidden max-w-3xl">
-          {world.description}
-        </p>
-      )}
-
-      {/* ── Graph canvas: standalone section, no nesting ──────────────── */}
+      {/* ── Full-bleed graph ──────────────────────────────────────────── */}
       <div
-        className="rounded-xl overflow-hidden"
-        style={{ border: '1px solid hsl(35 12% 86% / 0.7)' }}
+        className="-mx-6 md:-mx-8 overflow-hidden"
+        style={{
+          borderTop: '1px solid hsl(35 12% 86% / 0.7)',
+          borderBottom: '1px solid hsl(35 12% 86% / 0.7)',
+          height: 'calc(100vh - 170px)',
+        }}
       >
-        <PremiseBar premise={world.premise} />
-        <div className="flex" style={{ height: 'max(calc(100vh - 360px), 520px)' }}>
-          <div className="flex-1 relative min-w-0">
-            <CausalTreeCanvas
-              nodes={graph.nodes}
-              worldId={Number(id)}
-              selectedNodeId={graph.selectedNode?.id}
-              onSelectNode={graph.selectNode}
-              onAddNode={handleAddNode}
-            />
-            {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
-              <GhostCandidates
-                candidates={graph.ghostCandidates}
-                parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
-                onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
-                onDismiss={graph.dismissGhosts}
-              />
-            )}
-          </div>
-          <GraphSidePanel
+        <div className="relative h-full">
+          <CausalTreeCanvas
+            nodes={graph.nodes}
+            worldId={Number(id)}
             selectedNode={graph.selectedNode}
+            onSelectNode={graph.selectNode}
+            onAddNode={handleAddNode}
+            onUpdateNode={handleUpdateNode}
             isExpanding={isExpanding}
             chatHistory={graph.chatHistory}
             chatLoading={graph.chatLoading}
             onSendMessage={(text) => graph.sendChatMessage(Number(id), text)}
-            onClose={() => graph.selectNode(null)}
             onExpand={async () => {
               setIsExpanding(true)
               try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
@@ -281,11 +257,22 @@ export default function WorldDetailPage() {
             onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
             onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
           />
+          {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
+            <GhostCandidates
+              candidates={graph.ghostCandidates}
+              parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
+              onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
+              onDismiss={graph.dismissGhosts}
+            />
+          )}
         </div>
       </div>
 
+      {/* ── Content below graph ───────────────────────────────────────── */}
+      <div className="max-w-5xl mx-auto mt-8 space-y-8">
+
       {/* ── Section divider ───────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 py-4 select-none">
+      <div className="flex items-center gap-4 py-2 select-none">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         <span
           className="tracking-[0.5em] text-xs"
@@ -448,6 +435,8 @@ export default function WorldDetailPage() {
           </div>
         )}
       </section>
+
+      </div>{/* end max-w-5xl */}
     </div>
   )
 }
