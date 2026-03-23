@@ -41,7 +41,11 @@ export default function CreateWorldPage() {
   const [loadingRoot, setLoadingRoot] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
   const [pageError, setPageError] = useState('')
-  const [premiseSuggestions, setPremiseSuggestions] = useState<string[]>([])
+  const FALLBACK_PREMISES = [
+    'Un archipiélago volcánico donde los espíritus del fuego gobiernan y los humanos son sus sacerdotes',
+    'Una megaciudad subterránea que huyó de la superficie hace siglos y olvidó cómo es el sol',
+  ]
+  const [premiseSuggestions, setPremiseSuggestions] = useState<string[]>(FALLBACK_PREMISES)
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
 
   useEffect(() => {
@@ -52,8 +56,11 @@ export default function CreateWorldPage() {
     if (!hasInstallation || installLoading) return
     setLoadingSuggestions(true)
     suggestPremises()
-      .then(r => setPremiseSuggestions(r.premises ?? []))
-      .catch(() => setPremiseSuggestions([]))
+      .then(r => {
+        const premises = r.premises ?? []
+        setPremiseSuggestions(premises.length > 0 ? premises : FALLBACK_PREMISES)
+      })
+      .catch(() => setPremiseSuggestions(FALLBACK_PREMISES))
       .finally(() => setLoadingSuggestions(false))
   }, [hasInstallation, installLoading])
 
