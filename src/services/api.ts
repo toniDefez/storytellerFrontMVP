@@ -203,6 +203,13 @@ export function graphChat(worldId: number, message: string) {
   })
 }
 
+export function generateWorld(premise: string) {
+  return request<{ world_id: number; nodes: WorldNode[] }>('/world/generate', {
+    method: 'POST',
+    body: JSON.stringify({ premise }),
+  })
+}
+
 export function getSubtreePreview(worldId: number, nodeId: number) {
   return request<SubtreePreview>(`/world/nodes/subtree?world_id=${worldId}&node_id=${nodeId}`)
 }
