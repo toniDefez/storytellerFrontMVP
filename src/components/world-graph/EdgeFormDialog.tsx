@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { LocationEdgeType, LocationEffort } from '@/services/api'
 import { Button } from '@/components/ui/button'
 
@@ -24,6 +24,14 @@ export function EdgeFormDialog({ open, onConfirm, onCancel }: Props) {
   const [edgeType, setEdgeType] = useState<LocationEdgeType>('road')
   const [effort, setEffort] = useState<LocationEffort>('moderate')
   const [bidirectional, setBidirectional] = useState(true)
+
+  useEffect(() => {
+    if (open) {
+      setEdgeType('road')
+      setEffort('moderate')
+      setBidirectional(true)
+    }
+  }, [open])
 
   if (!open) return null
 

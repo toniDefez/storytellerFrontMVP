@@ -88,6 +88,12 @@ export function LocationGraphCanvas({
 
   const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  useEffect(() => {
+    return () => {
+      if (dragTimer.current) clearTimeout(dragTimer.current)
+    }
+  }, [])
+
   const handleNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
     const id = Number(node.id)
     if (dragTimer.current) clearTimeout(dragTimer.current)
