@@ -714,5 +714,34 @@
     "fillWithAI": "Rellenar con IA",
     "clearSuggestion": "✕ Limpiar sugerencia",
     "aiSuggestions": "Sugerencias IA"
+  },
+  "location": {
+    "tabLabel": "Localizaciones",
+    "emptyTitle": "El mapa está vacío",
+    "emptyDescription": "Genera las localizaciones a partir del grafo causal de tu mundo",
+    "generateButton": "Generar desde el grafo causal →",
+    "regenerateButton": "↺ Regenerar",
+    "generating": "Generando...",
+    "nodeType": {
+      "settlement": "Asentamiento",
+      "wilderness": "Naturaleza",
+      "ruin": "Ruina",
+      "landmark": "Punto de referencia",
+      "threshold": "Paso"
+    },
+    "edgeType": {
+      "road": "Camino",
+      "wilderness": "Naturaleza",
+      "waterway": "Vía fluvial"
+    },
+    "effort": {
+      "easy": "Fácil",
+      "moderate": "Moderado",
+      "difficult": "Difícil"
+    },
+    "storyLayer": "Capa narrativa",
+    "connections": "Conexiones",
+    "saveEdge": "Guardar",
+    "editNode": "Editar"
   }
 }

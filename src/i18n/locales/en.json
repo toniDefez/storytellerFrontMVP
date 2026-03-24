@@ -714,5 +714,34 @@
     "fillWithAI": "Fill with AI",
     "clearSuggestion": "✕ Clear suggestion",
     "aiSuggestions": "AI suggestions"
+  },
+  "location": {
+    "tabLabel": "Locations",
+    "emptyTitle": "The map is empty",
+    "emptyDescription": "Generate locations from your world's causal graph",
+    "generateButton": "Generate from causal graph →",
+    "regenerateButton": "↺ Regenerate",
+    "generating": "Generating...",
+    "nodeType": {
+      "settlement": "Settlement",
+      "wilderness": "Wilderness",
+      "ruin": "Ruin",
+      "landmark": "Landmark",
+      "threshold": "Threshold"
+    },
+    "edgeType": {
+      "road": "Road",
+      "wilderness": "Wilderness",
+      "waterway": "Waterway"
+    },
+    "effort": {
+      "easy": "Easy",
+      "moderate": "Moderate",
+      "difficult": "Difficult"
+    },
+    "storyLayer": "Story layer",
+    "connections": "Connections",
+    "saveEdge": "Save",
+    "editNode": "Edit"
   }
 }
