@@ -13,6 +13,9 @@ import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { Plus, Users, Clapperboard, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
 import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
 import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
+import { LocationGraphCanvas } from '@/components/world-graph/LocationGraphCanvas'
+import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
+import { useLocationGraph } from '@/hooks/useLocationGraph'
 import { toast } from 'sonner'
 import { exportWorld } from '../../services/worldExport'
 
@@ -62,7 +65,19 @@ export default function WorldDetailPage() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
+  const [graphView, setGraphView] = useState<'causal' | 'locations'>('causal')
+  const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
+  const [confirmRegen, setConfirmRegen] = useState(false)
   const graph = useWorldGraph()
+
+  const {
+    nodes: locationNodes, edges: locationEdges,
+    selected: locationSelected, setSelected: setLocationSelected,
+    generating: locationGenerating,
+    loadGraph: loadLocationGraph, generate: generateLocations,
+    moveNode, addEdge, editNode: editLocationNode, removeNode,
+    editEdge, removeEdge,
+  } = useLocationGraph(Number(id))
 
   const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
     const wid = Number(id)
@@ -120,6 +135,10 @@ export default function WorldDetailPage() {
       .finally(() => setLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, t])
+
+  useEffect(() => {
+    if (id) loadLocationGraph()
+  }, [id, loadLocationGraph])
 
   const handleExport = async () => {
     setExporting(true)
@@ -237,34 +256,96 @@ export default function WorldDetailPage() {
           height: 'calc(100vh - 170px)',
         }}
       >
-        <div className="relative h-full">
-          <CausalTreeCanvas
-            nodes={graph.nodes}
-            worldId={Number(id)}
-            selectedNode={graph.selectedNode}
-            onSelectNode={graph.selectNode}
-            onAddNode={handleAddNode}
-            onUpdateNode={handleUpdateNode}
-            isExpanding={isExpanding}
-            chatHistory={graph.chatHistory}
-            chatLoading={graph.chatLoading}
-            onSendMessage={(text) => graph.sendChatMessage(Number(id), text)}
-            onExpand={async () => {
-              setIsExpanding(true)
-              try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
-              finally { setIsExpanding(false) }
-            }}
-            onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
-            onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
-          />
-          {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
-            <GhostCandidates
-              candidates={graph.ghostCandidates}
-              parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
-              onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
-              onDismiss={graph.dismissGhosts}
-            />
-          )}
+        <div className="flex flex-col h-full">
+          {/* Tab switcher */}
+          <div className="flex border-b border-border/50 bg-background px-4 gap-0 shrink-0">
+            <button
+              onClick={() => setGraphView('causal')}
+              className={`text-xs font-medium px-4 py-2.5 border-b-2 transition-colors ${
+                graphView === 'causal'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Grafo Causal
+            </button>
+            <button
+              onClick={() => setGraphView('locations')}
+              className={`text-xs font-medium px-4 py-2.5 border-b-2 transition-colors ${
+                graphView === 'locations'
+                  ? 'border-[#14b8a6] text-[#14b8a6]'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Localizaciones
+            </button>
+          </div>
+
+          {/* Both canvases mounted simultaneously */}
+          <div className="flex-1 relative overflow-hidden">
+            <div
+              style={{
+                position: 'absolute', inset: 0,
+                visibility: graphView === 'causal' ? 'visible' : 'hidden',
+                pointerEvents: graphView === 'causal' ? 'auto' : 'none',
+              }}
+            >
+              <div className="relative h-full">
+                <CausalTreeCanvas
+                  nodes={graph.nodes}
+                  worldId={Number(id)}
+                  selectedNode={graph.selectedNode}
+                  onSelectNode={graph.selectNode}
+                  onAddNode={handleAddNode}
+                  onUpdateNode={handleUpdateNode}
+                  isExpanding={isExpanding}
+                  chatHistory={graph.chatHistory}
+                  chatLoading={graph.chatLoading}
+                  onSendMessage={(text) => graph.sendChatMessage(Number(id), text)}
+                  onExpand={async () => {
+                    setIsExpanding(true)
+                    try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
+                    finally { setIsExpanding(false) }
+                  }}
+                  onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
+                  onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
+                />
+                {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
+                  <GhostCandidates
+                    candidates={graph.ghostCandidates}
+                    parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
+                    onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
+                    onDismiss={graph.dismissGhosts}
+                  />
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
+                position: 'absolute', inset: 0,
+                visibility: graphView === 'locations' ? 'visible' : 'hidden',
+                pointerEvents: graphView === 'locations' ? 'auto' : 'none',
+              }}
+            >
+              <LocationGraphCanvas
+                worldId={Number(id)}
+                locationNodes={locationNodes}
+                locationEdges={locationEdges}
+                selected={locationSelected}
+                onSelectNode={node => setLocationSelected(node ? { type: 'node', item: node } : null)}
+                onSelectEdge={edge => setLocationSelected(edge ? { type: 'edge', item: edge } : null)}
+                onMoveNode={moveNode}
+                onConnect={(src, tgt) => setPendingConn({ src, tgt })}
+                onEditNode={node => editLocationNode(node.id, { name: node.name, node_type: node.node_type, description: node.description, properties: node.properties })}
+                onDeleteNode={removeNode}
+                onUpdateEdge={editEdge}
+                onDeleteEdge={removeEdge}
+                onGenerate={() => setConfirmRegen(true)}
+                generating={locationGenerating}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -437,6 +518,52 @@ export default function WorldDetailPage() {
       </section>
 
       </div>{/* end max-w-5xl */}
+
+      {/* EdgeFormDialog */}
+      <EdgeFormDialog
+        open={pendingConn !== null}
+        onConfirm={(edgeType, effort, bidirectional) => {
+          if (pendingConn && id) {
+            addEdge({
+              world_id: Number(id),
+              source_node_id: pendingConn.src,
+              target_node_id: pendingConn.tgt,
+              edge_type: edgeType,
+              effort,
+              bidirectional,
+              note: '',
+            })
+          }
+          setPendingConn(null)
+        }}
+        onCancel={() => setPendingConn(null)}
+      />
+
+      {/* Regenerate confirmation dialog */}
+      {confirmRegen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-background border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="font-semibold text-base mb-2">¿Regenerar el mapa?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Se eliminará el mapa actual y se generará uno nuevo desde el grafo causal.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setConfirmRegen(false)}
+                className="text-sm px-3 py-1.5 rounded-lg border border-border hover:bg-accent"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { setConfirmRegen(false); generateLocations() }}
+                className="text-sm px-3 py-1.5 rounded-lg bg-[#14b8a6] text-white hover:bg-[#0f766e]"
+              >
+                Regenerar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
