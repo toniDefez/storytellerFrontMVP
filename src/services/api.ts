@@ -435,3 +435,85 @@ export function getLinkingToken() {
 export function revokeInstallation() {
   return request<{ status: string }>('/installation/revoke', { method: 'DELETE' })
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Location graph
+// ────────────────────────────────────────────────────────────────────────────
+
+export type LocationNodeType = 'settlement' | 'wilderness' | 'ruin' | 'landmark' | 'threshold'
+export type LocationEdgeType = 'road' | 'wilderness' | 'waterway'
+export type LocationEffort = 'easy' | 'moderate' | 'difficult'
+
+export interface LocationNodeProperties {
+  atmosphere?: string
+  social_filter?: string
+  behavioral_rule?: string
+  control?: string
+  duration?: 'permanent' | 'temporary' | 'declining' | 'emerging'
+}
+
+export interface LocationNode {
+  id: number
+  world_id: number
+  name: string
+  node_type: LocationNodeType
+  description: string
+  properties: LocationNodeProperties
+  canvas_x: number
+  canvas_y: number
+}
+
+export interface LocationEdge {
+  id: number
+  world_id: number
+  source_node_id: number
+  target_node_id: number
+  edge_type: LocationEdgeType
+  effort: LocationEffort
+  bidirectional: boolean
+  note: string
+}
+
+export interface LocationGraph {
+  nodes: LocationNode[]
+  edges: LocationEdge[]
+}
+
+export function getLocationGraph(worldId: number) {
+  return request<LocationGraph>(`/location/graph?world_id=${worldId}`)
+}
+
+export function createLocationNode(node: Omit<LocationNode, 'id'>) {
+  return request<LocationNode>('/location/nodes', { method: 'POST', body: JSON.stringify(node) })
+}
+
+export function updateLocationNode(id: number, data: Pick<LocationNode, 'name' | 'node_type' | 'description' | 'properties'>) {
+  return request<void>(`/location/nodes/update?id=${id}`, { method: 'PUT', body: JSON.stringify(data) })
+}
+
+export function updateLocationNodePosition(id: number, canvas_x: number, canvas_y: number) {
+  return request<void>(`/location/nodes/position?id=${id}`, { method: 'PATCH', body: JSON.stringify({ canvas_x, canvas_y }) })
+}
+
+export function deleteLocationNode(id: number) {
+  return request<void>(`/location/nodes/delete?id=${id}`, { method: 'DELETE' })
+}
+
+export function createLocationEdge(edge: Omit<LocationEdge, 'id'>) {
+  return request<LocationEdge>('/location/edges', { method: 'POST', body: JSON.stringify(edge) })
+}
+
+export function updateLocationEdge(id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'bidirectional' | 'note'>) {
+  return request<void>(`/location/edges/update?id=${id}`, { method: 'PUT', body: JSON.stringify(data) })
+}
+
+export function deleteLocationEdge(id: number) {
+  return request<void>(`/location/edges/delete?id=${id}`, { method: 'DELETE' })
+}
+
+export function generateLocationGraph(worldId: number, nodeCountHint = 12) {
+  return request<LocationGraph>('/location/generate', {
+    method: 'POST',
+    body: JSON.stringify({ world_id: worldId, node_count_hint: nodeCountHint }),
+  })
+}
