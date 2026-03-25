@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import type { NodeProps } from '@xyflow/react'
+import { Handle, Position, type NodeProps } from '@xyflow/react'
 import type { LocationNodeType } from '@/services/api'
 
 const NODE_ICONS: Record<LocationNodeType, string> = {
@@ -8,14 +8,6 @@ const NODE_ICONS: Record<LocationNodeType, string> = {
   ruin: '🏚',
   landmark: '⛰',
   threshold: '🚪',
-}
-
-const NODE_TYPE_LABEL: Record<LocationNodeType, string> = {
-  settlement: 'Asentamiento',
-  wilderness: 'Naturaleza',
-  ruin: 'Ruina',
-  landmark: 'Punto de referencia',
-  threshold: 'Paso',
 }
 
 export interface LocationNodeData {
@@ -28,33 +20,39 @@ export interface LocationNodeData {
 export const LocationNode = memo(function LocationNode({ data }: NodeProps) {
   const d = data as unknown as LocationNodeData
 
+  const handleStyle = {
+    width: 8, height: 8,
+    background: '#14b8a6',
+    border: '2px solid white',
+    borderRadius: '50%',
+  }
+
   return (
     <div
       className={`
-        rounded-xl border bg-background shadow-sm min-w-[140px] max-w-[180px]
+        rounded-xl border bg-background shadow-sm min-w-[120px] max-w-[160px]
         transition-all duration-150
         ${d.isSelected
           ? 'border-[#14b8a6] shadow-[0_0_0_2px_#14b8a620]'
           : 'border-border/60 hover:border-[#14b8a6]/50'}
       `}
     >
+      <Handle type="source" position={Position.Top}    id="t" style={handleStyle} />
+      <Handle type="source" position={Position.Right}  id="r" style={handleStyle} />
+      <Handle type="source" position={Position.Bottom} id="b" style={handleStyle} />
+      <Handle type="source" position={Position.Left}   id="l" style={handleStyle} />
+      <Handle type="target" position={Position.Top}    id="tt" style={handleStyle} />
+      <Handle type="target" position={Position.Right}  id="tr" style={handleStyle} />
+      <Handle type="target" position={Position.Bottom} id="tb" style={handleStyle} />
+      <Handle type="target" position={Position.Left}   id="tl" style={handleStyle} />
+
       {/* Barra teal superior */}
       <div className="h-[3px] rounded-t-xl bg-[#14b8a6]" />
 
       {/* Contenido */}
-      <div className="px-3 py-2.5">
-        <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-sm">{NODE_ICONS[d.node_type]}</span>
-          <span className="text-[10px] uppercase tracking-widest text-[#14b8a6] font-semibold">
-            {NODE_TYPE_LABEL[d.node_type]}
-          </span>
-        </div>
-        <div className="font-semibold text-sm text-foreground leading-tight">{d.name}</div>
-        {d.description && (
-          <p className="text-[11px] text-muted-foreground mt-1 leading-snug line-clamp-2">
-            {d.description}
-          </p>
-        )}
+      <div className="px-2.5 py-2 flex items-center gap-1.5">
+        <span className="text-base leading-none">{NODE_ICONS[d.node_type]}</span>
+        <div className="font-medium text-xs text-foreground leading-tight">{d.name}</div>
       </div>
     </div>
   )

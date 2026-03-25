@@ -57,6 +57,30 @@ export interface World {
   root_node_id?: number
 }
 
+export interface CharacterBrief {
+  id: number
+  name: string
+}
+
+export interface SceneBrief {
+  id: number
+  title: string
+  position: number
+}
+
+export interface WorldDetail {
+  id: number
+  name: string
+  summary: string
+  premise: string
+  characters: CharacterBrief[]
+  scenes: SceneBrief[]
+}
+
+export function getWorldDetail(id: number) {
+  return request<WorldDetail>(`/world-detail/get?id=${id}`)
+}
+
 // --- World Graph (causal tree) ---
 
 export type NodeDomain = 'core' | 'physical' | 'biological' | 'social' | 'symbolic' | 'technic'
