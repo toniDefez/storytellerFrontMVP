@@ -25,8 +25,8 @@ export function useLocationGraph(worldId: number | null) {
     setLoading(true)
     try {
       const graph = await getLocationGraph(worldId)
-      setNodes(graph.nodes)
-      setEdges(graph.edges)
+      setNodes(graph.nodes ?? [])
+      setEdges(graph.edges ?? [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error cargando localizaciones')
     } finally {
@@ -40,8 +40,8 @@ export function useLocationGraph(worldId: number | null) {
     setError('')
     try {
       const graph = await generateLocationGraph(worldId)
-      setNodes(graph.nodes)
-      setEdges(graph.edges)
+      setNodes(graph.nodes ?? [])
+      setEdges(graph.edges ?? [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error generando localizaciones')
     } finally {
