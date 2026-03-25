@@ -1,8 +1,8 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getWorldById, deleteWorld } from '../../services/api'
-import type { World, WorldNode } from '../../services/api'
+import { getWorldById, deleteWorld, getWorldDetail } from '../../services/api'
+import type { World, WorldNode, WorldDetail } from '../../services/api'
 import type { NodeFormInput } from '@/components/world-graph/NodeFormDialog'
 import { useWorldGraph } from '@/hooks/useWorldGraph'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -46,7 +46,8 @@ export default function WorldDetailPage() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
-  const [graphView, setGraphView] = useState<'causal' | 'locations'>('causal')
+  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'scenes'>('causal')
+  const [_worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
   const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
   const [confirmRegen, setConfirmRegen] = useState(false)
   const graph = useWorldGraph()
@@ -104,9 +105,11 @@ export default function WorldDetailPage() {
     Promise.all([
       getWorldById(worldId),
       graph.loadGraph(worldId),
+      getWorldDetail(worldId),
     ])
-      .then(([w]) => {
+      .then(([w, , detail]) => {
         setWorld(w)
+        setWorldDetail(detail)
         document.title = `${w.name} — StoryTeller`
       })
       .catch(err => setError(err.message))
@@ -162,8 +165,7 @@ export default function WorldDetailPage() {
   const dotColor = inferDotColor(world)
 
   return (
-    /* Break out of MainLayout's padding entirely */
-    <div className="-mx-6 md:-mx-8 -mt-6 md:-mt-8">
+    <div>
       <ConfirmModal
         open={showConfirmDelete}
         title={t('world.detail.deleteTitle')}
@@ -283,8 +285,7 @@ export default function WorldDetailPage() {
           <div
             style={{
               position: 'absolute', inset: 0,
-              visibility: graphView === 'causal' ? 'visible' : 'hidden',
-              pointerEvents: graphView === 'causal' ? 'auto' : 'none',
+              display: graphView === 'causal' ? 'block' : 'none',
             }}
           >
             <div className="relative h-full">
@@ -322,8 +323,7 @@ export default function WorldDetailPage() {
           <div
             style={{
               position: 'absolute', inset: 0,
-              visibility: graphView === 'locations' ? 'visible' : 'hidden',
-              pointerEvents: graphView === 'locations' ? 'auto' : 'none',
+              display: graphView === 'locations' ? 'block' : 'none',
             }}
           >
             <LocationGraphCanvas
@@ -331,6 +331,7 @@ export default function WorldDetailPage() {
               locationNodes={locationNodes}
               locationEdges={locationEdges}
               selected={locationSelected}
+              visible={graphView === 'locations'}
               onSelectNode={node => setLocationSelected(node ? { type: 'node', item: node } : null)}
               onSelectEdge={edge => setLocationSelected(edge ? { type: 'edge', item: edge } : null)}
               onMoveNode={moveNode}
