@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Globe, Settings, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Globe, Settings, LogOut, Menu, PanelLeftClose, PanelLeftOpen, GitBranch, Users, Clapperboard } from 'lucide-react'
 
 const NAV_ITEM_DEFS = [
   { to: '/worlds', labelKey: 'nav.worlds', Icon: Globe },
@@ -35,6 +35,85 @@ function NavItem({ to, labelKey, Icon, collapsed }: { to: string; labelKey: stri
   )
 }
 
+function WorldSubNav({ worldId, collapsed }: { worldId: string; collapsed: boolean }) {
+  const location = useLocation()
+
+  const items = [
+    { label: 'Grafos', to: `/worlds/${worldId}`, Icon: GitBranch, exact: true },
+    { label: 'Personajes', to: `/worlds/${worldId}/characters`, Icon: Users, exact: false },
+    { label: 'Escenas', to: `/worlds/${worldId}/scenes`, Icon: Clapperboard, exact: false },
+  ]
+
+  return (
+    <div className={`${collapsed ? 'px-1' : 'px-3'} space-y-0.5`}>
+      {!collapsed && (
+        <Link
+          to="/worlds"
+          className="flex items-center gap-1.5 text-[10px] text-[#5a4a72] hover:text-[#8a7a9e] transition-colors px-4 py-1 mb-1"
+        >
+          ← Mundos
+        </Link>
+      )}
+      {items.map(({ label, to, Icon, exact }) => {
+        const isActive = exact
+          ? location.pathname === to
+          : location.pathname.startsWith(to)
+        return (
+          <Link
+            key={to}
+            to={to}
+            title={collapsed ? label : undefined}
+            aria-label={collapsed ? label : undefined}
+            className={`flex items-center gap-2.5 py-2 rounded-sm text-xs font-medium transition-all duration-150 ${
+              collapsed ? 'justify-center px-2' : 'pl-6 pr-4'
+            } ${
+              isActive
+                ? 'bg-entity-world/[0.12] text-[#e8d5c8]'
+                : 'text-[#6a5a82] hover:text-[#c9b8ae] hover:bg-white/[0.04]'
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5 shrink-0" />
+            {!collapsed && label}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
+function SidebarNav({ collapsed }: { collapsed: boolean }) {
+  const location = useLocation()
+  const { t } = useTranslation()
+
+  // Detect if we're inside a world detail context
+  const worldMatch = location.pathname.match(/^\/worlds\/(\d+)/)
+  const worldId = worldMatch ? worldMatch[1] : null
+
+  if (worldId) {
+    return (
+      <nav aria-label={t('a11y.sidebarNav')} className="flex-1 py-2 space-y-0">
+        {!collapsed && (
+          <p className="text-[10px] font-semibold text-[#5a4a72] uppercase tracking-widest px-7 mb-2">Este mundo</p>
+        )}
+        <WorldSubNav worldId={worldId} collapsed={collapsed} />
+        <div className="mx-3 my-3 border-t border-[#1c1926]/60" />
+        <NavItem to="/settings" labelKey="nav.settings" Icon={Settings} collapsed={collapsed} />
+      </nav>
+    )
+  }
+
+  return (
+    <nav aria-label={t('a11y.sidebarNav')} className="flex-1 px-3 space-y-1">
+      {!collapsed && (
+        <p className="text-[10px] font-semibold text-[#5a4a72] uppercase tracking-widest px-4 mb-3">{t('a11y.sidebarNav')}</p>
+      )}
+      {NAV_ITEM_DEFS.map(item => (
+        <NavItem key={item.to} {...item} collapsed={collapsed} />
+      ))}
+    </nav>
+  )
+}
+
 function Sidebar({ onLogout, collapsed, onToggle }: {
   onLogout: () => void
   collapsed: boolean
@@ -53,15 +132,8 @@ function Sidebar({ onLogout, collapsed, onToggle }: {
         </div>
       </div>
 
-      {/* Nav */}
-      <nav aria-label={t('a11y.sidebarNav')} className="flex-1 px-3 space-y-1">
-        {!collapsed && (
-          <p className="text-[10px] font-semibold text-[#5a4a72] uppercase tracking-widest px-4 mb-3">{t('a11y.sidebarNav')}</p>
-        )}
-        {NAV_ITEM_DEFS.map(item => (
-          <NavItem key={item.to} {...item} collapsed={collapsed} />
-        ))}
-      </nav>
+      {/* Nav — contextual */}
+      <SidebarNav collapsed={collapsed} />
 
       {/* Toggle */}
       <div className="px-3 pb-2">
