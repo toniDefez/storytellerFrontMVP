@@ -1,3 +1,20 @@
+# [1.7.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.6.0...v1.7.0) (2026-03-25)
+
+
+### Bug Fixes
+
+* **location:** cleanup drag timer on unmount, reset EdgeFormDialog state on open ([cef29f1](https://github.com/toniDefez/storytellerFrontMVP/commit/cef29f12d9263e0c8dd3be445159f1d02e0a82c0))
+
+
+### Features
+
+* **location:** API types + useLocationGraph hook ([5c0a134](https://github.com/toniDefez/storytellerFrontMVP/commit/5c0a13459225ddfc1cf6f7d7db16353996e4d9e7))
+* **location:** i18n keys for location graph ([7c6b907](https://github.com/toniDefez/storytellerFrontMVP/commit/7c6b90769c229071f913c65b2407c3bdc671aa65))
+* **location:** LocationGraphCanvas + tab switcher in WorldDetailPage ([655a215](https://github.com/toniDefez/storytellerFrontMVP/commit/655a2155848ac4ce496a198c653dee58903f1d1c))
+* **location:** LocationNode + custom floating edges ([4543131](https://github.com/toniDefez/storytellerFrontMVP/commit/4543131e81a0dc63b7c27331af3017c3836e6612))
+* **location:** node + edge detail panels + edge form dialog ([e650482](https://github.com/toniDefez/storytellerFrontMVP/commit/e65048210ae338004350cf1be45211165a12abb8))
+* replace world creation wizard with single-form generate endpoint ([b0dfcb5](https://github.com/toniDefez/storytellerFrontMVP/commit/b0dfcb5a8b2d5c462cc2359162e60fec0448c3b1))
+
 # [1.6.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.5.0...v1.6.0) (2026-03-23)
 
 
