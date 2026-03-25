@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.7.0...v1.7.1) (2026-03-25)
+
+
+### Bug Fixes
+
+* **location:** guard against null nodes/edges from Go nil slices ([2c9b2de](https://github.com/toniDefez/storytellerFrontMVP/commit/2c9b2de85f2506bae40cbf977381e2a30a88b96b))
+
 # [1.7.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.6.0...v1.7.0) (2026-03-25)
 
 
