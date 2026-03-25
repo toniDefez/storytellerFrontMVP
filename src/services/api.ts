@@ -204,10 +204,16 @@ export function graphChat(worldId: number, message: string) {
 }
 
 export function generateWorld(premise: string) {
-  return request<{ world_id: number; nodes: WorldNode[] }>('/world/generate', {
+  return request<{ job_id: string }>('/world/generate', {
     method: 'POST',
     body: JSON.stringify({ premise }),
   })
+}
+
+export function getJobStatus(jobId: string) {
+  return request<{ status: 'pending' | 'done' | 'error'; world_id: number; error: string }>(
+    `/jobs/status?id=${jobId}`
+  )
 }
 
 export function getSubtreePreview(worldId: number, nodeId: number) {

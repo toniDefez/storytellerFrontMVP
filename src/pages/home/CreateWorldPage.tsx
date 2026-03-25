@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Loader2, Globe, Sparkles } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
-import { generateWorld, suggestPremises } from '@/services/api'
+import { generateWorld, getJobStatus, suggestPremises } from '@/services/api'
 
 const LOADING_MESSAGES = [
   'Interpretando la premisa...',
@@ -14,6 +14,9 @@ const LOADING_MESSAGES = [
   'Expandiendo el grafo causal...',
   'Sintetizando el mundo...',
 ]
+
+const POLL_INTERVAL_MS = 2000
+const POLL_TIMEOUT_MS = 90_000
 
 export default function CreateWorldPage() {
   const navigate = useNavigate()
@@ -23,7 +26,9 @@ export default function CreateWorldPage() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggesting, setSuggesting] = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const messageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollStartRef = useRef<number>(0)
 
   useEffect(() => {
     document.title = 'Crear Mundo — StoryTeller'
@@ -32,19 +37,54 @@ export default function CreateWorldPage() {
   useEffect(() => {
     if (loading) {
       setMessageIndex(0)
-      intervalRef.current = setInterval(() => {
+      messageIntervalRef.current = setInterval(() => {
         setMessageIndex(i => (i + 1) % LOADING_MESSAGES.length)
       }, 8000)
     } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+      if (messageIntervalRef.current) {
+        clearInterval(messageIntervalRef.current)
+        messageIntervalRef.current = null
       }
     }
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      if (messageIntervalRef.current) clearInterval(messageIntervalRef.current)
     }
   }, [loading])
+
+  const stopPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+  }
+
+  const startPolling = (jobId: string) => {
+    pollStartRef.current = Date.now()
+
+    pollIntervalRef.current = setInterval(async () => {
+      if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
+        stopPolling()
+        setError('La generación tardó demasiado. Inténtalo de nuevo.')
+        setLoading(false)
+        return
+      }
+
+      try {
+        const job = await getJobStatus(jobId)
+        if (job.status === 'done') {
+          stopPolling()
+          navigate(`/worlds/${job.world_id}`)
+        } else if (job.status === 'error') {
+          stopPolling()
+          setError(job.error || 'Error generando el mundo')
+          setLoading(false)
+        }
+        // 'pending' → keep polling
+      } catch {
+        // transient network error — keep polling
+      }
+    }, POLL_INTERVAL_MS)
+  }
 
   const handleSuggest = async () => {
     setSuggesting(true)
@@ -65,10 +105,10 @@ export default function CreateWorldPage() {
     setError('')
     setLoading(true)
     try {
-      const result = await generateWorld(premise.trim())
-      navigate(`/worlds/${result.world_id}`)
+      const { job_id } = await generateWorld(premise.trim())
+      startPolling(job_id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error generando el mundo')
+      setError(err instanceof Error ? err.message : 'Error iniciando la generación')
       setLoading(false)
     }
   }
