@@ -15,6 +15,8 @@ import { LocationGraphCanvas } from '@/components/world-graph/LocationGraphCanva
 import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
 import { toast } from 'sonner'
+import { WorldCharactersList } from '@/components/world-detail/WorldCharactersList'
+import { WorldScenesList } from '@/components/world-detail/WorldScenesList'
 import { exportWorld } from '../../services/worldExport'
 import {
   DropdownMenu,
@@ -47,7 +49,7 @@ export default function WorldDetailPage() {
   const [exporting, setExporting] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
   const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'scenes'>('causal')
-  const [_worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
+  const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
   const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
   const [confirmRegen, setConfirmRegen] = useState(false)
   const graph = useWorldGraph()
@@ -364,6 +366,28 @@ export default function WorldDetailPage() {
               generating={locationGenerating}
             />
           </div>
+
+          {/* Characters view */}
+          {graphView === 'characters' && (
+            <div style={{ position: 'absolute', inset: 0 }}>
+              <WorldCharactersList
+                worldId={Number(id)}
+                characters={worldDetail?.characters ?? []}
+                worldSummary={worldDetail?.summary || world?.premise || ''}
+              />
+            </div>
+          )}
+
+          {/* Scenes view */}
+          {graphView === 'scenes' && (
+            <div style={{ position: 'absolute', inset: 0 }}>
+              <WorldScenesList
+                worldId={Number(id)}
+                scenes={worldDetail?.scenes ?? []}
+                worldSummary={worldDetail?.summary || world?.premise || ''}
+              />
+            </div>
+          )}
         </div>
       </div>
 
