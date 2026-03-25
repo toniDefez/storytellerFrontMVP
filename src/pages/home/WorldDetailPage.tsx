@@ -233,6 +233,26 @@ export default function WorldDetailPage() {
             >
               Locs
             </button>
+            <button
+              onClick={() => setGraphView('characters')}
+              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
+                graphView === 'characters'
+                  ? 'bg-[#f97316]/10 text-[#c2410c]'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+            >
+              Personajes
+            </button>
+            <button
+              onClick={() => setGraphView('scenes')}
+              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
+                graphView === 'scenes'
+                  ? 'bg-[#06b6d4]/10 text-[#0e7490]'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+            >
+              Escenas
+            </button>
           </div>
         </div>
 
