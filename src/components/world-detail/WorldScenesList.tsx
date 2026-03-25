@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Clapperboard, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { SceneBrief } from '@/services/api'
 
 interface Props {
@@ -12,65 +12,66 @@ export function WorldScenesList({ worldId, scenes, worldSummary }: Props) {
   const sorted = [...scenes].sort((a, b) => a.position - b.position)
 
   return (
-    <div className="h-full overflow-y-auto px-8 py-6">
-      {/* World reference */}
-      {worldSummary && (
-        <div className="mb-6 p-4 rounded-lg bg-[#06b6d4]/5 border border-[#06b6d4]/10 max-w-2xl">
-          <p className="text-xs font-semibold text-[#0e7490]/60 uppercase tracking-widest mb-1">Referencia del mundo</p>
-          <p className="text-sm text-foreground/70 leading-relaxed">{worldSummary}</p>
-        </div>
-      )}
+    <div className="h-full overflow-y-auto">
+      <div className="px-10 py-8 max-w-3xl">
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5 max-w-2xl">
-        <div className="flex items-center gap-2">
-          <Clapperboard className="w-4 h-4 text-[#06b6d4]" />
-          <h2 className="text-sm font-semibold text-foreground">
-            Escenas
+        {/* Section heading — literary serif */}
+        <div className="mb-8 flex items-end justify-between">
+          <div>
+            <h2 className="font-display text-3xl italic text-foreground tracking-tight">Escenas</h2>
             {scenes.length > 0 && (
-              <span className="ml-2 text-xs text-muted-foreground font-normal">({scenes.length})</span>
+              <p className="text-xs text-muted-foreground mt-1">{scenes.length} en este mundo</p>
             )}
-          </h2>
-        </div>
-        <Link
-          to={`/worlds/${worldId}/scenes/create`}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-[#06b6d4]/10 text-[#0e7490] hover:bg-[#06b6d4]/20 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Nueva escena
-        </Link>
-      </div>
-
-      {/* List */}
-      {sorted.length === 0 ? (
-        <div className="max-w-2xl flex flex-col items-center justify-center py-16 text-center">
-          <Clapperboard className="w-8 h-8 text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">No hay escenas todavía.</p>
+          </div>
           <Link
             to={`/worlds/${worldId}/scenes/create`}
-            className="mt-3 text-xs text-[#0e7490] hover:underline"
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-[#06b6d4]/10 text-[#0e7490] hover:bg-[#06b6d4]/20 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06b6d4]/50 focus-visible:ring-offset-2"
           >
-            Crea la primera
+            <Plus className="w-3.5 h-3.5" />
+            Nueva escena
           </Link>
         </div>
-      ) : (
-        <div className="flex flex-col gap-2 max-w-2xl">
-          {sorted.map(s => (
+
+        {/* World reference — epigraph style */}
+        {worldSummary && (
+          <div className="mb-8 pl-4 border-l-2 border-[#06b6d4]/30 max-w-xl">
+            <p className="font-display text-sm italic text-foreground/50 leading-relaxed">{worldSummary}</p>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {sorted.length === 0 ? (
+          <div className="py-20 text-center">
+            <p className="font-display text-2xl italic text-foreground/20 mb-3">Sin escenas aún</p>
+            <p className="text-sm text-muted-foreground mb-5">Las historias comienzan con una primera escena.</p>
             <Link
-              key={s.id}
-              to={`/worlds/${worldId}/scenes/${s.id}`}
-              className="group flex items-center gap-3 p-3.5 rounded-lg border border-border/60 bg-background hover:border-[#06b6d4]/30 hover:bg-[#06b6d4]/5 transition-all duration-150"
+              to={`/worlds/${worldId}/scenes/create`}
+              className="inline-flex items-center gap-2 text-sm font-medium text-[#0e7490] hover:text-[#06b6d4] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06b6d4]/50 focus-visible:ring-offset-2 rounded-sm"
             >
-              <div className="w-6 h-6 rounded bg-[#06b6d4]/10 flex items-center justify-center shrink-0 text-[10px] font-bold text-[#0e7490]">
-                {s.position + 1}
-              </div>
-              <span className="text-sm font-medium text-foreground group-hover:text-[#0e7490] transition-colors truncate">
-                {s.title}
-              </span>
+              <Plus className="w-4 h-4" />
+              Crear la primera
             </Link>
-          ))}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            {sorted.map((s, index) => (
+              <Link
+                key={s.id}
+                to={`/worlds/${worldId}/scenes/${s.id}`}
+                className="group flex items-baseline gap-5 py-4 border-b border-border/30 last:border-0 -mx-4 px-4 rounded-sm hover:bg-[#06b6d4]/[0.03] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06b6d4]/50 focus-visible:ring-offset-2"
+              >
+                {/* Chapter-style number — dramatic, literary */}
+                <span className="font-display text-3xl italic leading-none text-[#06b6d4]/25 group-hover:text-[#06b6d4]/60 transition-colors duration-150 w-9 text-right shrink-0">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span className="text-sm font-medium text-foreground group-hover:text-[#0e7490] transition-colors duration-150 leading-snug">
+                  {s.title}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
