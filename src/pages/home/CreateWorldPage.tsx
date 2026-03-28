@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Loader2, Globe, Server, Wand2 } from 'lucide-react'
+import { Loader2, Globe, Server, Wand2, Sparkles } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { TensionSelector } from '@/components/world-graph/TensionSelector'
@@ -20,6 +20,7 @@ import {
   interpretTensions,
   generateRoot,
   refinePremise,
+  suggestPremises,
   type TensionOption,
 } from '@/services/api'
 
@@ -41,10 +42,25 @@ export default function CreateWorldPage() {
   const [isExpanding, setIsExpanding] = useState(false)
   const [pageError, setPageError] = useState('')
   const [refining, setRefining] = useState(false)
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggestions, setSuggestions] = useState<string[]>([])
 
   useEffect(() => {
     document.title = `Crear Mundo — StoryTeller`
   }, [i18n.language])
+
+  const handleSuggest = async () => {
+    setSuggesting(true)
+    setSuggestions([])
+    try {
+      const result = await suggestPremises()
+      setSuggestions(result.premises ?? [])
+    } catch {
+      // silently fail
+    } finally {
+      setSuggesting(false)
+    }
+  }
 
   const handleRefine = async () => {
     if (!premise.trim()) return
@@ -254,7 +270,7 @@ export default function CreateWorldPage() {
                     <label className="text-sm font-medium text-foreground">
                       La premisa de tu mundo
                     </label>
-                    {premise.trim() && (
+                    {premise.trim() ? (
                       <button
                         type="button"
                         onClick={handleRefine}
@@ -267,6 +283,19 @@ export default function CreateWorldPage() {
                         }
                         {refining ? 'Enriqueciendo...' : 'Enriquecer'}
                       </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSuggest}
+                        disabled={suggesting}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                      >
+                        {suggesting
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Sparkles className="h-3 w-3" />
+                        }
+                        {suggesting ? 'Pensando...' : 'Sugerir ideas'}
+                      </button>
                     )}
                   </div>
                   <Textarea
@@ -278,21 +307,23 @@ export default function CreateWorldPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-2 pt-1">
-                  {[
-                    'Un archipiélago volcánico donde los espíritus del fuego gobiernan y los humanos son sus sacerdotes',
-                    'Una megaciudad subterránea que huyó de la superficie hace siglos y olvidó cómo es el sol',
-                  ].map(example => (
-                    <button
-                      key={example}
-                      type="button"
-                      onClick={() => setPremise(example)}
-                      className="text-left text-[11px] text-muted-foreground bg-accent/50 hover:bg-accent rounded-lg p-2.5 transition-colors leading-relaxed"
-                    >
-                      {example}
-                    </button>
-                  ))}
-                </div>
+                {suggestions.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs text-muted-foreground">Elige una o úsala como inspiración:</p>
+                    <div className="flex flex-col gap-1.5">
+                      {suggestions.map((s, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => { setPremise(s); setSuggestions([]) }}
+                          className="text-left text-[11px] text-muted-foreground bg-accent/50 hover:bg-accent rounded-lg p-2.5 transition-colors leading-relaxed"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <Button type="submit" size="lg" className="w-full" disabled={loadingTensions || !name.trim() || !premise.trim()}>
                   {loadingTensions
