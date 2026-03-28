@@ -1,3 +1,20 @@
+# [1.10.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.9.0...v1.10.0) (2026-03-28)
+
+
+### Bug Fixes
+
+* **create:** restore Sugerir ideas button, remove hardcoded examples ([bef5baa](https://github.com/toniDefez/storytellerFrontMVP/commit/bef5baafae1f3d083db3e5ef6247396ce42fdfda))
+* **graph:** make chat props optional in CausalTreeCanvas ([8a6a57f](https://github.com/toniDefez/storytellerFrontMVP/commit/8a6a57fa5443c60fefb476eaba4e32a88c787efd))
+
+
+### Features
+
+* **create:** add Enriquecer button with analysis-aware refinement ([587ab79](https://github.com/toniDefez/storytellerFrontMVP/commit/587ab79be46d10fe06a8eae98c862156eddc7944))
+* **create:** exclusive Suggest/Enrich buttons with analysis type ([c529c05](https://github.com/toniDefez/storytellerFrontMVP/commit/c529c05d5370228661c968a1a76d281b5baf1660))
+* **create:** redesign premise step as literary writing surface ([d64df73](https://github.com/toniDefez/storytellerFrontMVP/commit/d64df734cad52a212092cb290f02c1024d8586cf))
+* **location:** add child node creation from parent detail panel ([2eff598](https://github.com/toniDefez/storytellerFrontMVP/commit/2eff598a264a83c183689f63a4b9940ba1add845))
+* **location:** show child nodes in parent detail panel ([c77dc32](https://github.com/toniDefez/storytellerFrontMVP/commit/c77dc32b96c8f600b3dcb44be1f4e4ba2be96a07))
+
 # [1.9.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.8.2...v1.9.0) (2026-03-28)
 
 
