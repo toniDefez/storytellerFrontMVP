@@ -170,8 +170,15 @@ export function suggestPremises() {
   })
 }
 
+export interface PremiseAnalysis {
+  entorno: 'PRESENTE' | 'AUSENTE'
+  regla: 'PRESENTE' | 'AUSENTE'
+  tension: 'PRESENTE' | 'AUSENTE'
+  stakes: 'PRESENTE' | 'AUSENTE'
+}
+
 export function refinePremise(premise: string) {
-  return request<{ premise: string }>('/world/refine-premise', {
+  return request<{ analysis: PremiseAnalysis; premise: string }>('/world/refine-premise', {
     method: 'POST',
     body: JSON.stringify({ premise }),
   })
