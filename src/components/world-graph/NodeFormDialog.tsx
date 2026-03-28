@@ -35,7 +35,7 @@ export function NodeFormDialog({
   mode, worldId, parentNode, editingNode, editingNodeHasChildren,
   anchorPosition, onConfirm, onClose,
 }: NodeFormDialogProps) {
-  const structureLocked = mode === 'edit' && editingNodeHasChildren
+  const structureLocked = mode === 'edit' && (editingNodeHasChildren || editingNode?.domain === 'core')
   const { t } = useTranslation()
   const dialogRef = useRef<HTMLDivElement>(null)
 
