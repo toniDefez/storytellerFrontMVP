@@ -1,3 +1,20 @@
+# [1.8.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.7.1...v1.8.0) (2026-03-28)
+
+
+### Bug Fixes
+
+* **layout:** revert sidebar to original simple nav ([6d7d492](https://github.com/toniDefez/storytellerFrontMVP/commit/6d7d4925154c80b7caa3fe164ae3b47faec8e9e4))
+* **location:** preserve drag positions when selection changes ([a713bec](https://github.com/toniDefez/storytellerFrontMVP/commit/a713bec81efb2f2ec7a7b9b6c7e825173c466052))
+* **location:** replace threshold node type with passage + structure ([da200dd](https://github.com/toniDefez/storytellerFrontMVP/commit/da200dd3380db5113830890c7dc693f0ee192e41))
+
+
+### Features
+
+* **api:** add WorldDetail types and getWorldDetail ([bfd11bb](https://github.com/toniDefez/storytellerFrontMVP/commit/bfd11bb760f8a5250a3a272541727f52ef04d252))
+* **world-detail:** add Personajes and Escenas list views ([f06414c](https://github.com/toniDefez/storytellerFrontMVP/commit/f06414cc317f094d6d378b49c594f6f28e33047f))
+* **world-detail:** add Personajes and Escenas tabs to toolbar ([a792afb](https://github.com/toniDefez/storytellerFrontMVP/commit/a792afbd131a7dd2a22b2a23ca00326f54b5d4a3))
+* **world-detail:** load WorldDetail data on mount ([6fbd04a](https://github.com/toniDefez/storytellerFrontMVP/commit/6fbd04afa440657b5a09d44fc5770475ac0b98e8))
+
 ## [1.7.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.7.0...v1.7.1) (2026-03-25)
 
 
