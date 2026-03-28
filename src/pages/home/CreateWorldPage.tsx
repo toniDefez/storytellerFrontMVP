@@ -27,7 +27,6 @@ export default function CreateWorldPage() {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggesting, setSuggesting] = useState(false)
   const [refining, setRefining] = useState(false)
-  const [suggestionsLabel, setSuggestionsLabel] = useState('')
   const messageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollStartRef = useRef<number>(0)
@@ -94,7 +93,6 @@ export default function CreateWorldPage() {
     try {
       const result = await suggestPremises()
       setSuggestions(result.premises ?? [])
-      setSuggestionsLabel('Elige una o úsala como inspiración:')
     } catch {
       // silently fail — suggestions are optional
     } finally {
@@ -108,8 +106,9 @@ export default function CreateWorldPage() {
     setSuggestions([])
     try {
       const result = await refinePremise(premise.trim())
-      setSuggestions(result.premises ?? [])
-      setSuggestionsLabel('Elige una versión enriquecida:')
+      if (result.premise) {
+        setPremise(result.premise)
+      }
     } catch {
       // silently fail — refinement is optional
     } finally {
@@ -172,25 +171,24 @@ export default function CreateWorldPage() {
                     <label className="text-sm font-medium text-foreground">
                       La premisa de tu mundo
                     </label>
-                    <div className="flex items-center gap-3">
-                      {premise.trim() && (
-                        <button
-                          type="button"
-                          onClick={handleRefine}
-                          disabled={refining || suggesting}
-                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                        >
-                          {refining
-                            ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : <Wand2 className="h-3 w-3" />
-                          }
-                          {refining ? 'Enriqueciendo...' : 'Enriquecer'}
-                        </button>
-                      )}
+                    {premise.trim() ? (
+                      <button
+                        type="button"
+                        onClick={handleRefine}
+                        disabled={refining}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                      >
+                        {refining
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Wand2 className="h-3 w-3" />
+                        }
+                        {refining ? 'Enriqueciendo...' : 'Enriquecer'}
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         onClick={handleSuggest}
-                        disabled={suggesting || refining}
+                        disabled={suggesting}
                         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
                       >
                         {suggesting
@@ -199,7 +197,7 @@ export default function CreateWorldPage() {
                         }
                         {suggesting ? 'Pensando...' : 'Sugerir ideas'}
                       </button>
-                    </div>
+                    )}
                   </div>
                   <Textarea
                     value={premise}
@@ -213,7 +211,7 @@ export default function CreateWorldPage() {
                 </div>
                 {suggestions.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <p className="text-xs text-muted-foreground">{suggestionsLabel}</p>
+                    <p className="text-xs text-muted-foreground">Elige una o úsala como inspiración:</p>
                     <div className="flex flex-col gap-1.5">
                       {suggestions.map((s, i) => (
                         <button

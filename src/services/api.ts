@@ -171,7 +171,7 @@ export function suggestPremises() {
 }
 
 export function refinePremise(premise: string) {
-  return request<{ premises: string[] }>('/world/refine-premise', {
+  return request<{ premise: string }>('/world/refine-premise', {
     method: 'POST',
     body: JSON.stringify({ premise }),
   })
