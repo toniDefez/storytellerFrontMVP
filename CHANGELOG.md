@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.8.1...v1.8.2) (2026-03-28)
+
+
+### Bug Fixes
+
+* **graph:** lock domain/role for root nodes regardless of children ([50d1f1c](https://github.com/toniDefez/storytellerFrontMVP/commit/50d1f1c67291358279f7c98b1f02229b071ebc9b))
+
 ## [1.8.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.8.0...v1.8.1) (2026-03-28)
 
 
