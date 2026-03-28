@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ReactFlow,
   Background,
@@ -16,15 +16,22 @@ import {
   type OnConnect,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { Plus } from 'lucide-react'
 import { LocationNode as LocationNodeComponent } from './LocationNode'
 import { WaterwayEdge, WildernessEdge, RoadEdge } from './LocationEdges'
 import { LocationSidePanel } from './LocationSidePanel'
+import { LocationNodeFormDialog, type LocationNodeFormInput } from './LocationNodeFormDialog'
 import type { LocationNode, LocationEdge } from '@/services/api'
 import type { SelectedLocation } from '@/hooks/useLocationGraph'
 
 // Define outside component to avoid re-renders
 const nodeTypes = { location: LocationNodeComponent }
 const edgeTypes = { waterway: WaterwayEdge, wilderness: WildernessEdge, road: RoadEdge }
+
+type FormState =
+  | { mode: 'create'; parentId?: number; parentName?: string }
+  | { mode: 'edit'; node: LocationNode }
+  | null
 
 interface Props {
   worldId: number | null
@@ -36,7 +43,8 @@ interface Props {
   onSelectEdge: (edge: LocationEdge | null) => void
   onMoveNode: (id: number, x: number, y: number) => Promise<void>
   onConnect: (source: number, target: number) => void
-  onEditNode: (node: LocationNode) => void
+  onAddNode: (input: LocationNodeFormInput, parentId?: number) => Promise<void>
+  onEditNode: (id: number, input: LocationNodeFormInput) => Promise<void>
   onDeleteNode: (id: number) => void
   onUpdateEdge: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'bidirectional' | 'note'>) => Promise<void>
   onDeleteEdge: (id: number) => void
@@ -86,10 +94,11 @@ function LocationGraphInner({
   selected, visible,
   onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
-  onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
+  onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
   onGenerate, generating,
 }: Props) {
   const { fitView } = useReactFlow()
+  const [formState, setFormState] = useState<FormState>(null)
 
   const selectedNodeId = selected?.type === 'node' ? selected.item.id : undefined
   const selectedEdgeId = selected?.type === 'edge' ? selected.item.id : undefined
@@ -164,6 +173,14 @@ function LocationGraphInner({
     onSelectNode(null)
   }, [onSelectNode])
 
+  const handleFormConfirm = useCallback(async (input: LocationNodeFormInput) => {
+    if (formState?.mode === 'edit') {
+      await onEditNode(formState.node.id, input)
+    } else if (formState?.mode === 'create') {
+      await onAddNode(input, formState.parentId)
+    }
+  }, [formState, onAddNode, onEditNode])
+
   if (locationNodes.length === 0) {
     return (
       <div className="flex h-full">
@@ -173,19 +190,37 @@ function LocationGraphInner({
               El mapa está vacío
             </p>
             <p className="text-xs text-muted-foreground">
-              Genera las localizaciones a partir del grafo causal de tu mundo
+              Genera las localizaciones a partir del grafo causal o crea una manualmente
             </p>
-            {worldId != null && (
+            <div className="flex flex-col items-center gap-2">
+              {worldId != null && (
+                <button
+                  onClick={onGenerate}
+                  disabled={generating}
+                  className="text-xs text-[#14b8a6] underline underline-offset-2 hover:text-[#0f766e] transition-colors disabled:opacity-50"
+                >
+                  {generating ? 'Generando...' : 'Generar desde el grafo causal →'}
+                </button>
+              )}
               <button
-                onClick={onGenerate}
-                disabled={generating}
-                className="text-xs text-[#14b8a6] underline underline-offset-2 hover:text-[#0f766e] transition-colors disabled:opacity-50"
+                onClick={() => setFormState({ mode: 'create' })}
+                className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
               >
-                {generating ? 'Generando...' : 'Generar desde el grafo causal →'}
+                Crear localización manualmente →
               </button>
-            )}
+            </div>
           </div>
         </div>
+
+        {formState && (
+          <LocationNodeFormDialog
+            mode={formState.mode}
+            editingNode={formState.mode === 'edit' ? formState.node : undefined}
+            parentName={formState.mode === 'create' ? formState.parentName : undefined}
+            onConfirm={handleFormConfirm}
+            onClose={() => setFormState(null)}
+          />
+        )}
       </div>
     )
   }
@@ -217,7 +252,13 @@ function LocationGraphInner({
             nodeColor="#14b8a6"
             className="!bg-background/90 !border-border/50"
           />
-          <div className="absolute top-2 right-2 z-10">
+          <div className="absolute top-2 right-2 z-10 flex gap-1.5">
+            <button
+              onClick={() => setFormState({ mode: 'create' })}
+              className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-[#14b8a6] text-muted-foreground hover:text-[#14b8a6] transition-colors flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" /> Añadir
+            </button>
             <button
               onClick={onGenerate}
               disabled={generating}
@@ -233,12 +274,22 @@ function LocationGraphInner({
         selected={selected}
         nodes={locationNodes}
         edges={locationEdges}
-        onEditNode={onEditNode}
+        onEditNode={node => setFormState({ mode: 'edit', node })}
         onDeleteNode={onDeleteNode}
+        onAddChildNode={node => setFormState({ mode: 'create', parentId: node.id, parentName: node.name })}
         onUpdateEdge={onUpdateEdge}
         onDeleteEdge={onDeleteEdge}
         onClose={() => { onSelectNode(null) }}
       />
+
+      {formState && (
+        <LocationNodeFormDialog
+          mode={formState.mode}
+          editingNode={formState.mode === 'edit' ? formState.node : undefined}
+          onConfirm={handleFormConfirm}
+          onClose={() => setFormState(null)}
+        />
+      )}
     </div>
   )
 }

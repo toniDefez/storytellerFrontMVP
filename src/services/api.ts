@@ -499,6 +499,7 @@ export interface LocationNodeProperties {
 export interface LocationNode {
   id: number
   world_id: number
+  parent_id?: number | null
   name: string
   node_type: LocationNodeType
   description: string

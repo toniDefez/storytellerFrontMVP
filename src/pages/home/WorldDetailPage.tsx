@@ -59,7 +59,7 @@ export default function WorldDetailPage() {
     selected: locationSelected, setSelected: setLocationSelected,
     generating: locationGenerating,
     loadGraph: loadLocationGraph, generate: generateLocations,
-    moveNode, addEdge, editNode: editLocationNode, removeNode,
+    moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
     editEdge, removeEdge,
   } = useLocationGraph(Number(id))
 
@@ -358,7 +358,26 @@ export default function WorldDetailPage() {
               onSelectEdge={edge => setLocationSelected(edge ? { type: 'edge', item: edge } : null)}
               onMoveNode={moveNode}
               onConnect={(src, tgt) => setPendingConn({ src, tgt })}
-              onEditNode={node => editLocationNode(node.id, { name: node.name, node_type: node.node_type, description: node.description, properties: node.properties })}
+              onAddNode={async (input, parentId) => {
+                await addLocationNode({
+                  world_id: Number(id),
+                  parent_id: parentId,
+                  name: input.name,
+                  node_type: input.node_type,
+                  description: input.description,
+                  properties: {},
+                  canvas_x: 200 + Math.random() * 800,
+                  canvas_y: 100 + Math.random() * 600,
+                })
+              }}
+              onEditNode={async (nodeId, input) => {
+                await editLocationNode(nodeId, {
+                  name: input.name,
+                  node_type: input.node_type,
+                  description: input.description,
+                  properties: {},
+                })
+              }}
               onDeleteNode={removeNode}
               onUpdateEdge={editEdge}
               onDeleteEdge={removeEdge}

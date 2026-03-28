@@ -9,12 +9,13 @@ interface Props {
   edges: LocationEdge[]
   onEditNode: (node: LocationNode) => void
   onDeleteNode: (id: number) => void
+  onAddChildNode: (parentNode: LocationNode) => void
   onUpdateEdge: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'bidirectional' | 'note'>) => Promise<void>
   onDeleteEdge: (id: number) => void
   onClose: () => void
 }
 
-export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge, onClose }: Props) {
+export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDeleteNode, onAddChildNode, onUpdateEdge, onDeleteEdge, onClose }: Props) {
   if (!selected) return (
     <div className="w-64 border-l border-border/50 flex flex-col items-center justify-center gap-3 p-6">
       <p className="text-sm text-muted-foreground italic text-center">
@@ -38,6 +39,7 @@ export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDelete
           connectedNodes={connectedNodes}
           onEdit={onEditNode}
           onDelete={onDeleteNode}
+          onAddChild={onAddChildNode}
           onClose={onClose}
         />
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Trash2, Pencil } from 'lucide-react'
+import { ChevronDown, ChevronRight, Trash2, Pencil, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { LocationNode } from '@/services/api'
 
@@ -8,10 +8,11 @@ interface Props {
   connectedNodes: LocationNode[]
   onEdit: (node: LocationNode) => void
   onDelete: (id: number) => void
+  onAddChild: (parentNode: LocationNode) => void
   onClose: () => void
 }
 
-export function LocationNodeDetailPanel({ node, connectedNodes, onEdit, onDelete, onClose }: Props) {
+export function LocationNodeDetailPanel({ node, connectedNodes, onEdit, onDelete, onAddChild, onClose }: Props) {
   const [storyLayerOpen, setStoryLayerOpen] = useState(false)
   const p = node.properties
 
@@ -67,13 +68,23 @@ export function LocationNodeDetailPanel({ node, connectedNodes, onEdit, onDelete
         )}
       </div>
 
-      <div className="p-4 border-t border-border/50 flex gap-2">
-        <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => onEdit(node)}>
-          <Pencil className="w-3.5 h-3.5" /> Editar
+      <div className="p-4 border-t border-border/50 space-y-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-1.5 text-[#14b8a6] border-[#14b8a6]/30 hover:bg-[#14b8a6]/10 hover:border-[#14b8a6]/50"
+          onClick={() => onAddChild(node)}
+        >
+          <Plus className="w-3.5 h-3.5" /> Añadir lugar dentro
         </Button>
-        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(node.id)}>
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => onEdit(node)}>
+            <Pencil className="w-3.5 h-3.5" /> Editar
+          </Button>
+          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(node.id)}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   )
