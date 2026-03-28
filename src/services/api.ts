@@ -470,7 +470,7 @@ export function revokeInstallation() {
 // Location graph
 // ────────────────────────────────────────────────────────────────────────────
 
-export type LocationNodeType = 'settlement' | 'wilderness' | 'ruin' | 'landmark' | 'threshold'
+export type LocationNodeType = 'settlement' | 'wilderness' | 'ruin' | 'landmark' | 'passage' | 'structure'
 export type LocationEdgeType = 'road' | 'wilderness' | 'waterway'
 export type LocationEffort = 'easy' | 'moderate' | 'difficult'
 

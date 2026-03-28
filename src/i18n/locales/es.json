@@ -727,7 +727,8 @@
       "wilderness": "Naturaleza",
       "ruin": "Ruina",
       "landmark": "Punto de referencia",
-      "threshold": "Paso"
+      "passage": "Paso",
+      "structure": "Estructura"
     },
     "edgeType": {
       "road": "Camino",

@@ -7,7 +7,8 @@ const NODE_ICONS: Record<LocationNodeType, string> = {
   wilderness: '🌲',
   ruin: '🏚',
   landmark: '⛰',
-  threshold: '🚪',
+  passage: '🚪',
+  structure: '🏛',
 }
 
 export interface LocationNodeData {

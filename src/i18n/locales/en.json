@@ -727,7 +727,8 @@
       "wilderness": "Wilderness",
       "ruin": "Ruin",
       "landmark": "Landmark",
-      "threshold": "Threshold"
+      "passage": "Passage",
+      "structure": "Structure"
     },
     "edgeType": {
       "road": "Road",
