@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.8.2...v1.9.0) (2026-03-28)
+
+
+### Features
+
+* **create:** add Enriquecer button to refine vague premises ([d7d06a7](https://github.com/toniDefez/storytellerFrontMVP/commit/d7d06a794a670650961dbed9a7b06e91a314a68d))
+
 ## [1.8.2](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.8.1...v1.8.2) (2026-03-28)
 
 
