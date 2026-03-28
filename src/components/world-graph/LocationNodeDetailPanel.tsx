@@ -1,18 +1,29 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Trash2, Pencil, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { LocationNode } from '@/services/api'
+import type { LocationNode, LocationNodeType } from '@/services/api'
+
+const NODE_TYPE_ICONS: Record<LocationNodeType, string> = {
+  settlement: '🏘',
+  wilderness: '🌲',
+  ruin: '🏚',
+  landmark: '⛰',
+  passage: '🚪',
+  structure: '🏛',
+}
 
 interface Props {
   node: LocationNode
   connectedNodes: LocationNode[]
+  childNodes: LocationNode[]
   onEdit: (node: LocationNode) => void
   onDelete: (id: number) => void
   onAddChild: (parentNode: LocationNode) => void
+  onSelectChild: (node: LocationNode) => void
   onClose: () => void
 }
 
-export function LocationNodeDetailPanel({ node, connectedNodes, onEdit, onDelete, onAddChild, onClose }: Props) {
+export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEdit, onDelete, onAddChild, onSelectChild, onClose }: Props) {
   const [storyLayerOpen, setStoryLayerOpen] = useState(false)
   const p = node.properties
 
@@ -44,6 +55,37 @@ export function LocationNodeDetailPanel({ node, connectedNodes, onEdit, onDelete
             </div>
           </div>
         )}
+
+        {/* Lugares dentro */}
+        <div>
+          <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+            Lugares dentro{childNodes.length > 0 && (
+              <span className="text-muted-foreground/60 ml-1">({childNodes.length})</span>
+            )}
+          </div>
+          {childNodes.length > 0 ? (
+            <div className="space-y-0.5">
+              {childNodes.map(child => (
+                <button
+                  key={child.id}
+                  onClick={() => onSelectChild(child)}
+                  className="w-full text-left group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#14b8a6]/10 transition-colors"
+                >
+                  <span className="text-sm leading-5 w-5 shrink-0">
+                    {NODE_TYPE_ICONS[child.node_type] ?? '📍'}
+                  </span>
+                  <span className="text-sm font-medium text-foreground group-hover:text-[#14b8a6] transition-colors truncate">
+                    {child.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic px-2 py-1">
+              Sin lugares dentro
+            </p>
+          )}
+        </div>
 
         {/* Capa narrativa colapsable */}
         {(p.atmosphere || p.social_filter || p.behavioral_rule || p.control || p.duration) && (

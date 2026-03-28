@@ -277,6 +277,7 @@ function LocationGraphInner({
         onEditNode={node => setFormState({ mode: 'edit', node })}
         onDeleteNode={onDeleteNode}
         onAddChildNode={node => setFormState({ mode: 'create', parentId: node.id, parentName: node.name })}
+        onSelectNode={node => onSelectNode(node)}
         onUpdateEdge={onUpdateEdge}
         onDeleteEdge={onDeleteEdge}
         onClose={() => { onSelectNode(null) }}
