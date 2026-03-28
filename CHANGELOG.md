@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.8.0...v1.8.1) (2026-03-28)
+
+
+### Bug Fixes
+
+* **location:** use per-node drag timers to prevent lost position saves ([a61418b](https://github.com/toniDefez/storytellerFrontMVP/commit/a61418b9798d599ede2e169280d16cb402b528f1))
+
 # [1.8.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.7.1...v1.8.0) (2026-03-28)
 
 
