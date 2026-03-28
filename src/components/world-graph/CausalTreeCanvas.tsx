@@ -50,9 +50,9 @@ interface CausalTreeCanvasProps {
   onUpdateNode: (input: NodeFormInput, nodeId: number) => Promise<void>
   // GraphSidePanel props
   isExpanding: boolean
-  chatHistory: ChatMessage[]
-  chatLoading: boolean
-  onSendMessage: (text: string) => void
+  chatHistory?: ChatMessage[]
+  chatLoading?: boolean
+  onSendMessage?: (text: string) => void
   onExpand: () => Promise<void>
   onDeleteSubtree: () => Promise<{ count: number; labels: string[] }>
   onDeleteConfirmed: () => Promise<void>
@@ -295,9 +295,9 @@ export function CausalTreeCanvas({
         <GraphSidePanel
           selectedNode={selectedNode}
           isExpanding={isExpanding}
-          chatHistory={chatHistory}
-          chatLoading={chatLoading}
-          onSendMessage={onSendMessage}
+          chatHistory={chatHistory ?? []}
+          chatLoading={chatLoading ?? false}
+          onSendMessage={onSendMessage ?? (() => {})}
           onClose={() => onSelectNode(null)}
           onEditNode={() => {
             if (selectedNode) {
