@@ -123,20 +123,23 @@ function LocationGraphInner({
     }
   }, [visible, fitView])
 
-  const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dragTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   useEffect(() => {
     return () => {
-      if (dragTimer.current) clearTimeout(dragTimer.current)
+      dragTimers.current.forEach(t => clearTimeout(t))
+      dragTimers.current.clear()
     }
   }, [])
 
   const handleNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
-    const id = Number(node.id)
-    if (dragTimer.current) clearTimeout(dragTimer.current)
-    dragTimer.current = setTimeout(() => {
-      onMoveNode(id, node.position.x, node.position.y)
-    }, 500)
+    const id = node.id
+    const prev = dragTimers.current.get(id)
+    if (prev) clearTimeout(prev)
+    dragTimers.current.set(id, setTimeout(() => {
+      dragTimers.current.delete(id)
+      onMoveNode(Number(id), node.position.x, node.position.y)
+    }, 500))
   }, [onMoveNode])
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
