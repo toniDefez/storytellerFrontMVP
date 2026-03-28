@@ -184,7 +184,7 @@ export default function MainLayout() {
           return (
             <motion.div
               key={location.pathname}
-              className={isWorldDetail ? '' : 'p-6 md:p-8 max-w-6xl ml-0'}
+              className={isWorldDetail ? '' : 'p-6 md:p-8'}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}
