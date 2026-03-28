@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Loader2, Globe, Sparkles } from 'lucide-react'
+import { Loader2, Globe, Sparkles, Wand2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
-import { generateWorld, getJobStatus, suggestPremises } from '@/services/api'
+import { generateWorld, getJobStatus, suggestPremises, refinePremise } from '@/services/api'
 
 const LOADING_MESSAGES = [
   'Interpretando la premisa...',
@@ -26,6 +26,8 @@ export default function CreateWorldPage() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggesting, setSuggesting] = useState(false)
+  const [refining, setRefining] = useState(false)
+  const [suggestionsLabel, setSuggestionsLabel] = useState('')
   const messageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollStartRef = useRef<number>(0)
@@ -92,10 +94,26 @@ export default function CreateWorldPage() {
     try {
       const result = await suggestPremises()
       setSuggestions(result.premises ?? [])
+      setSuggestionsLabel('Elige una o úsala como inspiración:')
     } catch {
       // silently fail — suggestions are optional
     } finally {
       setSuggesting(false)
+    }
+  }
+
+  const handleRefine = async () => {
+    if (!premise.trim()) return
+    setRefining(true)
+    setSuggestions([])
+    try {
+      const result = await refinePremise(premise.trim())
+      setSuggestions(result.premises ?? [])
+      setSuggestionsLabel('Elige una versión enriquecida:')
+    } catch {
+      // silently fail — refinement is optional
+    } finally {
+      setRefining(false)
     }
   }
 
@@ -154,18 +172,34 @@ export default function CreateWorldPage() {
                     <label className="text-sm font-medium text-foreground">
                       La premisa de tu mundo
                     </label>
-                    <button
-                      type="button"
-                      onClick={handleSuggest}
-                      disabled={suggesting}
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                    >
-                      {suggesting
-                        ? <Loader2 className="h-3 w-3 animate-spin" />
-                        : <Sparkles className="h-3 w-3" />
-                      }
-                      {suggesting ? 'Pensando...' : 'Sugerir ideas'}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {premise.trim() && (
+                        <button
+                          type="button"
+                          onClick={handleRefine}
+                          disabled={refining || suggesting}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                        >
+                          {refining
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Wand2 className="h-3 w-3" />
+                          }
+                          {refining ? 'Enriqueciendo...' : 'Enriquecer'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleSuggest}
+                        disabled={suggesting || refining}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                      >
+                        {suggesting
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Sparkles className="h-3 w-3" />
+                        }
+                        {suggesting ? 'Pensando...' : 'Sugerir ideas'}
+                      </button>
+                    </div>
                   </div>
                   <Textarea
                     value={premise}
@@ -179,7 +213,7 @@ export default function CreateWorldPage() {
                 </div>
                 {suggestions.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <p className="text-xs text-muted-foreground">Elige una o úsala como inspiración:</p>
+                    <p className="text-xs text-muted-foreground">{suggestionsLabel}</p>
                     <div className="flex flex-col gap-1.5">
                       {suggestions.map((s, i) => (
                         <button

@@ -170,6 +170,13 @@ export function suggestPremises() {
   })
 }
 
+export function refinePremise(premise: string) {
+  return request<{ premises: string[] }>('/world/refine-premise', {
+    method: 'POST',
+    body: JSON.stringify({ premise }),
+  })
+}
+
 export function interpretTensions(premise: string) {
   return request<{ options: TensionOption[] }>('/world/interpret-tensions', {
     method: 'POST',
