@@ -6,6 +6,8 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
   ConnectionMode,
   MarkerType,
   type Node,
@@ -29,6 +31,7 @@ interface Props {
   locationNodes: LocationNode[]
   locationEdges: LocationEdge[]
   selected: SelectedLocation
+  visible?: boolean
   onSelectNode: (node: LocationNode | null) => void
   onSelectEdge: (edge: LocationEdge | null) => void
   onMoveNode: (id: number, x: number, y: number) => Promise<void>
@@ -42,17 +45,28 @@ interface Props {
 }
 
 function buildFlowNodes(locationNodes: LocationNode[], selectedId?: number): Node[] {
-  return locationNodes.map(n => ({
-    id: String(n.id),
-    type: 'location',
-    position: { x: n.canvas_x, y: n.canvas_y },
-    data: {
-      name: n.name,
-      node_type: n.node_type,
-      description: n.description,
-      isSelected: n.id === selectedId,
-    } as unknown as Record<string, unknown>,
-  }))
+  // If all nodes are at origin, distribute them in a grid
+  const needsLayout = locationNodes.length > 1 &&
+    locationNodes.every(n => n.canvas_x === 0 && n.canvas_y === 0)
+
+  return locationNodes.map((n, i) => {
+    let position = { x: n.canvas_x, y: n.canvas_y }
+    if (needsLayout) {
+      const cols = Math.ceil(Math.sqrt(locationNodes.length))
+      position = { x: (i % cols) * 420, y: Math.floor(i / cols) * 260 }
+    }
+    return {
+      id: String(n.id),
+      type: 'location',
+      position,
+      data: {
+        name: n.name,
+        node_type: n.node_type,
+        description: n.description,
+        isSelected: n.id === selectedId,
+      } as unknown as Record<string, unknown>,
+    }
+  })
 }
 
 function buildFlowEdges(locationEdges: LocationEdge[], selectedId?: number): Edge[] {
@@ -67,13 +81,16 @@ function buildFlowEdges(locationEdges: LocationEdge[], selectedId?: number): Edg
   }))
 }
 
-export function LocationGraphCanvas({
+function LocationGraphInner({
   worldId, locationNodes, locationEdges,
-  selected, onSelectNode, onSelectEdge,
+  selected, visible,
+  onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
   onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
   onGenerate, generating,
 }: Props) {
+  const { fitView } = useReactFlow()
+
   const selectedNodeId = selected?.type === 'node' ? selected.item.id : undefined
   const selectedEdgeId = selected?.type === 'edge' ? selected.item.id : undefined
 
@@ -83,8 +100,28 @@ export function LocationGraphCanvas({
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
 
-  useEffect(() => { setNodes(flowNodes) }, [flowNodes, setNodes])
+  // Sync data changes (name, type, selection) without overwriting drag positions
+  useEffect(() => {
+    setNodes(prev => {
+      const posMap = new Map(prev.map(n => [n.id, n.position]))
+      return flowNodes.map(fn => ({
+        ...fn,
+        position: posMap.get(fn.id) ?? fn.position,
+      }))
+    })
+  }, [flowNodes, setNodes])
   useEffect(() => { setEdges(flowEdges) }, [flowEdges, setEdges])
+
+  // When this canvas becomes visible, remeasure nodes and refit
+  useEffect(() => {
+    if (visible) {
+      const t = setTimeout(() => {
+        window.dispatchEvent(new Event('resize'))
+        fitView({ padding: 0.3, duration: 300 })
+      }, 50)
+      return () => clearTimeout(t)
+    }
+  }, [visible, fitView])
 
   const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -177,7 +214,6 @@ export function LocationGraphCanvas({
             nodeColor="#14b8a6"
             className="!bg-background/90 !border-border/50"
           />
-          {/* Botón regenerar en toolbar */}
           <div className="absolute top-2 right-2 z-10">
             <button
               onClick={onGenerate}
@@ -201,5 +237,13 @@ export function LocationGraphCanvas({
         onClose={() => { onSelectNode(null) }}
       />
     </div>
+  )
+}
+
+export function LocationGraphCanvas(props: Props) {
+  return (
+    <ReactFlowProvider>
+      <LocationGraphInner {...props} />
+    </ReactFlowProvider>
   )
 }
