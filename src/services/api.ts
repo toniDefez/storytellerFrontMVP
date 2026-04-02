@@ -276,6 +276,24 @@ export interface StructuredGoal {
   category: GoalCategory
 }
 
+export type CharacterValueType = 'nuclear' | 'peripheral'
+export type ValueRelationType = 'reinforces' | 'tensions' | 'depends'
+
+export interface CharacterValue {
+  id: number
+  name: string
+  description: string
+  weight: number
+  value_type: CharacterValueType
+}
+
+export interface CharacterValueRelation {
+  id: number
+  source_value: string
+  target_value: string
+  relation_type: ValueRelationType
+}
+
 export interface Character {
   id: number
   name: string
@@ -298,6 +316,8 @@ export interface Character {
   contradiction_declared?: string
   contradiction_operative?: string
   structured_goals?: StructuredGoal[]
+  values?: CharacterValue[]
+  value_relations?: CharacterValueRelation[]
 }
 
 export interface Scene {
