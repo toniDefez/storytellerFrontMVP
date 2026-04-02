@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react'
 import { getCharacterById, deleteCharacter } from '@/services/api'
 import type { Character } from '@/services/api'
 import { ConsciousnessStateDot } from './ConsciousnessStateDot'
+import { ValueGraph } from './ValueGraph'
 
 interface Props {
   characterId: number
@@ -150,6 +151,9 @@ export function CharacterDetailView({ characterId, onDeleted }: Props) {
 
         {/* Values */}
         <Section label="GRAFO DE VALORES" color="purple">
+          {character.values && character.values.length > 0 && (
+            <ValueGraph values={character.values} relations={character.value_relations || []} />
+          )}
           {character.values && character.values.length > 0 ? (
             <div className="space-y-2">
               {character.values.map((v, i) => (
@@ -183,7 +187,6 @@ export function CharacterDetailView({ characterId, onDeleted }: Props) {
           ) : (
             <p className="text-xs text-muted-foreground/50 italic">Sin grafo de valores</p>
           )}
-          {/* ValueGraph SVG will be added in Task 7 */}
         </Section>
 
         {/* Delete confirmation */}

@@ -5,6 +5,7 @@ import { generateCharacter } from '@/services/api'
 import type { Character } from '@/services/api'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import { useInstallation } from '@/hooks/useInstallation'
+import { ValueGraph } from './ValueGraph'
 import NoInstallationBanner from '@/components/NoInstallationBanner'
 
 const PREMISE_EXAMPLES = [
@@ -312,12 +313,11 @@ function SectionBlock({
         )}
         {sectionKey === 'values' && (
           <>
-            <p className="text-xs text-muted-foreground/50 italic">
-              {character.values && character.values.length > 0
-                ? character.values.map(v => v.name).join(' \u00b7 ')
-                : 'Sin grafo de valores'}
-            </p>
-            {/* ValueGraph component will be wired here in Task 7 */}
+            {character.values && character.values.length > 0 ? (
+              <ValueGraph values={character.values} relations={character.value_relations || []} />
+            ) : (
+              <p className="text-xs text-muted-foreground/50 italic">Sin grafo de valores</p>
+            )}
           </>
         )}
       </div>
