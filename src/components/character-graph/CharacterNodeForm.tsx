@@ -18,7 +18,7 @@ const ROLES: { value: CharacterNodeRole; label: string }[] = [
   { value: 'arc_seed', label: 'Semilla de arco' },
 ]
 
-const SALIENCE: { value: string; label: string }[] = [
+const SALIENCE: { value: 'high' | 'medium' | 'low'; label: string }[] = [
   { value: 'high', label: 'Alta' },
   { value: 'medium', label: 'Media' },
   { value: 'low', label: 'Baja' },
