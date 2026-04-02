@@ -46,7 +46,7 @@ interface Props {
   onAddNode: (input: LocationNodeFormInput, parentId?: number) => Promise<void>
   onEditNode: (id: number, input: LocationNodeFormInput) => Promise<void>
   onDeleteNode: (id: number) => void
-  onUpdateEdge: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'bidirectional' | 'note'>) => Promise<void>
+  onUpdateEdge: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'dramatic_charge' | 'bidirectional' | 'note'>) => Promise<void>
   onDeleteEdge: (id: number) => void
   onGenerate: () => void
   generating: boolean
@@ -71,6 +71,8 @@ function buildFlowNodes(locationNodes: LocationNode[], selectedId?: number): Nod
         name: n.name,
         node_type: n.node_type,
         description: n.description,
+        narrative_function: n.narrative_function,
+        source_hint: n.source_hint,
         isSelected: n.id === selectedId,
       } as unknown as Record<string, unknown>,
     }
@@ -84,7 +86,7 @@ function buildFlowEdges(locationEdges: LocationEdge[], selectedId?: number): Edg
     target: String(e.target_node_id),
     type: e.edge_type,
     selected: e.id === selectedId,
-    data: { effort: e.effort, bidirectional: e.bidirectional, note: e.note },
+    data: { effort: e.effort, dramatic_charge: e.dramatic_charge, bidirectional: e.bidirectional, note: e.note },
     markerEnd: e.bidirectional ? undefined : { type: MarkerType.ArrowClosed, color: '#14b8a6' },
   }))
 }

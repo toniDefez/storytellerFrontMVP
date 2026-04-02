@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Trash2, Pencil, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { LocationNode, LocationNodeType } from '@/services/api'
+import type { LocationNode, LocationNodeType, NarrativeFunction } from '@/services/api'
 
 const NODE_TYPE_ICONS: Record<LocationNodeType, string> = {
   settlement: '🏘',
@@ -10,6 +10,20 @@ const NODE_TYPE_ICONS: Record<LocationNodeType, string> = {
   landmark: '⛰',
   passage: '🚪',
   structure: '🏛',
+}
+
+const NARRATIVE_FN_LABELS: Record<NarrativeFunction, string> = {
+  conflict: 'Conflicto',
+  origin: 'Origen',
+  threshold: 'Umbral',
+  atmosphere: 'Atmósfera',
+}
+
+const NARRATIVE_FN_COLORS: Record<NarrativeFunction, string> = {
+  conflict: 'bg-red-500/15 text-red-700 border-red-500/20',
+  origin: 'bg-amber-500/15 text-amber-700 border-amber-500/20',
+  threshold: 'bg-violet-500/15 text-violet-700 border-violet-500/20',
+  atmosphere: 'bg-sky-500/15 text-sky-700 border-sky-500/20',
 }
 
 interface Props {
@@ -39,8 +53,20 @@ export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEd
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <h3 className="font-[var(--font-display)] text-lg font-semibold">{node.name}</h3>
 
+        {node.narrative_function && (
+          <span className={`inline-block text-xs px-2 py-0.5 rounded-full border font-medium ${NARRATIVE_FN_COLORS[node.narrative_function] ?? ''}`}>
+            {NARRATIVE_FN_LABELS[node.narrative_function] ?? node.narrative_function}
+          </span>
+        )}
+
         {node.description && (
           <p className="text-sm text-muted-foreground leading-relaxed">{node.description}</p>
+        )}
+
+        {node.source_hint && (
+          <div className="text-xs text-muted-foreground/70 italic border-l-2 border-[#14b8a6]/30 pl-2">
+            {node.source_hint}
+          </div>
         )}
 
         {connectedNodes.length > 0 && (

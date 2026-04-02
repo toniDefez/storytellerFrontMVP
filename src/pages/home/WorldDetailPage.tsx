@@ -431,6 +431,7 @@ export default function WorldDetailPage() {
               target_node_id: pendingConn.tgt,
               edge_type: edgeType,
               effort,
+              dramatic_charge: 'medium',
               bidirectional,
               note: '',
             })

@@ -507,6 +507,8 @@ export function revokeInstallation() {
 export type LocationNodeType = 'settlement' | 'wilderness' | 'ruin' | 'landmark' | 'passage' | 'structure'
 export type LocationEdgeType = 'road' | 'wilderness' | 'waterway'
 export type LocationEffort = 'easy' | 'moderate' | 'difficult'
+export type NarrativeFunction = 'conflict' | 'origin' | 'threshold' | 'atmosphere'
+export type DramaticCharge = 'low' | 'medium' | 'high'
 
 export interface LocationNodeProperties {
   atmosphere?: string
@@ -524,6 +526,8 @@ export interface LocationNode {
   node_type: LocationNodeType
   description: string
   properties: LocationNodeProperties
+  narrative_function?: NarrativeFunction
+  source_hint?: string
   canvas_x: number
   canvas_y: number
 }
@@ -535,6 +539,7 @@ export interface LocationEdge {
   target_node_id: number
   edge_type: LocationEdgeType
   effort: LocationEffort
+  dramatic_charge: DramaticCharge
   bidirectional: boolean
   note: string
 }
@@ -568,7 +573,7 @@ export function createLocationEdge(edge: Omit<LocationEdge, 'id'>) {
   return request<LocationEdge>('/location/edges', { method: 'POST', body: JSON.stringify(edge) })
 }
 
-export function updateLocationEdge(id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'bidirectional' | 'note'>) {
+export function updateLocationEdge(id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'dramatic_charge' | 'bidirectional' | 'note'>) {
   return request<void>(`/location/edges/update?id=${id}`, { method: 'PUT', body: JSON.stringify(data) })
 }
 

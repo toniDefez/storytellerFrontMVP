@@ -11,7 +11,7 @@ interface Props {
   onDeleteNode: (id: number) => void
   onAddChildNode: (parentNode: LocationNode) => void
   onSelectNode: (node: LocationNode) => void
-  onUpdateEdge: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'bidirectional' | 'note'>) => Promise<void>
+  onUpdateEdge: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'dramatic_charge' | 'bidirectional' | 'note'>) => Promise<void>
   onDeleteEdge: (id: number) => void
   onClose: () => void
 }

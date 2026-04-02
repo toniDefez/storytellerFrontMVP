@@ -78,7 +78,7 @@ export function useLocationGraph(worldId: number | null) {
     return created
   }, [])
 
-  const editEdge = useCallback(async (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'bidirectional' | 'note'>) => {
+  const editEdge = useCallback(async (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'dramatic_charge' | 'bidirectional' | 'note'>) => {
     await updateLocationEdge(id, data)
     setEdges(prev => prev.map(e => e.id === id ? { ...e, ...data } : e))
   }, [])

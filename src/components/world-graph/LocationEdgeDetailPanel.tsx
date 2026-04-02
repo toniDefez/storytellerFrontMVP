@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Trash2, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { LocationEdge, LocationEdgeType, LocationEffort } from '@/services/api'
+import type { LocationEdge, LocationEdgeType, LocationEffort, DramaticCharge } from '@/services/api'
 
 interface Props {
   edge: LocationEdge
   sourceNode?: { name: string }
   targetNode?: { name: string }
-  onUpdate: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'bidirectional' | 'note'>) => Promise<void>
+  onUpdate: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'dramatic_charge' | 'bidirectional' | 'note'>) => Promise<void>
   onDelete: (id: number) => void
   onClose: () => void
 }
@@ -24,16 +24,23 @@ const EFFORT_LABELS: Record<LocationEffort, string> = {
   difficult: 'Difícil',
 }
 
+const DRAMATIC_CHARGE_LABELS: Record<DramaticCharge, string> = {
+  low: 'Baja',
+  medium: 'Media',
+  high: 'Alta',
+}
+
 export function LocationEdgeDetailPanel({ edge, sourceNode, targetNode, onUpdate, onDelete, onClose }: Props) {
   const [effort, setEffort] = useState<LocationEffort>(edge.effort)
   const [edgeType, setEdgeType] = useState<LocationEdgeType>(edge.edge_type)
+  const [dramaticCharge, setDramaticCharge] = useState<DramaticCharge>(edge.dramatic_charge ?? 'medium')
   const [bidirectional, setBidirectional] = useState(edge.bidirectional)
   const [note, setNote] = useState(edge.note ?? '')
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
     setSaving(true)
-    await onUpdate(edge.id, { edge_type: edgeType, effort, bidirectional, note })
+    await onUpdate(edge.id, { edge_type: edgeType, effort, dramatic_charge: dramaticCharge, bidirectional, note })
     setSaving(false)
   }
 
@@ -79,6 +86,21 @@ export function LocationEdgeDetailPanel({ edge, sourceNode, targetNode, onUpdate
                   className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${effort === e ? 'bg-[#14b8a6] text-white border-[#14b8a6]' : 'border-border text-muted-foreground hover:border-[#14b8a6]/50'}`}
                 >
                   {EFFORT_LABELS[e]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1.5">Carga dramática</label>
+            <div className="flex gap-1.5">
+              {(['low', 'medium', 'high'] as DramaticCharge[]).map(c => (
+                <button
+                  key={c}
+                  onClick={() => setDramaticCharge(c)}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${dramaticCharge === c ? 'bg-[#14b8a6] text-white border-[#14b8a6]' : 'border-border text-muted-foreground hover:border-[#14b8a6]/50'}`}
+                >
+                  {DRAMATIC_CHARGE_LABELS[c]}
                 </button>
               ))}
             </div>
