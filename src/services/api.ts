@@ -683,3 +683,25 @@ export function generateLocationGraph(worldId: number, nodeCountHint = 12) {
     body: JSON.stringify({ world_id: worldId, node_count_hint: nodeCountHint }),
   })
 }
+
+// --- Seed Templates ---
+
+export interface SeedTemplateBrief {
+  id: number
+  title: string
+  description: string
+  category: string
+  tags: string[]
+  node_count: number
+}
+
+export function listSeedTemplates() {
+  return request<SeedTemplateBrief[]>('/seeds')
+}
+
+export function createWorldFromSeed(seedId: number, name: string, premise: string) {
+  return request<{ job_id: string }>('/seeds/create-world', {
+    method: 'POST',
+    body: JSON.stringify({ seed_id: seedId, name, premise }),
+  })
+}

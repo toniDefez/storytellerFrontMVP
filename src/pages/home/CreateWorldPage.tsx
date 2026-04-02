@@ -13,7 +13,10 @@ import {
   getJobStatus,
   refinePremise,
   suggestPremises,
+  createWorldFromSeed,
 } from '@/services/api'
+import type { SeedTemplateBrief } from '@/services/api'
+import { SeedTemplatePicker } from '@/components/SeedTemplatePicker'
 
 const LOADING_MESSAGES = [
   'Interpretando la premisa...',
@@ -31,6 +34,7 @@ export default function CreateWorldPage() {
   const { hasInstallation, loading: installLoading, checked } = useInstallation()
 
   const [premise, setPremise] = useState('')
+  const [selectedSeed, setSelectedSeed] = useState<SeedTemplateBrief | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [messageIndex, setMessageIndex] = useState(0)
@@ -142,8 +146,13 @@ export default function CreateWorldPage() {
     setError('')
     setLoading(true)
     try {
-      const { job_id } = await generateWorld(premise.trim())
-      startPolling(job_id)
+      if (selectedSeed) {
+        const { job_id } = await createWorldFromSeed(selectedSeed.id, selectedSeed.title, premise.trim())
+        startPolling(job_id)
+      } else {
+        const { job_id } = await generateWorld(premise.trim())
+        startPolling(job_id)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error iniciando la generación')
       setLoading(false)
@@ -239,6 +248,9 @@ export default function CreateWorldPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
+              {/* ── Template picker ── */}
+              <SeedTemplatePicker selected={selectedSeed} onSelect={setSelectedSeed} />
+
               {/* ── Premise textarea ── */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2.5">
@@ -385,7 +397,7 @@ export default function CreateWorldPage() {
                   style={{ fontFamily: 'var(--font-ui)' }}
                   disabled={loading || !premise.trim()}
                 >
-                  Generar mundo
+                  {selectedSeed ? `Crear desde "${selectedSeed.title}"` : 'Generar mundo'}
                 </Button>
               </div>
             </form>
