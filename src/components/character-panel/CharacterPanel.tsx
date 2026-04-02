@@ -3,7 +3,7 @@ import { getCharacterById } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterCreationFlow } from './CharacterCreationFlow'
-import { CharacterDetailView } from './CharacterDetailView'
+import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
 import { Users } from 'lucide-react'
 
 type Mode = 'empty' | 'creating' | 'viewing'
@@ -47,13 +47,6 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     onCharacterListChanged()
   }
 
-  const handleDeleted = () => {
-    setCharacters(prev => prev.filter(c => c.id !== selectedId))
-    setSelectedId(null)
-    setMode('empty')
-    onCharacterListChanged()
-  }
-
   return (
     <div className="grid grid-cols-[320px_1fr] h-full">
       <CharacterSidebar
@@ -78,10 +71,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
           />
         )}
         {mode === 'viewing' && selectedId && (
-          <CharacterDetailView
-            characterId={selectedId}
-            onDeleted={handleDeleted}
-          />
+          <CharacterGraphPage characterId={selectedId} worldId={worldId} />
         )}
       </div>
     </div>
