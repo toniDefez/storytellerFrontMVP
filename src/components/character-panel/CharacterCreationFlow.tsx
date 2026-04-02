@@ -5,7 +5,8 @@ import { generateCharacter } from '@/services/api'
 import type { Character } from '@/services/api'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import { useInstallation } from '@/hooks/useInstallation'
-import { ValueGraph } from './ValueGraph'
+// TODO: Replace with CharacterGraphCanvas once implemented
+// import { ValueGraph } from './ValueGraph'
 import NoInstallationBanner from '@/components/NoInstallationBanner'
 
 const PREMISE_EXAMPLES = [
@@ -311,14 +312,9 @@ function SectionBlock({
             ) : null}
           </>
         )}
+        {/* TODO: Replace with CharacterGraphCanvas once implemented */}
         {sectionKey === 'values' && (
-          <>
-            {character.values && character.values.length > 0 ? (
-              <ValueGraph values={character.values} relations={character.value_relations || []} />
-            ) : (
-              <p className="text-xs text-muted-foreground/50 italic">Sin grafo de valores</p>
-            )}
-          </>
+          <p className="text-xs text-muted-foreground/50 italic">Próximamente: grafo psicológico del personaje</p>
         )}
       </div>
     </div>

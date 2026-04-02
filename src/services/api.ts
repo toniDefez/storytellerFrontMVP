@@ -276,24 +276,6 @@ export interface StructuredGoal {
   category: GoalCategory
 }
 
-export type CharacterValueType = 'nuclear' | 'peripheral'
-export type ValueRelationType = 'reinforces' | 'tensions' | 'depends'
-
-export interface CharacterValue {
-  id: number
-  name: string
-  description: string
-  weight: number
-  value_type: CharacterValueType
-}
-
-export interface CharacterValueRelation {
-  id: number
-  source_value: string
-  target_value: string
-  relation_type: ValueRelationType
-}
-
 export interface Character {
   id: number
   name: string
@@ -316,8 +298,51 @@ export interface Character {
   contradiction_declared?: string
   contradiction_operative?: string
   structured_goals?: StructuredGoal[]
-  values?: CharacterValue[]
-  value_relations?: CharacterValueRelation[]
+  voice_register?: VoiceRegister
+}
+
+// --- Character Psychological Graph ---
+
+export type CharacterNodeDomain = 'origin' | 'belief' | 'drive' | 'fear' | 'mask' | 'tension' | 'bond'
+export type CharacterNodeRole = 'trait' | 'wound' | 'arc_seed'
+export type CharacterEdgeType = 'forged_by' | 'masks' | 'contradicts' | 'fuels' | 'constrains' | 'costs' | 'evolved_from' | 'could_resolve'
+
+export interface CharacterNode {
+  id: number
+  domain: CharacterNodeDomain
+  role: CharacterNodeRole
+  label: string
+  description: string
+  salience: 'high' | 'medium' | 'low'
+  arc_destination?: string
+  canvas_x: number
+  canvas_y: number
+}
+
+export interface CharacterEdge {
+  id: number
+  source_node_id: number
+  target_node_id: number
+  edge_type: CharacterEdgeType
+}
+
+export interface CharacterGraph {
+  nodes: CharacterNode[]
+  edges: CharacterEdge[]
+}
+
+export interface VoiceRegister {
+  emotional_rhythm: string
+  social_posture: string
+  cognitive_tempo: string
+  expressive_style: string
+}
+
+export interface ChatMessage {
+  id: number
+  role: 'user' | 'character'
+  content: string
+  created_at?: string
 }
 
 export interface Scene {
@@ -362,6 +387,77 @@ export function deleteCharacter(id: number) {
   return request<{ status: string }>(`/character/delete?id=${id}`, {
     method: 'DELETE',
   })
+}
+
+// --- Character Graph ---
+
+export function getCharacterGraph(characterId: number) {
+  return request<CharacterGraph>(`/character/graph?character_id=${characterId}`)
+}
+
+export function createCharacterNode(characterId: number, node: Omit<CharacterNode, 'id'>) {
+  return request<CharacterNode>(`/character/nodes?character_id=${characterId}`, {
+    method: 'POST',
+    body: JSON.stringify(node),
+  })
+}
+
+export function updateCharacterNode(nodeId: number, node: Partial<CharacterNode>) {
+  return request<void>(`/character/nodes/update?node_id=${nodeId}`, {
+    method: 'PUT',
+    body: JSON.stringify(node),
+  })
+}
+
+export function deleteCharacterNode(nodeId: number) {
+  return request<void>(`/character/nodes/delete?node_id=${nodeId}`, {
+    method: 'DELETE',
+  })
+}
+
+export function updateNodePosition(nodeId: number, x: number, y: number) {
+  return request<void>(`/character/nodes/position?node_id=${nodeId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ canvas_x: x, canvas_y: y }),
+  })
+}
+
+export function createCharacterEdge(characterId: number, edge: Omit<CharacterEdge, 'id'>) {
+  return request<CharacterEdge>(`/character/edges?character_id=${characterId}`, {
+    method: 'POST',
+    body: JSON.stringify(edge),
+  })
+}
+
+export function deleteCharacterEdge(edgeId: number) {
+  return request<void>(`/character/edges/delete?edge_id=${edgeId}`, {
+    method: 'DELETE',
+  })
+}
+
+export function updateVoiceRegister(characterId: number, vr: VoiceRegister) {
+  return request<void>(`/character/voice-register?character_id=${characterId}`, {
+    method: 'PUT',
+    body: JSON.stringify(vr),
+  })
+}
+
+export function generateCharacterNodes(characterId: number, premise: string) {
+  return request<{ nodes: CharacterNode[]; voice_register: VoiceRegister }>(`/character/generate-nodes?character_id=${characterId}`, {
+    method: 'POST',
+    body: JSON.stringify({ premise }),
+  })
+}
+
+export function characterChat(characterId: number, message: string) {
+  return request<{ reply: string; proposed_node?: CharacterNode }>(`/character/chat?character_id=${characterId}`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  })
+}
+
+export function getCharacterChatHistory(characterId: number) {
+  return request<ChatMessage[]>(`/character/chat/history?character_id=${characterId}`)
 }
 
 // --- Scenes ---

@@ -4,7 +4,8 @@ import { Trash2 } from 'lucide-react'
 import { getCharacterById, deleteCharacter } from '@/services/api'
 import type { Character } from '@/services/api'
 import { ConsciousnessStateDot } from './ConsciousnessStateDot'
-import { ValueGraph } from './ValueGraph'
+// TODO: Replace with CharacterGraphCanvas once implemented
+// import { ValueGraph } from './ValueGraph'
 
 interface Props {
   characterId: number
@@ -149,44 +150,9 @@ export function CharacterDetailView({ characterId, onDeleted }: Props) {
           ) : null}
         </Section>
 
-        {/* Values */}
-        <Section label="GRAFO DE VALORES" color="purple">
-          {character.values && character.values.length > 0 && (
-            <ValueGraph values={character.values} relations={character.value_relations || []} />
-          )}
-          {character.values && character.values.length > 0 ? (
-            <div className="space-y-2">
-              {character.values.map((v, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className={`w-3 h-3 rounded-full ${v.value_type === 'nuclear' ? 'bg-amber-500' : 'bg-stone-300 border border-stone-400 border-dashed'}`} />
-                  <span className="text-sm font-medium">{v.name}</span>
-                  <span className="text-xs text-muted-foreground/50">{v.description}</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground/40">{(v.weight * 100).toFixed(0)}%</span>
-                </div>
-              ))}
-              {character.value_relations && character.value_relations.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-border/30 space-y-1">
-                  {character.value_relations.map((r, i) => (
-                    <p key={i} className="text-xs text-muted-foreground/60">
-                      <span className="font-medium">{r.source_value}</span>
-                      {' '}
-                      <span className={
-                        r.relation_type === 'tensions' ? 'text-red-400' :
-                        r.relation_type === 'reinforces' ? 'text-emerald-400' : 'text-indigo-400'
-                      }>
-                        {r.relation_type === 'tensions' ? 'tensiona con' :
-                         r.relation_type === 'reinforces' ? 'refuerza' : 'depende de'}
-                      </span>
-                      {' '}
-                      <span className="font-medium">{r.target_value}</span>
-                    </p>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground/50 italic">Sin grafo de valores</p>
-          )}
+        {/* Psychological Graph — TODO: replace with CharacterGraphCanvas */}
+        <Section label="GRAFO PSICOLÓGICO" color="purple">
+          <p className="text-xs text-muted-foreground/50 italic">Próximamente: grafo psicológico del personaje</p>
         </Section>
 
         {/* Delete confirmation */}
