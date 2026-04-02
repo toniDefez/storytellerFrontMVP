@@ -1,3 +1,17 @@
+# [1.11.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.10.0...v1.11.0) (2026-04-02)
+
+
+### Features
+
+* **api:** add character value graph types ([77dbd29](https://github.com/toniDefez/storytellerFrontMVP/commit/77dbd29475090009c9c8e7c59d5a27feefef5c8f))
+* **character:** add CharacterCard component for sidebar list ([6e0a731](https://github.com/toniDefez/storytellerFrontMVP/commit/6e0a7317daca6314cbe6fffcfe8133b2b6ec4ea7))
+* **character:** add CharacterCreationFlow component ([b5fc356](https://github.com/toniDefez/storytellerFrontMVP/commit/b5fc356febb483981dd0bd2732584bb31de5c443))
+* **character:** add CharacterDetailView component ([397386d](https://github.com/toniDefez/storytellerFrontMVP/commit/397386d85f522cd872f5d95649fcfdbe4263af3d))
+* **character:** add CharacterPanel master-detail and wire to WorldDetailPage ([b9b8498](https://github.com/toniDefez/storytellerFrontMVP/commit/b9b849819853040447848d2230a3e5775daa43e7))
+* **character:** add CharacterSidebar component ([1ac4279](https://github.com/toniDefez/storytellerFrontMVP/commit/1ac4279ef6865cdf033b64e50d162a9417b80d75))
+* **character:** add ConsciousnessStateDot component ([3f90c07](https://github.com/toniDefez/storytellerFrontMVP/commit/3f90c07e48a84bb52a5ed40e07af51e00dc82295))
+* **character:** add ValueGraph SVG visualization component ([ec0cb56](https://github.com/toniDefez/storytellerFrontMVP/commit/ec0cb56ce0de351eadb633178f26c66a9d1cb02e))
+
 # [1.10.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.9.0...v1.10.0) (2026-03-28)
 
 
