@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getCharacterById, createCharacter, generateCharacterNodes } from '@/services/api'
+import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
@@ -36,6 +36,20 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   const handleSelect = (id: number) => {
     setSelectedId(id)
     setMode('viewing')
+  }
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteCharacter(id)
+      setCharacters(prev => prev.filter(c => c.id !== id))
+      if (selectedId === id) {
+        setSelectedId(null)
+        setMode('empty')
+      }
+      onCharacterListChanged()
+    } catch (err) {
+      console.error('Failed to delete character:', err)
+    }
   }
 
   const handleNewCharacter = () => {
@@ -86,6 +100,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         selectedId={selectedId}
         onSelect={handleSelect}
         onNewCharacter={handleNewCharacter}
+        onDelete={handleDelete}
       />
 
       <div className="h-full overflow-hidden">
@@ -133,7 +148,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         )}
 
         {mode === 'viewing' && selectedId && (
-          <CharacterGraphPage key={selectedId} characterId={selectedId} worldId={worldId} />
+          <CharacterGraphPage key={selectedId} characterId={selectedId} worldId={worldId} onDelete={() => handleDelete(selectedId!)} />
         )}
       </div>
     </div>

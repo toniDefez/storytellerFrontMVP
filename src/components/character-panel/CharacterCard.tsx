@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Trash2 } from 'lucide-react'
 import type { Character } from '@/services/api'
 import { ConsciousnessStateDot } from './ConsciousnessStateDot'
 
@@ -6,16 +7,17 @@ interface Props {
   character: Character
   selected: boolean
   onClick: () => void
+  onDelete?: () => void
 }
 
-export function CharacterCard({ character, selected, onClick }: Props) {
+export function CharacterCard({ character, selected, onClick, onDelete }: Props) {
   const initial = character.name?.charAt(0)?.toUpperCase() || '?'
 
   return (
     <motion.button
       onClick={onClick}
       className={`
-        w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left
+        group w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left
         transition-colors duration-150 relative
         ${selected
           ? 'bg-[hsl(18_55%_94%)] border border-[hsl(17_63%_37%/0.3)] shadow-sm'
@@ -48,6 +50,21 @@ export function CharacterCard({ character, selected, onClick }: Props) {
           </span>
         )}
       </span>
+
+      {onDelete && (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={e => { e.stopPropagation(); onDelete() }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onDelete() } }}
+          className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded-md
+                     text-muted-foreground/40 hover:text-red-500 hover:bg-red-50
+                     transition-all duration-150"
+          aria-label={`Eliminar ${character.name}`}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </span>
+      )}
     </motion.button>
   )
 }

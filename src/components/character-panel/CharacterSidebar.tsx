@@ -8,9 +8,10 @@ interface Props {
   selectedId: number | null
   onSelect: (id: number) => void
   onNewCharacter: () => void
+  onDelete: (id: number) => void
 }
 
-export function CharacterSidebar({ worldPremise, characters, selectedId, onSelect, onNewCharacter }: Props) {
+export function CharacterSidebar({ worldPremise, characters, selectedId, onSelect, onNewCharacter, onDelete }: Props) {
   return (
     <div className="flex flex-col h-full min-h-0 border-r border-border/40">
       {/* World premise */}
@@ -36,6 +37,7 @@ export function CharacterSidebar({ worldPremise, characters, selectedId, onSelec
               character={c}
               selected={selectedId === c.id}
               onClick={() => onSelect(c.id)}
+              onDelete={() => onDelete(c.id)}
             />
           ))
         )}

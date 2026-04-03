@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Network, MessageCircle, Sparkles } from 'lucide-react'
+import { Network, MessageCircle, Sparkles, Trash2 } from 'lucide-react'
 import { useCharacterGraph } from './useCharacterGraph'
 import { CharacterGraphCanvas } from './CharacterGraphCanvas'
 import { CharacterChatPanel } from './CharacterChatPanel'
@@ -11,9 +11,10 @@ import type { CharacterNode, CharacterEdgeType } from '@/services/api'
 interface Props {
   characterId: number
   worldId: number
+  onDelete?: () => void
 }
 
-export function CharacterGraphPage({ characterId }: Props) {
+export function CharacterGraphPage({ characterId, onDelete }: Props) {
   const {
     nodes, edges, voiceRegister, chatMessages, characterName,
     mode, selectedNodeId, loading, chatLoading, generating, error,
@@ -138,6 +139,7 @@ export function CharacterGraphPage({ characterId }: Props) {
       {/* Top bar with mode toggle */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0">
         <span className="text-sm font-medium text-foreground/80">{characterName}</span>
+        <div className="flex items-center gap-2">
         <div className="flex gap-1 bg-muted/30 rounded-lg p-0.5">
           <button
             onClick={() => toggleMode()}
@@ -155,6 +157,21 @@ export function CharacterGraphPage({ characterId }: Props) {
             <MessageCircle className="w-3.5 h-3.5" />
             Hablar
           </button>
+        </div>
+        {onDelete && (
+          <button
+            onClick={() => {
+              if (window.confirm(`¿Eliminar a ${characterName}?`)) {
+                onDelete()
+              }
+            }}
+            className="p-1.5 rounded-md text-muted-foreground/40 hover:text-red-500 hover:bg-red-50
+                       transition-all duration-150"
+            aria-label={`Eliminar ${characterName}`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
         </div>
       </div>
 
