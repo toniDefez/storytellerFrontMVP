@@ -12,7 +12,7 @@ interface Props {
 
 export function CharacterSidebar({ worldPremise, characters, selectedId, onSelect, onNewCharacter }: Props) {
   return (
-    <div className="flex flex-col h-full border-r border-border/40">
+    <div className="flex flex-col h-full min-h-0 border-r border-border/40">
       {/* World premise */}
       {worldPremise && (
         <div className="px-5 pt-6 pb-4 border-b border-border/40">
@@ -23,7 +23,7 @@ export function CharacterSidebar({ worldPremise, characters, selectedId, onSelec
       )}
 
       {/* Character list */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1.5">
         {characters.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
             <p className="font-display text-xl italic text-foreground/15 mb-2">Sin personajes aun</p>

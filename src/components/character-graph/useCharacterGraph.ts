@@ -31,13 +31,13 @@ export function useCharacterGraph(characterId: number) {
       const [graph, char, history] = await Promise.all([
         getCharacterGraph(characterId),
         getCharacterById(characterId),
-        getCharacterChatHistory(characterId),
+        getCharacterChatHistory(characterId).catch(() => [] as ChatMessage[]),
       ])
-      setNodes(graph.nodes || [])
-      setEdges(graph.edges || [])
+      setNodes(graph.nodes ?? [])
+      setEdges(graph.edges ?? [])
       setVoiceRegister(char.voice_register || { emotional_rhythm: '', social_posture: '', cognitive_tempo: '', expressive_style: '' })
       setCharacterName(char.name)
-      setChatMessages(history || [])
+      setChatMessages(history ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading graph')
     } finally {
