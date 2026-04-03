@@ -1,3 +1,15 @@
+# [1.13.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.12.0...v1.13.0) (2026-04-03)
+
+
+### Bug Fixes
+
+* **character:** fix panel scroll, detail view loading, and resilient graph fetch ([a125844](https://github.com/toniDefez/storytellerFrontMVP/commit/a1258445133ffe02e85cdb235da7656e727a8154))
+
+
+### Features
+
+* **character:** add delete button to character card and graph page ([330eb09](https://github.com/toniDefez/storytellerFrontMVP/commit/330eb099437da8344d44267dc1b6af3ce85d41b1))
+
 # [1.12.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.11.0...v1.12.0) (2026-04-03)
 
 
