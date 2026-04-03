@@ -1,3 +1,10 @@
+## [1.17.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.17.0...v1.17.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* **character:** make pipeline nodes clearly editable — hover effects, pencil icon, form below pipeline ([5a50207](https://github.com/toniDefez/storytellerFrontMVP/commit/5a50207c2448641092764a890b49bf2a32a2988f))
+
 # [1.17.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.16.0...v1.17.0) (2026-04-03)
 
 
