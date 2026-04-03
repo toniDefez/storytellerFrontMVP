@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.15.2...v1.16.0) (2026-04-03)
+
+
+### Features
+
+* **character:** add clear chat button, improve contrast and readability, log voice save errors ([3df38d8](https://github.com/toniDefez/storytellerFrontMVP/commit/3df38d804061c768859f32580053fc0d0404d814))
+
 ## [1.15.2](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.15.1...v1.15.2) (2026-04-03)
 
 
