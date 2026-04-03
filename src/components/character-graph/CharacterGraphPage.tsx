@@ -19,7 +19,7 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
     nodes, voiceRegister, chatMessages, characterName,
     mode, selectedNodeId, loading, chatLoading, generating, error,
     loadGraph, addNode, editNode, removeNode,
-    updateVoice, sendMessage, generateNodes,
+    updateVoice, sendMessage, generateNodes, clearChat,
     toggleMode, setSelectedNodeId,
   } = useCharacterGraph(characterId)
 
@@ -200,6 +200,7 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
                 onSend={sendMessage}
                 onHarvest={handleHarvest}
                 onVoiceChange={updateVoice}
+                onClearChat={clearChat}
               />
             </div>
           </div>

@@ -109,10 +109,15 @@ export function useCharacterGraph(characterId: number) {
     setVoiceRegister(vr)
     try {
       await apiUpdateVoiceRegister(characterId, vr)
-    } catch {
-      // silent — will be saved on next update
+    } catch (err) {
+      console.error('Failed to save voice register:', err)
+      setError('Error guardando la voz')
     }
   }, [characterId])
+
+  const clearChat = useCallback(() => {
+    setChatMessages([])
+  }, [])
 
   const sendMessage = useCallback(async (text: string) => {
     setChatLoading(true)
@@ -155,6 +160,6 @@ export function useCharacterGraph(characterId: number) {
     // Actions
     loadGraph, addNode, editNode, removeNode, moveNode,
     addEdge, removeEdge, updateVoice, sendMessage, generateNodes,
-    toggleMode, setSelectedNodeId, setMode,
+    clearChat, toggleMode, setSelectedNodeId, setMode,
   }
 }
