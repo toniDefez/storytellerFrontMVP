@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.16.0...v1.17.0) (2026-04-03)
+
+
+### Features
+
+* **character:** simplify voice to caudal+temperatura+sabor, fix clear chat button ([67ae258](https://github.com/toniDefez/storytellerFrontMVP/commit/67ae2581c209d3e13246394b4638ab7cf3b3541c))
+
 # [1.16.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.15.2...v1.16.0) (2026-04-03)
 
 
