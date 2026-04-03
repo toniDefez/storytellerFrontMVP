@@ -84,8 +84,9 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
           </span>
         </div>
         <button
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onAdd() }}
-          className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-white/50"
+          className="nopan nodrag w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-white/50 cursor-pointer"
           style={{ color: meta.color }}
         >
           <Plus className="w-3.5 h-3.5" />
@@ -94,9 +95,13 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
 
       {/* Empty state hint */}
       {childCount === 0 && (
-        <div className="flex items-center justify-center h-[calc(100%-40px)] opacity-30">
+        <div
+          className="nopan nodrag flex items-center justify-center h-[calc(100%-40px)] opacity-30 cursor-pointer hover:opacity-50 transition-opacity"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onAdd() }}
+        >
           <span className="text-[11px]" style={{ color: meta.color }}>
-            Pulsa + para añadir
+            Pulsa + o aquí para añadir
           </span>
         </div>
       )}
@@ -123,6 +128,7 @@ interface ChildData extends Record<string, unknown> {
 function ChildNode({ data }: NodeProps<Node<ChildData>>) {
   return (
     <div
+      onPointerDown={(e) => e.stopPropagation()}
       onClick={data.onClick}
       className={`group cursor-pointer rounded-lg px-3 py-2 transition-all duration-150 hover:shadow-md ${
         data.isSelected ? 'ring-2 shadow-md' : 'hover:scale-[1.02]'
