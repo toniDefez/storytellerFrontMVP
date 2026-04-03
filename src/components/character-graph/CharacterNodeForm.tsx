@@ -3,10 +3,11 @@ import { Trash2 } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, CharacterNodeRole } from '@/services/api'
 
 const DOMAINS: { value: CharacterNodeDomain; label: string; color: string }[] = [
+  { value: 'origin', label: 'Creencia', color: 'bg-indigo-100 text-indigo-700' },
   { value: 'fear', label: 'Miedo', color: 'bg-red-100 text-red-700' },
-  { value: 'drive', label: 'Necesidad', color: 'bg-emerald-100 text-emerald-700' },
-  { value: 'mask', label: 'Armadura', color: 'bg-slate-100 text-slate-700' },
-  { value: 'bond', label: 'Quiebre', color: 'bg-purple-100 text-purple-700' },
+  { value: 'drive', label: 'Deseo', color: 'bg-amber-100 text-amber-700' },
+  { value: 'mask', label: 'Máscara', color: 'bg-emerald-100 text-emerald-700' },
+  { value: 'bond', label: 'Grieta', color: 'bg-violet-100 text-violet-700' },
 ]
 
 const ROLES: { value: CharacterNodeRole; label: string }[] = [

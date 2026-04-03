@@ -1,17 +1,15 @@
 import type { CharacterNode } from '@/services/api'
 
 const DOMAIN_META: Record<string, { label: string; color: string; bg: string }> = {
-  fear:    { label: 'Miedo',     color: '#dc2626', bg: '#fef2f2' },
-  drive:   { label: 'Necesidad', color: '#059669', bg: '#ecfdf5' },
-  mask:    { label: 'Armadura',  color: '#64748b', bg: '#f8fafc' },
-  tension: { label: 'Señal',     color: '#d97706', bg: '#fffbeb' },
-  bond:    { label: 'Quiebre',   color: '#9333ea', bg: '#faf5ff' },
-  origin:  { label: 'Origen',    color: '#a8a29e', bg: '#f5f5f4' },
-  belief:  { label: 'Creencia',  color: '#d97706', bg: '#fffbeb' },
+  origin:  { label: 'Creencias', color: '#6366F1', bg: '#eef2ff' },
+  fear:    { label: 'Miedos',    color: '#EF4444', bg: '#fef2f2' },
+  drive:   { label: 'Deseos',    color: '#F59E0B', bg: '#fffbeb' },
+  mask:    { label: 'Máscaras',  color: '#10B981', bg: '#ecfdf5' },
+  bond:    { label: 'Grietas',   color: '#8B5CF6', bg: '#f5f3ff' },
 }
 
 // Fixed order for pipeline display
-const PIPELINE_ORDER = ['fear', 'drive', 'mask', 'bond']
+const PIPELINE_ORDER = ['origin', 'fear', 'drive', 'mask', 'bond']
 
 interface Props {
   nodes: CharacterNode[]
