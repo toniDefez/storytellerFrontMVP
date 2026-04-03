@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.15.0...v1.15.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* **character:** remove SEÑAL from pipeline, fix chat scroll, strengthen voice prompt ([7a61bca](https://github.com/toniDefez/storytellerFrontMVP/commit/7a61bca4c0f8700dfc080343894498db4b17e3a2))
+
 # [1.15.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.14.0...v1.15.0) (2026-04-03)
 
 
