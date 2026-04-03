@@ -90,8 +90,6 @@
       "aiError": "No se pudo generar el mundo.",
       "aiSaving": "Guardando...",
       "aiSaveButton": "Guardar este mundo",
-      "sandersonTitle": "Define el corazón de tu mundo",
-      "sandersonSubtitle": "Un eje central. Cinco capas derivadas. Un mundo completo.",
       "worldNameLabel": "Nombre del mundo",
       "worldNamePlaceholder": "Aún sin nombre...",
       "coreAxisLabel": "El eje central",

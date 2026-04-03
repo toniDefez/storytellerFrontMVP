@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react'
-import { getCharacterById } from '@/services/api'
+import { getCharacterById, createCharacter } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
-import { CharacterCreationFlow } from './CharacterCreationFlow'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
 import { Users } from 'lucide-react'
-
-type Mode = 'empty' | 'creating' | 'viewing'
 
 interface Props {
   worldId: number
@@ -16,7 +13,6 @@ interface Props {
 }
 
 export function CharacterPanel({ worldId, worldPremise, characterBriefs, onCharacterListChanged }: Props) {
-  const [mode, setMode] = useState<Mode>('empty')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
 
@@ -32,19 +28,27 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
 
   const handleSelect = (id: number) => {
     setSelectedId(id)
-    setMode('viewing')
   }
 
-  const handleNewCharacter = () => {
-    setSelectedId(null)
-    setMode('creating')
-  }
-
-  const handleCharacterCreated = (character: Character) => {
-    setCharacters(prev => [...prev, character])
-    setSelectedId(character.id)
-    setMode('viewing')
-    onCharacterListChanged()
+  const handleNewCharacter = async () => {
+    try {
+      // Create a minimal character in DB, then open its graph
+      const result = await createCharacter({
+        name: `Personaje ${characters.length + 1}`,
+        role: '',
+        personality: '',
+        background: '',
+        goals: [],
+        world_id: worldId,
+        state: {},
+      })
+      const newChar = await getCharacterById(result.id)
+      setCharacters(prev => [...prev, newChar])
+      setSelectedId(result.id)
+      onCharacterListChanged()
+    } catch (err) {
+      console.error('Failed to create character:', err)
+    }
   }
 
   return (
@@ -58,20 +62,13 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
       />
 
       <div className="h-full">
-        {mode === 'empty' && (
+        {selectedId ? (
+          <CharacterGraphPage characterId={selectedId} worldId={worldId} />
+        ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Users className="w-12 h-12 text-muted-foreground/15 mb-3" />
             <p className="font-display text-lg italic text-foreground/15">Selecciona un personaje</p>
           </div>
-        )}
-        {mode === 'creating' && (
-          <CharacterCreationFlow
-            worldId={worldId}
-            onCharacterCreated={handleCharacterCreated}
-          />
-        )}
-        {mode === 'viewing' && selectedId && (
-          <CharacterGraphPage characterId={selectedId} worldId={worldId} />
         )}
       </div>
     </div>

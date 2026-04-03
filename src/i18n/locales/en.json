@@ -90,8 +90,6 @@
       "aiError": "Could not generate the world.",
       "aiSaving": "Saving...",
       "aiSaveButton": "Save this world",
-      "sandersonTitle": "Define your world's heart",
-      "sandersonSubtitle": "One core axis. Five derived layers. A complete world.",
       "worldNameLabel": "World name",
       "worldNamePlaceholder": "Unnamed for now...",
       "coreAxisLabel": "The core axis",
