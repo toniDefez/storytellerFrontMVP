@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.15.1...v1.15.2) (2026-04-03)
+
+
+### Bug Fixes
+
+* **character:** fix chat scroll by constraining grid cell height ([e3217a1](https://github.com/toniDefez/storytellerFrontMVP/commit/e3217a17322937382f6c1d5fdecc00d37a7c9c6e))
+
 ## [1.15.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.15.0...v1.15.1) (2026-04-03)
 
 
