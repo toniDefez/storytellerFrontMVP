@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ChevronRight, Sparkles } from 'lucide-react'
+import { ChevronRight, Sparkles, Pencil } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain } from '@/services/api'
 
 /* ── Pipeline stage metadata ───────────────────────────────────── */
@@ -62,8 +62,8 @@ const PIPELINE_STAGES: StageMeta[] = [
 
 function Arrow() {
   return (
-    <div className="flex items-center px-1 shrink-0">
-      <ChevronRight className="w-5 h-5 text-muted-foreground/25" />
+    <div className="flex items-center px-1 shrink-0 self-start mt-12">
+      <ChevronRight className="w-5 h-5 text-foreground/20" />
     </div>
   )
 }
@@ -87,7 +87,8 @@ function StageCard({ meta, node, selected, onClick, index }: StageCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25, delay: index * 0.08 }}
       onClick={onClick}
-      className="flex-1 min-w-[180px] max-w-[260px] rounded-xl text-left transition-all duration-200 overflow-hidden"
+      className="group flex-1 min-w-[180px] max-w-[280px] rounded-xl text-left transition-all duration-200 overflow-hidden
+                 hover:scale-[1.02] hover:shadow-md cursor-pointer"
       style={{
         background: meta.bg,
         borderWidth: 2,
@@ -100,37 +101,51 @@ function StageCard({ meta, node, selected, onClick, index }: StageCardProps) {
     >
       {/* Stage header */}
       <div
-        className="px-3 py-1.5 border-b flex items-center gap-1.5"
+        className="px-3 py-2 border-b flex items-center gap-1.5"
         style={{ borderColor: `${meta.border}20`, background: meta.accent }}
       >
         <span
-          className="text-[9px] font-bold uppercase tracking-[0.15em]"
+          className="text-[10px] font-bold uppercase tracking-[0.12em]"
           style={{ color: meta.border }}
         >
           {meta.emoji} {meta.label}
         </span>
-        <span className="text-[8px] opacity-40 ml-auto" style={{ color: meta.text }}>
-          {meta.subtitle}
-        </span>
+        {!isEmpty && (
+          <Pencil
+            className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-60 transition-opacity"
+            style={{ color: meta.border }}
+          />
+        )}
       </div>
 
       {/* Content */}
-      <div className="px-3 py-3 min-h-[72px] flex flex-col justify-center">
+      <div className="px-3 py-3 min-h-[80px] flex flex-col justify-center">
         {isEmpty ? (
-          <div className="flex flex-col items-center gap-1 py-2">
-            <Sparkles className="w-3.5 h-3.5 opacity-20" style={{ color: meta.border }} />
-            <span className="text-[10px] opacity-30" style={{ color: meta.text }}>
+          <div className="flex flex-col items-center gap-2 py-2">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-dashed"
+              style={{ borderColor: `${meta.border}30` }}
+            >
+              <Sparkles className="w-4 h-4" style={{ color: `${meta.border}40` }} />
+            </div>
+            <span className="text-[11px] font-medium" style={{ color: `${meta.text}60` }}>
               Click para definir
             </span>
           </div>
         ) : (
           <>
-            <p className="text-xs font-semibold leading-tight" style={{ color: meta.text }}>
+            <p className="text-[13px] font-semibold leading-tight" style={{ color: meta.text }}>
               {node.label}
             </p>
-            <p className="text-[10px] mt-1.5 leading-snug opacity-60 line-clamp-3" style={{ color: meta.text }}>
+            <p className="text-[11px] mt-1.5 leading-snug opacity-70 line-clamp-3" style={{ color: meta.text }}>
               {node.description}
             </p>
+            <span
+              className="text-[9px] mt-2 opacity-0 group-hover:opacity-50 transition-opacity"
+              style={{ color: meta.text }}
+            >
+              Click para editar
+            </span>
           </>
         )}
       </div>
@@ -148,7 +163,6 @@ interface Props {
 }
 
 export function CharacterGraphCanvas({ nodes, selectedNodeId, onSelectNode, onSelectStage }: Props) {
-  // Map nodes by domain for quick lookup
   const nodeByDomain = new Map<string, CharacterNode>()
   for (const n of nodes) {
     nodeByDomain.set(n.domain, n)
@@ -157,12 +171,12 @@ export function CharacterGraphCanvas({ nodes, selectedNodeId, onSelectNode, onSe
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 py-8 bg-[hsl(40_20%_97%)]">
       {/* Pipeline label */}
-      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/30 mb-6">
+      <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-foreground/30 mb-6">
         Flujo de decisión
       </p>
 
       {/* Pipeline stages */}
-      <div className="flex items-stretch gap-0 w-full max-w-[1200px]">
+      <div className="flex items-start gap-0 w-full max-w-[1200px]">
         {PIPELINE_STAGES.map((stage, i) => {
           const node = nodeByDomain.get(stage.domain)
           return (
@@ -187,8 +201,8 @@ export function CharacterGraphCanvas({ nodes, selectedNodeId, onSelectNode, onSe
       </div>
 
       {/* Flow description */}
-      <p className="text-[9px] text-muted-foreground/25 mt-6 text-center max-w-lg">
-        Algo pasa → el miedo filtra cómo lo interpreta → la necesidad reacciona → la armadura se activa → a no ser que el quiebre se dispare
+      <p className="text-[10px] text-foreground/25 mt-8 text-center max-w-lg leading-relaxed">
+        Algo pasa → el <strong className="text-red-400">miedo</strong> filtra cómo lo interpreta → la <strong className="text-emerald-500">necesidad</strong> reacciona → la <strong className="text-slate-400">armadura</strong> se activa → a no ser que el <strong className="text-purple-400">quiebre</strong> se dispare
       </p>
     </div>
   )

@@ -167,16 +167,18 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
               onSelectNode={handleSelectNode}
               onSelectStage={handleSelectStage}
             />
-            {/* Node form overlay */}
+            {/* Node form — centered below pipeline */}
             {showNodeForm && (
-              <div className="absolute top-4 right-4 w-80 z-10">
-                <CharacterNodeForm
-                  node={editingNode}
-                  defaultDomain={newNodeDomain}
-                  onSave={handleSaveNode}
-                  onDelete={editingNode ? () => { removeNode(editingNode.id); setShowNodeForm(false) } : undefined}
-                  onCancel={() => { setShowNodeForm(false); setEditingNode(undefined); setNewNodeDomain(undefined) }}
-                />
+              <div className="absolute bottom-0 left-0 right-0 flex justify-center p-4 z-10 bg-gradient-to-t from-[hsl(40_20%_97%)] via-[hsl(40_20%_97%/0.95)] to-transparent pt-8">
+                <div className="w-full max-w-md">
+                  <CharacterNodeForm
+                    node={editingNode}
+                    defaultDomain={newNodeDomain}
+                    onSave={handleSaveNode}
+                    onDelete={editingNode ? () => { removeNode(editingNode.id); setShowNodeForm(false) } : undefined}
+                    onCancel={() => { setShowNodeForm(false); setEditingNode(undefined); setNewNodeDomain(undefined) }}
+                  />
+                </div>
               </div>
             )}
           </div>
