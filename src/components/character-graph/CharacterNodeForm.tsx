@@ -3,13 +3,11 @@ import { Trash2 } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, CharacterNodeRole } from '@/services/api'
 
 const DOMAINS: { value: CharacterNodeDomain; label: string; color: string }[] = [
-  { value: 'origin', label: 'Origen', color: 'bg-stone-200 text-stone-700' },
-  { value: 'belief', label: 'Creencia', color: 'bg-amber-100 text-amber-700' },
-  { value: 'drive', label: 'Impulso', color: 'bg-emerald-100 text-emerald-700' },
-  { value: 'fear', label: 'Miedo', color: 'bg-rose-100 text-rose-700' },
-  { value: 'mask', label: 'Máscara', color: 'bg-slate-100 text-slate-700' },
-  { value: 'tension', label: 'Tensión', color: 'bg-red-100 text-red-700' },
-  { value: 'bond', label: 'Vínculo', color: 'bg-purple-100 text-purple-700' },
+  { value: 'fear', label: 'Miedo', color: 'bg-red-100 text-red-700' },
+  { value: 'drive', label: 'Necesidad', color: 'bg-emerald-100 text-emerald-700' },
+  { value: 'mask', label: 'Armadura', color: 'bg-slate-100 text-slate-700' },
+  { value: 'tension', label: 'Señal', color: 'bg-amber-100 text-amber-700' },
+  { value: 'bond', label: 'Quiebre', color: 'bg-purple-100 text-purple-700' },
 ]
 
 const ROLES: { value: CharacterNodeRole; label: string }[] = [
@@ -34,7 +32,7 @@ interface Props {
 export function CharacterNodeForm({ node, onSave, onDelete, onCancel }: Props) {
   const [label, setLabel] = useState(node?.label || '')
   const [description, setDescription] = useState(node?.description || '')
-  const [domain, setDomain] = useState<CharacterNodeDomain>(node?.domain || 'belief')
+  const [domain, setDomain] = useState<CharacterNodeDomain>(node?.domain || 'fear')
   const [role, setRole] = useState<CharacterNodeRole>(node?.role || 'trait')
   const [salience, setSalience] = useState(node?.salience || 'medium')
   const [arcDestination, setArcDestination] = useState(node?.arc_destination || '')

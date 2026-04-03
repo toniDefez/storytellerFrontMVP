@@ -22,16 +22,14 @@ import type {
   CharacterEdgeType,
 } from '@/services/api'
 
-/* ── Domain colors ─────────────────────────────────────────────── */
+/* ── Pipeline metadata (5-node character model) ───────────────── */
 
-const DOMAIN_COLORS: Record<CharacterNodeDomain, { bg: string; border: string; text: string }> = {
-  origin:  { bg: '#f5f5f4', border: '#a8a29e', text: '#57534e' },
-  belief:  { bg: '#fef3c7', border: '#d97706', text: '#92400e' },
-  drive:   { bg: '#d1fae5', border: '#059669', text: '#065f46' },
-  fear:    { bg: '#ffe4e6', border: '#e11d48', text: '#9f1239' },
-  mask:    { bg: '#f1f5f9', border: '#64748b', text: '#334155' },
-  tension: { bg: '#fee2e2', border: '#dc2626', text: '#991b1b' },
-  bond:    { bg: '#f3e8ff', border: '#9333ea', text: '#6b21a8' },
+const PIPELINE_META: Record<string, { label: string; emoji: string; bg: string; border: string; text: string; description: string }> = {
+  fear:    { label: 'MIEDO',     emoji: '◆', bg: '#fef2f2', border: '#dc2626', text: '#991b1b', description: 'Lo que cree del mundo' },
+  drive:   { label: 'NECESIDAD', emoji: '▶', bg: '#ecfdf5', border: '#059669', text: '#065f46', description: 'Lo que persigue' },
+  mask:    { label: 'ARMADURA',  emoji: '◎', bg: '#f8fafc', border: '#64748b', text: '#334155', description: 'Cómo se protege' },
+  tension: { label: 'SEÑAL',     emoji: '◇', bg: '#fffbeb', border: '#d97706', text: '#92400e', description: 'Cómo lo ven los demás' },
+  bond:    { label: 'QUIEBRE',   emoji: '✦', bg: '#faf5ff', border: '#9333ea', text: '#6b21a8', description: 'Lo que lo rompe' },
 }
 
 /* ── Edge styles per type ──────────────────────────────────────── */
@@ -47,42 +45,54 @@ const EDGE_STYLES: Record<CharacterEdgeType, Partial<Edge['style']> & { strokeDa
   could_resolve:{ stroke: '#059669', strokeDasharray: '2 3' },
 }
 
-/* ── Role → border style ──────────────────────────────────────── */
-
-function roleBorderStyle(role: CharacterNodeRole): React.CSSProperties {
-  switch (role) {
-    case 'trait':    return { borderStyle: 'solid', borderWidth: 2 }
-    case 'wound':    return { borderStyle: 'dashed', borderWidth: 2 }
-    case 'arc_seed': return { borderStyle: 'dotted', borderWidth: 2, boxShadow: '0 0 8px rgba(99,102,241,0.35)' }
-  }
-}
-
 /* ── Custom node component ─────────────────────────────────────── */
 
 interface PsycheNodeData extends Record<string, unknown> {
   label: string
   domain: CharacterNodeDomain
   role: CharacterNodeRole
+  description: string
   isSelected: boolean
 }
 
 function PsycheNode({ data }: NodeProps<Node<PsycheNodeData>>) {
-  const colors = DOMAIN_COLORS[data.domain]
+  const meta = PIPELINE_META[data.domain] || { label: data.domain, emoji: '●', bg: '#f5f5f4', border: '#a8a29e', text: '#57534e', description: '' }
   return (
     <div
-      className="relative px-3 py-2 rounded-lg min-w-[80px] max-w-[160px] text-center transition-shadow"
+      className="relative rounded-xl min-w-[200px] max-w-[280px] transition-shadow overflow-hidden"
       style={{
-        background: colors.bg,
-        borderColor: colors.border,
-        color: colors.text,
-        ...roleBorderStyle(data.role),
-        ...(data.isSelected ? { boxShadow: `0 0 0 3px ${colors.border}55, 0 0 12px ${colors.border}33` } : {}),
+        background: meta.bg,
+        borderColor: meta.border,
+        borderWidth: 2,
+        borderStyle: 'solid',
+        boxShadow: data.isSelected ? `0 0 0 3px ${meta.border}44, 0 4px 12px ${meta.border}22` : '0 1px 3px rgba(0,0,0,0.08)',
       }}
     >
-      <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-stone-400" />
-      <span className="text-xs font-medium leading-tight block truncate">{data.label}</span>
-      <span className="text-[9px] opacity-60 capitalize">{data.role.replace('_', ' ')}</span>
-      <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-stone-400" />
+      <Handle type="target" position={Position.Left} className="!w-2.5 !h-2.5 !bg-stone-400 !border-stone-300" />
+
+      {/* Header with pipeline label */}
+      <div className="px-3 py-1.5 border-b" style={{ borderColor: `${meta.border}30`, background: `${meta.border}08` }}>
+        <span className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: meta.border }}>
+          {meta.emoji} {meta.label}
+        </span>
+        <span className="text-[8px] ml-2 opacity-50" style={{ color: meta.text }}>
+          {meta.description}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="px-3 py-2">
+        <p className="text-xs font-semibold leading-tight" style={{ color: meta.text }}>
+          {data.label}
+        </p>
+        {data.description && (
+          <p className="text-[10px] mt-1 leading-snug opacity-70" style={{ color: meta.text }}>
+            {data.description}
+          </p>
+        )}
+      </div>
+
+      <Handle type="source" position={Position.Right} className="!w-2.5 !h-2.5 !bg-stone-400 !border-stone-300" />
     </div>
   )
 }
@@ -104,6 +114,7 @@ function toFlowElements(
       label: n.label,
       domain: n.domain,
       role: n.role,
+      description: n.description,
       isSelected: n.id === selectedId,
     },
   }))
@@ -208,7 +219,7 @@ export function CharacterGraphCanvas({
       <Background color="#d8cfc4" gap={24} size={1} />
       <Controls />
       <MiniMap
-        nodeColor={n => DOMAIN_COLORS[(n.data as PsycheNodeData).domain]?.border ?? '#a855f7'}
+        nodeColor={n => PIPELINE_META[(n.data as PsycheNodeData).domain]?.border ?? '#a855f7'}
         className="!bg-background/90 !border-border/50"
       />
     </ReactFlow>

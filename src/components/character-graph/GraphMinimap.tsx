@@ -1,13 +1,14 @@
 import type { CharacterNode, CharacterNodeDomain } from '@/services/api'
 
-const DOMAIN_META: Record<CharacterNodeDomain, { label: string; color: string }> = {
+const DOMAIN_META: Record<string, { label: string; color: string }> = {
+  fear:    { label: 'Miedo', color: '#dc2626' },
+  drive:   { label: 'Necesidad', color: '#059669' },
+  mask:    { label: 'Armadura', color: '#64748b' },
+  tension: { label: 'Señal', color: '#d97706' },
+  bond:    { label: 'Quiebre', color: '#9333ea' },
+  // Backwards compatibility for old nodes
   origin:  { label: 'Origen', color: '#a8a29e' },
   belief:  { label: 'Creencia', color: '#d97706' },
-  drive:   { label: 'Impulso', color: '#059669' },
-  fear:    { label: 'Miedo', color: '#e11d48' },
-  mask:    { label: 'Máscara', color: '#64748b' },
-  tension: { label: 'Tensión', color: '#dc2626' },
-  bond:    { label: 'Vínculo', color: '#9333ea' },
 }
 
 const ROLE_LABELS: Record<string, string> = {
