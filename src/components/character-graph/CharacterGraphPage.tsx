@@ -183,23 +183,25 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
         )}
 
         {mode === 'talk' && (
-          <div className="absolute inset-0 grid grid-cols-[200px_1fr]">
-            <div className="border-r border-border/30 overflow-hidden">
+          <div className="absolute inset-0 grid grid-cols-[200px_1fr] min-h-0">
+            <div className="border-r border-border/30 overflow-hidden min-h-0">
               <GraphMinimap
                 nodes={nodes}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={(id) => setSelectedNodeId(id)}
               />
             </div>
-            <CharacterChatPanel
-              messages={chatMessages}
-              characterName={characterName}
-              voiceRegister={voiceRegister}
-              loading={chatLoading}
-              onSend={sendMessage}
-              onHarvest={handleHarvest}
-              onVoiceChange={updateVoice}
-            />
+            <div className="overflow-hidden min-h-0">
+              <CharacterChatPanel
+                messages={chatMessages}
+                characterName={characterName}
+                voiceRegister={voiceRegister}
+                loading={chatLoading}
+                onSend={sendMessage}
+                onHarvest={handleHarvest}
+                onVoiceChange={updateVoice}
+              />
+            </div>
           </div>
         )}
       </div>
