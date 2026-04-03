@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.13.0...v1.14.0) (2026-04-03)
+
+
+### Features
+
+* **character:** update frontend to 5-node pipeline model (fear/need/armor/tell/break) ([0aa4774](https://github.com/toniDefez/storytellerFrontMVP/commit/0aa477409b332ad00c6a3796239f0af11b4002bb))
+
 # [1.13.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.12.0...v1.13.0) (2026-04-03)
 
 
