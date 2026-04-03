@@ -24,15 +24,16 @@ const SALIENCE: { value: 'high' | 'medium' | 'low'; label: string }[] = [
 
 interface Props {
   node?: CharacterNode  // undefined = create mode
+  defaultDomain?: CharacterNodeDomain  // pre-select domain when creating from pipeline stage
   onSave: (data: Omit<CharacterNode, 'id'>) => void
   onDelete?: () => void
   onCancel: () => void
 }
 
-export function CharacterNodeForm({ node, onSave, onDelete, onCancel }: Props) {
+export function CharacterNodeForm({ node, defaultDomain, onSave, onDelete, onCancel }: Props) {
   const [label, setLabel] = useState(node?.label || '')
   const [description, setDescription] = useState(node?.description || '')
-  const [domain, setDomain] = useState<CharacterNodeDomain>(node?.domain || 'fear')
+  const [domain, setDomain] = useState<CharacterNodeDomain>(node?.domain || defaultDomain || 'fear')
   const [role, setRole] = useState<CharacterNodeRole>(node?.role || 'trait')
   const [salience, setSalience] = useState(node?.salience || 'medium')
   const [arcDestination, setArcDestination] = useState(node?.arc_destination || '')
