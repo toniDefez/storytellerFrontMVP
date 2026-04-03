@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.17.1...v1.18.0) (2026-04-03)
+
+
+### Features
+
+* **character:** ReactFlow containers with animated flow edges, 5 containers (Creencias/Miedos/Deseos/Máscaras/Grietas) ([4aeb689](https://github.com/toniDefez/storytellerFrontMVP/commit/4aeb6896ce85a45e8467769c196f1621cfd98b9c))
+
 ## [1.17.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.17.0...v1.17.1) (2026-04-03)
 
 
