@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect } from 'react'
+import { useMemo, useCallback, useEffect, createContext, useContext } from 'react'
 import {
   ReactFlow,
   Background,
@@ -14,6 +14,18 @@ import '@xyflow/react/dist/style.css'
 import { Plus, Pencil } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain } from '@/services/api'
 
+/* ── Callbacks context (avoids passing functions through ReactFlow data) ── */
+
+interface FlowCallbacks {
+  onAddToContainer: (domain: CharacterNodeDomain) => void
+  onSelectNode: (id: number) => void
+}
+
+const CallbacksContext = createContext<FlowCallbacks>({
+  onAddToContainer: () => {},
+  onSelectNode: () => {},
+})
+
 /* ── Container metadata ────────────────────────────────────────── */
 
 interface ContainerMeta {
@@ -22,29 +34,22 @@ interface ContainerMeta {
   subtitle: string
   color: string
   bg: string
-  lightBg: string
 }
 
-const CONTAINERS: ContainerMeta[] = [
-  { domain: 'fear',    label: 'MIEDOS',     subtitle: '¿Qué evita?',           color: '#EF4444', bg: '#fef2f2', lightBg: '#fef2f2' },
-  { domain: 'drive',   label: 'DESEOS',     subtitle: '¿Qué persigue?',        color: '#F59E0B', bg: '#fffbeb', lightBg: '#fffbeb' },
-  { domain: 'mask',    label: 'MÁSCARAS',   subtitle: '¿Qué muestra?',         color: '#10B981', bg: '#ecfdf5', lightBg: '#ecfdf5' },
-  { domain: 'bond',    label: 'GRIETAS',    subtitle: '¿Dónde se rompe?',      color: '#8B5CF6', bg: '#f5f3ff', lightBg: '#f5f3ff' },
-]
-
-// We add CREENCIAS as first container
 const ALL_CONTAINERS: ContainerMeta[] = [
-  { domain: 'origin',  label: 'CREENCIAS',  subtitle: '¿Qué da por hecho?',    color: '#6366F1', bg: '#eef2ff', lightBg: '#eef2ff' },
-  ...CONTAINERS,
+  { domain: 'origin', label: 'CREENCIAS',  subtitle: '¿Qué da por hecho?',  color: '#6366F1', bg: '#eef2ff' },
+  { domain: 'fear',   label: 'MIEDOS',     subtitle: '¿Qué evita?',         color: '#EF4444', bg: '#fef2f2' },
+  { domain: 'drive',  label: 'DESEOS',     subtitle: '¿Qué persigue?',      color: '#F59E0B', bg: '#fffbeb' },
+  { domain: 'mask',   label: 'MÁSCARAS',   subtitle: '¿Qué muestra?',       color: '#10B981', bg: '#ecfdf5' },
+  { domain: 'bond',   label: 'GRIETAS',    subtitle: '¿Dónde se rompe?',    color: '#8B5CF6', bg: '#f5f3ff' },
 ]
 
-// Zigzag layout positions (px)
 const CONTAINER_POSITIONS: Record<string, { x: number; y: number }> = {
-  origin: { x: 50,  y: 50 },   // Row 1, left
-  fear:   { x: 350, y: 50 },   // Row 1, center
-  drive:  { x: 650, y: 50 },   // Row 1, right
-  bond:   { x: 500, y: 380 },  // Row 2, right
-  mask:   { x: 200, y: 380 },  // Row 2, left
+  origin: { x: 50,  y: 50 },
+  fear:   { x: 350, y: 50 },
+  drive:  { x: 650, y: 50 },
+  bond:   { x: 500, y: 380 },
+  mask:   { x: 200, y: 380 },
 }
 
 const CONTAINER_WIDTH = 250
@@ -53,60 +58,69 @@ const CONTAINER_HEIGHT = 300
 /* ── Custom container node ─────────────────────────────────────── */
 
 interface ContainerData extends Record<string, unknown> {
-  meta: ContainerMeta
+  domain: string
+  label: string
+  subtitle: string
+  color: string
+  bg: string
   childCount: number
-  onAdd: () => void
 }
 
 function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
-  const { meta, childCount, onAdd } = data
+  const callbacks = useContext(CallbacksContext)
+
+  const handleAdd = (e: React.MouseEvent | React.PointerEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    callbacks.onAddToContainer(data.domain as CharacterNodeDomain)
+  }
+
   return (
     <div
       className="rounded-xl overflow-hidden"
       style={{
         width: CONTAINER_WIDTH,
         height: CONTAINER_HEIGHT,
-        background: meta.bg,
-        border: `2px solid ${meta.color}30`,
+        background: data.bg,
+        border: `2px solid ${data.color}30`,
       }}
     >
-      {/* Header */}
       <div
         className="px-3 py-2 flex items-center justify-between"
-        style={{ background: `${meta.color}15`, borderBottom: `1px solid ${meta.color}20` }}
+        style={{ background: `${data.color}15`, borderBottom: `1px solid ${data.color}20` }}
       >
         <div>
-          <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: meta.color }}>
-            {meta.label}
+          <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: data.color }}>
+            {data.label}
           </span>
-          <span className="text-[9px] ml-2 opacity-50" style={{ color: meta.color }}>
-            {meta.subtitle}
+          <span className="text-[9px] ml-2 opacity-50" style={{ color: data.color }}>
+            {data.subtitle}
           </span>
         </div>
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onAdd() }}
-          className="nopan nodrag w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-white/50 cursor-pointer"
-          style={{ color: meta.color }}
+        <div
+          role="button"
+          className="nopan nodrag w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-white/60 transition-colors"
+          style={{ color: data.color }}
+          onPointerDown={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
+          onClick={handleAdd}
         >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+          <Plus className="w-4 h-4" />
+        </div>
       </div>
 
-      {/* Empty state hint */}
-      {childCount === 0 && (
+      {data.childCount === 0 && (
         <div
-          className="nopan nodrag flex items-center justify-center h-[calc(100%-40px)] opacity-30 cursor-pointer hover:opacity-50 transition-opacity"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onAdd() }}
+          className="nopan nodrag flex items-center justify-center cursor-pointer hover:opacity-60 transition-opacity"
+          style={{ height: CONTAINER_HEIGHT - 44, color: `${data.color}40` }}
+          onPointerDown={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
+          onClick={handleAdd}
         >
-          <span className="text-[11px]" style={{ color: meta.color }}>
-            Pulsa + o aquí para añadir
-          </span>
+          <span className="text-[12px]">+ Añadir</span>
         </div>
       )}
 
-      {/* Source/Target handles for flow edges */}
       <Handle type="source" position={Position.Right} className="!w-0 !h-0 !opacity-0" />
       <Handle type="target" position={Position.Left} className="!w-0 !h-0 !opacity-0" />
       <Handle type="source" position={Position.Bottom} id="bottom" className="!w-0 !h-0 !opacity-0" />
@@ -115,23 +129,23 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
   )
 }
 
-/* ── Custom child node (draggable within container) ───────────── */
+/* ── Custom child node ─────────────────────────────────────────── */
 
 interface ChildData extends Record<string, unknown> {
+  nodeId: number
   label: string
   description: string
   containerColor: string
   isSelected: boolean
-  onClick: () => void
 }
 
 function ChildNode({ data }: NodeProps<Node<ChildData>>) {
+  const callbacks = useContext(CallbacksContext)
+
   return (
     <div
-      onPointerDown={(e) => e.stopPropagation()}
-      onClick={data.onClick}
-      className={`group cursor-pointer rounded-lg px-3 py-2 transition-all duration-150 hover:shadow-md ${
-        data.isSelected ? 'ring-2 shadow-md' : 'hover:scale-[1.02]'
+      className={`nopan nodrag group cursor-pointer rounded-lg px-3 py-2 transition-all duration-150 hover:shadow-md relative ${
+        data.isSelected ? 'shadow-md' : 'hover:scale-[1.02]'
       }`}
       style={{
         width: CONTAINER_WIDTH - 24,
@@ -139,8 +153,11 @@ function ChildNode({ data }: NodeProps<Node<ChildData>>) {
         border: `1px solid ${data.containerColor}${data.isSelected ? '' : '30'}`,
         boxShadow: data.isSelected ? `0 0 0 2px ${data.containerColor}` : undefined,
       }}
+      onPointerDown={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      onClick={(e) => { e.stopPropagation(); callbacks.onSelectNode(data.nodeId) }}
     >
-      <p className="text-[12px] font-semibold leading-tight text-stone-800 truncate">
+      <p className="text-[12px] font-semibold leading-tight text-stone-800 truncate pr-4">
         {data.label}
       </p>
       {data.description && (
@@ -168,13 +185,10 @@ const nodeTypes = {
 function buildElements(
   charNodes: CharacterNode[],
   selectedId: number | null,
-  onSelectNode: (id: number) => void,
-  onAddToContainer: (domain: CharacterNodeDomain) => void,
 ): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = []
   const edges: Edge[] = []
 
-  // 1. Container nodes (fixed, non-draggable)
   for (const meta of ALL_CONTAINERS) {
     const childCount = charNodes.filter(n => n.domain === meta.domain).length
     const pos = CONTAINER_POSITIONS[meta.domain] || { x: 0, y: 0 }
@@ -186,14 +200,16 @@ function buildElements(
       draggable: false,
       selectable: false,
       data: {
-        meta,
+        domain: meta.domain,
+        label: meta.label,
+        subtitle: meta.subtitle,
+        color: meta.color,
+        bg: meta.bg,
         childCount,
-        onAdd: () => onAddToContainer(meta.domain),
       },
     })
   }
 
-  // 2. Child nodes (draggable, inside containers)
   const domainChildIndex: Record<string, number> = {}
   for (const cn of charNodes) {
     const idx = domainChildIndex[cn.domain] || 0
@@ -209,21 +225,21 @@ function buildElements(
       extent: 'parent' as const,
       draggable: true,
       data: {
+        nodeId: cn.id,
         label: cn.label,
         description: cn.description,
         containerColor: meta?.color || '#999',
         isSelected: cn.id === selectedId,
-        onClick: () => onSelectNode(cn.id),
       },
     })
   }
 
-  // 3. Flow edges between containers (animated!)
+  // Flow edges between containers (animated)
   const flowPath = [
-    { from: 'origin', to: 'fear',  sourceHandle: undefined, targetHandle: undefined },
-    { from: 'fear',   to: 'drive', sourceHandle: undefined, targetHandle: undefined },
-    { from: 'drive',  to: 'bond',  sourceHandle: 'bottom',  targetHandle: 'top' },
-    { from: 'bond',   to: 'mask',  sourceHandle: undefined, targetHandle: undefined },
+    { from: 'origin', to: 'fear' },
+    { from: 'fear',   to: 'drive' },
+    { from: 'drive',  to: 'bond',  sourceHandle: 'bottom', targetHandle: 'top' },
+    { from: 'bond',   to: 'mask' },
   ]
 
   for (const { from, to, sourceHandle, targetHandle } of flowPath) {
@@ -239,7 +255,7 @@ function buildElements(
       style: {
         stroke: fromMeta?.color || '#999',
         strokeWidth: 2,
-        opacity: 0.4,
+        opacity: 0.35,
       },
     })
   }
@@ -258,8 +274,8 @@ interface Props {
 
 export function CharacterGraphCanvas({ nodes: charNodes, selectedNodeId, onSelectNode, onSelectStage }: Props) {
   const { nodes: flowNodes, edges: flowEdges } = useMemo(
-    () => buildElements(charNodes, selectedNodeId, (id) => onSelectNode(id), onSelectStage),
-    [charNodes, selectedNodeId, onSelectNode, onSelectStage],
+    () => buildElements(charNodes, selectedNodeId),
+    [charNodes, selectedNodeId],
   )
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
@@ -270,21 +286,28 @@ export function CharacterGraphCanvas({ nodes: charNodes, selectedNodeId, onSelec
 
   const handlePaneClick = useCallback(() => onSelectNode(null), [onSelectNode])
 
+  const callbacks = useMemo<FlowCallbacks>(() => ({
+    onAddToContainer: onSelectStage,
+    onSelectNode: (id: number) => onSelectNode(id === selectedNodeId ? null : id),
+  }), [onSelectStage, onSelectNode, selectedNodeId])
+
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      nodeTypes={nodeTypes}
-      onPaneClick={handlePaneClick}
-      fitView
-      fitViewOptions={{ padding: 0.15 }}
-      minZoom={0.5}
-      maxZoom={1.5}
-      className="bg-[hsl(40_20%_97%)]"
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background color="#e8e0d4" gap={20} size={1} />
-    </ReactFlow>
+    <CallbacksContext.Provider value={callbacks}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        nodeTypes={nodeTypes}
+        onPaneClick={handlePaneClick}
+        fitView
+        fitViewOptions={{ padding: 0.15 }}
+        minZoom={0.5}
+        maxZoom={1.5}
+        className="bg-[hsl(40_20%_97%)]"
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background color="#e8e0d4" gap={20} size={1} />
+      </ReactFlow>
+    </CallbacksContext.Provider>
   )
 }
