@@ -1,3 +1,10 @@
+## [1.18.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.18.0...v1.18.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* **character:** fix click handling in ReactFlow container nodes — add nopan/nodrag/stopPropagation ([9ae4a94](https://github.com/toniDefez/storytellerFrontMVP/commit/9ae4a943b94187e0fc86f71e6a1c2f0250a2e079))
+
 # [1.18.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.17.1...v1.18.0) (2026-04-03)
 
 
