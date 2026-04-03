@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.14.0...v1.15.0) (2026-04-03)
+
+
+### Features
+
+* **character:** voice register as selectable pills, improve minimap contrast and pipeline order ([49b50f0](https://github.com/toniDefez/storytellerFrontMVP/commit/49b50f026905a829745da3844be11cb129203b3f))
+
 # [1.14.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.13.0...v1.14.0) (2026-04-03)
 
 
