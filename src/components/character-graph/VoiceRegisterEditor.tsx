@@ -2,77 +2,109 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp, Mic } from 'lucide-react'
 import type { VoiceRegister } from '@/services/api'
 
-/* ── Predefined options for each temperament dimension ──────── */
+/* ── Voice options ──────────────────────────────────────────── */
 
-const RHYTHM_OPTIONS = [
-  { value: 'Explosivo — estalla rápido, se calma rápido', label: 'Explosivo' },
-  { value: 'Contenido — procesa internamente, rara vez muestra', label: 'Contenido' },
-  { value: 'Volátil — cambia sin aviso, impredecible', label: 'Volátil' },
-  { value: 'Plano — emoción mínima visible, monotono', label: 'Plano' },
-  { value: 'Lento — las emociones llegan tarde pero duran', label: 'Lento' },
-  { value: 'Intenso — todo lo siente al máximo, sin filtro', label: 'Intenso' },
+const CAUDAL_OPTIONS = [
+  { value: 'Telegráfico — habla en fragmentos, cada palabra cuesta', label: 'Telegráfico', desc: 'Cada palabra cuesta' },
+  { value: 'Medido — dice lo justo, ni más ni menos, preciso', label: 'Medido', desc: 'Lo justo, ni más ni menos' },
+  { value: 'Fluido — habla con naturalidad, frases completas, ritmo cómodo', label: 'Fluido', desc: 'Natural, cómodo' },
+  { value: 'Desbordante — no puede parar, monólogos, tangentes, se pierde', label: 'Desbordante', desc: 'No puede parar' },
 ]
 
-const POSTURE_OPTIONS = [
-  { value: 'Hacia otros — busca conexión, se acerca', label: 'Hacia otros' },
-  { value: 'Hacia dentro — se retira, prefiere observar', label: 'Hacia dentro' },
-  { value: 'Dominante — toma el espacio, lidera', label: 'Dominante' },
-  { value: 'Deferente — cede, sigue, evita conflicto', label: 'Deferente' },
-  { value: 'Observador — al margen, atento, interviene poco', label: 'Observador' },
-  { value: 'Provocador — busca reacción, desafía', label: 'Provocador' },
+const TEMPERATURA_OPTIONS = [
+  { value: 'Gélido — nada le toca, clínico, distante, sin emoción visible', label: 'Gélido', desc: 'Nada le toca' },
+  { value: 'Templado — calidez controlada, educado, revela poco', label: 'Templado', desc: 'Calidez controlada' },
+  { value: 'Cálido — abierto, presente, emocionalmente disponible', label: 'Cálido', desc: 'Abierto y presente' },
+  { value: 'Incandescente — todo quema, pasión o rabia en cada frase', label: 'Incandescente', desc: 'Todo quema' },
 ]
 
-const TEMPO_OPTIONS = [
-  { value: 'Impulsivo — decide al instante, se arrepiente después', label: 'Impulsivo' },
-  { value: 'Deliberado — piensa antes de actuar, metódico', label: 'Deliberado' },
-  { value: 'Analítico — desmonta todo, necesita entender antes', label: 'Analítico' },
-  { value: 'Intuitivo — sigue corazonadas, no sabe explicar por qué', label: 'Intuitivo' },
-  { value: 'Errático — a veces rápido, a veces paralizado', label: 'Errático' },
-  { value: 'Calculador — planifica 3 pasos adelante', label: 'Calculador' },
+const SABOR_OPTIONS = [
+  { value: 'Humor — deflecta con ironía y sarcasmo', label: 'Humor', desc: 'Ironía como escudo' },
+  { value: 'Evasivo — nunca responde a la pregunta real', label: 'Evasivo', desc: 'Nunca responde directo' },
+  { value: 'Formal — habla como si hubiera audiencia', label: 'Formal', desc: 'Registro alto' },
+  { value: 'Brusco — sin colchón, dice lo duro sin preparar', label: 'Brusco', desc: 'Dice lo duro' },
+  { value: 'Poético — usa imágenes, metáforas, ritmo', label: 'Poético', desc: 'Metáforas y ritmo' },
+  { value: 'Errático — salta entre ideas, se contradice', label: 'Errático', desc: 'Salta y se pierde' },
 ]
 
-const STYLE_OPTIONS = [
-  { value: 'Cortante — frases cortas, directas, sin adornos', label: 'Cortante' },
-  { value: 'Verborrágico — habla mucho, llena silencios', label: 'Verborrágico' },
-  { value: 'Silencios largos — dice más callando que hablando', label: 'Silencios' },
-  { value: 'Humor seco — ironía como escudo', label: 'Humor seco' },
-  { value: 'Formal — vocabulario cuidado, distancia verbal', label: 'Formal' },
-  { value: 'Poético — metáforas, lenguaje evocador', label: 'Poético' },
-  { value: 'Brusco — sin filtro, dice lo que piensa', label: 'Brusco' },
-  { value: 'Evasivo — nunca responde directo, rodeos', label: 'Evasivo' },
-]
+/* ── Pill selector ─────────────────────────────────────────── */
 
-interface PillGroupProps {
-  label: string
-  options: { value: string; label: string }[]
+function PillSelector({ options, selected, onChange }: {
+  options: { value: string; label: string; desc: string }[]
   selected: string
   onChange: (value: string) => void
-}
-
-function PillGroup({ label, options, selected, onChange }: PillGroupProps) {
-  const isSelected = (optLabel: string) =>
-    selected.toLowerCase().includes(optLabel.toLowerCase().split(' ')[0])
+}) {
+  const isActive = (opt: { value: string; label: string }) =>
+    selected.toLowerCase().startsWith(opt.label.toLowerCase())
 
   return (
-    <div className="space-y-1.5">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/50">
-        {label}
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map(opt => (
-          <button
-            key={opt.label}
-            onClick={() => onChange(opt.value)}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150
-              ${isSelected(opt.label)
-                ? 'bg-amber-500 text-white shadow-sm'
-                : 'bg-muted/40 text-foreground/60 hover:bg-muted/70 hover:text-foreground/80'
-              }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(opt => (
+        <button
+          key={opt.label}
+          onClick={() => onChange(opt.value)}
+          className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-150 flex flex-col items-start
+            ${isActive(opt)
+              ? 'bg-amber-500 text-white shadow-sm'
+              : 'bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-800'
+            }`}
+        >
+          <span>{opt.label}</span>
+          <span className={`text-[9px] ${isActive(opt) ? 'text-amber-100' : 'text-stone-400'}`}>
+            {opt.desc}
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function SaborSelector({ options, selected1, selected2, onChange1, onChange2 }: {
+  options: { value: string; label: string; desc: string }[]
+  selected1: string
+  selected2: string
+  onChange1: (value: string) => void
+  onChange2: (value: string) => void
+}) {
+  const isActive = (opt: { label: string }) =>
+    selected1.toLowerCase().startsWith(opt.label.toLowerCase()) ||
+    selected2.toLowerCase().startsWith(opt.label.toLowerCase())
+
+  const handleClick = (opt: { value: string; label: string }) => {
+    const matchesSel1 = selected1.toLowerCase().startsWith(opt.label.toLowerCase())
+    const matchesSel2 = selected2.toLowerCase().startsWith(opt.label.toLowerCase())
+
+    if (matchesSel1) {
+      onChange1('') // deselect
+    } else if (matchesSel2) {
+      onChange2('') // deselect
+    } else if (!selected1) {
+      onChange1(opt.value) // fill slot 1
+    } else if (!selected2) {
+      onChange2(opt.value) // fill slot 2
+    } else {
+      onChange2(opt.value) // replace slot 2
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(opt => (
+        <button
+          key={opt.label}
+          onClick={() => handleClick(opt)}
+          className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-150 flex flex-col items-start
+            ${isActive(opt)
+              ? 'bg-amber-500 text-white shadow-sm'
+              : 'bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-800'
+            }`}
+        >
+          <span>{opt.label}</span>
+          <span className={`text-[9px] ${isActive(opt) ? 'text-amber-100' : 'text-stone-400'}`}>
+            {opt.desc}
+          </span>
+        </button>
+      ))}
     </div>
   )
 }
@@ -87,15 +119,15 @@ interface Props {
 export function VoiceRegisterEditor({ voiceRegister, onChange }: Props) {
   const [expanded, setExpanded] = useState(false)
 
-  const hasValues = voiceRegister.emotional_rhythm || voiceRegister.social_posture ||
-                    voiceRegister.cognitive_tempo || voiceRegister.expressive_style
+  // Map fields: emotional_rhythm=caudal, social_posture=temperatura, cognitive_tempo=sabor1, expressive_style=sabor2
+  const caudal = voiceRegister.emotional_rhythm
+  const temperatura = voiceRegister.social_posture
+  const sabor1 = voiceRegister.cognitive_tempo
+  const sabor2 = voiceRegister.expressive_style
 
-  const summaryParts = [
-    voiceRegister.emotional_rhythm,
-    voiceRegister.social_posture,
-    voiceRegister.cognitive_tempo,
-    voiceRegister.expressive_style,
-  ].filter(Boolean).map(s => s.split('—')[0].trim())
+  const summaryParts = [caudal, temperatura, sabor1, sabor2]
+    .filter(Boolean)
+    .map(s => s.split('—')[0].trim())
 
   return (
     <div className="border border-border/40 rounded-lg bg-background/80 backdrop-blur-sm">
@@ -103,43 +135,56 @@ export function VoiceRegisterEditor({ voiceRegister, onChange }: Props) {
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-2 px-3 py-2.5 text-left"
       >
-        <Mic className="w-3.5 h-3.5 text-amber-500" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Voz</span>
-        <span className="flex-1 text-[11px] text-foreground/50 truncate ml-2">
-          {hasValues ? summaryParts.join(' · ') : 'Sin definir — elige el temperamento'}
+        <Mic className="w-4 h-4 text-amber-500" />
+        <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600">Voz</span>
+        <span className="flex-1 text-[11px] text-foreground/60 truncate ml-2">
+          {summaryParts.length > 0 ? summaryParts.join(' · ') : 'Define cómo habla el personaje'}
         </span>
         {expanded
-          ? <ChevronUp className="w-3.5 h-3.5 text-foreground/30" />
-          : <ChevronDown className="w-3.5 h-3.5 text-foreground/30" />
+          ? <ChevronUp className="w-4 h-4 text-foreground/40" />
+          : <ChevronDown className="w-4 h-4 text-foreground/40" />
         }
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 space-y-3 border-t border-border/30 pt-3">
-          <PillGroup
-            label="Ritmo emocional"
-            options={RHYTHM_OPTIONS}
-            selected={voiceRegister.emotional_rhythm}
-            onChange={v => onChange({ ...voiceRegister, emotional_rhythm: v })}
-          />
-          <PillGroup
-            label="Postura social"
-            options={POSTURE_OPTIONS}
-            selected={voiceRegister.social_posture}
-            onChange={v => onChange({ ...voiceRegister, social_posture: v })}
-          />
-          <PillGroup
-            label="Tempo cognitivo"
-            options={TEMPO_OPTIONS}
-            selected={voiceRegister.cognitive_tempo}
-            onChange={v => onChange({ ...voiceRegister, cognitive_tempo: v })}
-          />
-          <PillGroup
-            label="Estilo expresivo"
-            options={STYLE_OPTIONS}
-            selected={voiceRegister.expressive_style}
-            onChange={v => onChange({ ...voiceRegister, expressive_style: v })}
-          />
+        <div className="px-3 pb-3 space-y-4 border-t border-border/30 pt-3">
+          {/* Caudal verbal */}
+          <div>
+            <p className="text-[11px] font-bold text-foreground/70 mb-2">
+              ¿Cuánto habla?
+            </p>
+            <PillSelector
+              options={CAUDAL_OPTIONS}
+              selected={caudal}
+              onChange={v => onChange({ ...voiceRegister, emotional_rhythm: v })}
+            />
+          </div>
+
+          {/* Temperatura */}
+          <div>
+            <p className="text-[11px] font-bold text-foreground/70 mb-2">
+              ¿Cómo se siente hablar con él?
+            </p>
+            <PillSelector
+              options={TEMPERATURA_OPTIONS}
+              selected={temperatura}
+              onChange={v => onChange({ ...voiceRegister, social_posture: v })}
+            />
+          </div>
+
+          {/* Sabores */}
+          <div>
+            <p className="text-[11px] font-bold text-foreground/70 mb-1">
+              ¿Qué lo hace especial? <span className="font-normal text-foreground/40">(elige hasta 2)</span>
+            </p>
+            <SaborSelector
+              options={SABOR_OPTIONS}
+              selected1={sabor1}
+              selected2={sabor2}
+              onChange1={v => onChange({ ...voiceRegister, cognitive_tempo: v })}
+              onChange2={v => onChange({ ...voiceRegister, expressive_style: v })}
+            />
+          </div>
         </div>
       )}
     </div>
