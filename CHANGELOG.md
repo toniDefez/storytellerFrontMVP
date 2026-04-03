@@ -1,3 +1,10 @@
+## [1.18.2](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.18.1...v1.18.2) (2026-04-03)
+
+
+### Bug Fixes
+
+* **character:** use React context for callbacks instead of passing functions through ReactFlow data ([56bc13c](https://github.com/toniDefez/storytellerFrontMVP/commit/56bc13c5058c74c51f53593254f80f075074882e))
+
 ## [1.18.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.18.0...v1.18.1) (2026-04-03)
 
 
