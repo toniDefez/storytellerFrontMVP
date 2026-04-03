@@ -1,21 +1,17 @@
-import type { CharacterNode, CharacterNodeDomain } from '@/services/api'
+import type { CharacterNode } from '@/services/api'
 
-const DOMAIN_META: Record<string, { label: string; color: string }> = {
-  fear:    { label: 'Miedo', color: '#dc2626' },
-  drive:   { label: 'Necesidad', color: '#059669' },
-  mask:    { label: 'Armadura', color: '#64748b' },
-  tension: { label: 'Señal', color: '#d97706' },
-  bond:    { label: 'Quiebre', color: '#9333ea' },
-  // Backwards compatibility for old nodes
-  origin:  { label: 'Origen', color: '#a8a29e' },
-  belief:  { label: 'Creencia', color: '#d97706' },
+const DOMAIN_META: Record<string, { label: string; color: string; bg: string }> = {
+  fear:    { label: 'Miedo',     color: '#dc2626', bg: '#fef2f2' },
+  drive:   { label: 'Necesidad', color: '#059669', bg: '#ecfdf5' },
+  mask:    { label: 'Armadura',  color: '#64748b', bg: '#f8fafc' },
+  tension: { label: 'Señal',     color: '#d97706', bg: '#fffbeb' },
+  bond:    { label: 'Quiebre',   color: '#9333ea', bg: '#faf5ff' },
+  origin:  { label: 'Origen',    color: '#a8a29e', bg: '#f5f5f4' },
+  belief:  { label: 'Creencia',  color: '#d97706', bg: '#fffbeb' },
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  trait: 'Rasgo',
-  wound: 'Herida',
-  arc_seed: 'Arco',
-}
+// Fixed order for pipeline display
+const PIPELINE_ORDER = ['fear', 'drive', 'mask', 'tension', 'bond']
 
 interface Props {
   nodes: CharacterNode[]
@@ -24,50 +20,71 @@ interface Props {
 }
 
 export function GraphMinimap({ nodes, selectedNodeId, onSelectNode }: Props) {
-  const grouped = new Map<CharacterNodeDomain, CharacterNode[]>()
+  const nodeByDomain = new Map<string, CharacterNode[]>()
   for (const node of nodes) {
-    const list = grouped.get(node.domain) || []
+    const list = nodeByDomain.get(node.domain) || []
     list.push(node)
-    grouped.set(node.domain, list)
+    nodeByDomain.set(node.domain, list)
   }
 
   if (nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-xs text-muted-foreground/40 italic">
-        Sin nodos
+      <div className="flex items-center justify-center h-full text-xs text-muted-foreground/40 italic p-4">
+        Sin nodos definidos
       </div>
     )
   }
 
+  // Show in pipeline order
+  const orderedDomains = PIPELINE_ORDER.filter(d => nodeByDomain.has(d))
+
   return (
-    <div className="overflow-y-auto p-2 space-y-3">
-      {Array.from(grouped.entries()).map(([domain, domainNodes]) => {
-        const meta = DOMAIN_META[domain]
+    <div className="overflow-y-auto p-3 space-y-2">
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-foreground/30 mb-2">
+        Flujo de decisión
+      </p>
+      {orderedDomains.map((domain, i) => {
+        const meta = DOMAIN_META[domain] || { label: domain, color: '#999', bg: '#f5f5f5' }
+        const domainNodes = nodeByDomain.get(domain) || []
         return (
           <div key={domain}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: meta.color }} />
-              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+            {/* Stage header */}
+            <div
+              className="flex items-center gap-2 px-2 py-1 rounded-md mb-1"
+              style={{ background: meta.bg }}
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: meta.color }}
+              />
+              <span
+                className="text-[10px] font-bold uppercase tracking-wide"
+                style={{ color: meta.color }}
+              >
                 {meta.label}
               </span>
             </div>
-            <div className="space-y-0.5">
-              {domainNodes.map(n => (
-                <button
-                  key={n.id}
-                  onClick={() => onSelectNode(n.id)}
-                  className={`w-full text-left px-2 py-1 rounded text-[11px] transition-colors
-                    ${selectedNodeId === n.id
-                      ? 'bg-amber-100/60 text-amber-900'
-                      : 'text-foreground/70 hover:bg-muted/30'}`}
-                >
-                  <span className="font-medium">{n.label}</span>
-                  <span className="ml-1 text-[9px] text-muted-foreground/40">
-                    {ROLE_LABELS[n.role] || n.role}
-                  </span>
-                </button>
-              ))}
-            </div>
+
+            {/* Nodes in this stage */}
+            {domainNodes.map(n => (
+              <button
+                key={n.id}
+                onClick={() => onSelectNode(n.id)}
+                className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-all duration-150 ml-1
+                  ${selectedNodeId === n.id
+                    ? 'bg-amber-100 text-amber-900 font-medium shadow-sm'
+                    : 'text-foreground/70 hover:bg-muted/50'}`}
+              >
+                {n.label}
+              </button>
+            ))}
+
+            {/* Arrow between stages */}
+            {i < orderedDomains.length - 1 && (
+              <div className="flex justify-center py-0.5">
+                <span className="text-[10px] text-foreground/20">↓</span>
+              </div>
+            )}
           </div>
         )
       })}
