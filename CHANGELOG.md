@@ -1,3 +1,24 @@
+# [1.12.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.11.0...v1.12.0) (2026-04-03)
+
+
+### Bug Fixes
+
+* **character:** fix salience type in CharacterNodeForm ([07724b0](https://github.com/toniDefez/storytellerFrontMVP/commit/07724b045e3f6e6b655e5df9f1d886038b1a5928))
+
+
+### Features
+
+* **api:** replace character value types with psychological graph + chat API ([a5bdacb](https://github.com/toniDefez/storytellerFrontMVP/commit/a5bdacb289b0fe2381da030467df08ee959b6b8d))
+* **character:** add CharacterChatPanel and HarvestButton components ([db43749](https://github.com/toniDefez/storytellerFrontMVP/commit/db437493a7e567de287a9e3c035a80b72fc97516))
+* **character:** add CharacterGraphCanvas @xyflow/react component ([0a8040b](https://github.com/toniDefez/storytellerFrontMVP/commit/0a8040b83ce8d8ae52cd65bbcd724c466429b780))
+* **character:** add CharacterGraphPage with mode toggle, wire into panel ([aac5339](https://github.com/toniDefez/storytellerFrontMVP/commit/aac53395d5d09ad07ad1eaee6a02b21b43616463))
+* **character:** add CharacterNodeForm component ([7ed7e50](https://github.com/toniDefez/storytellerFrontMVP/commit/7ed7e507175cae28657ce571df7817fd2d708b4a))
+* **character:** add GraphMinimap component for Talk Mode sidebar ([004fe08](https://github.com/toniDefez/storytellerFrontMVP/commit/004fe08f9b75b4a13ce453d4e6b58a0c20d38ae5))
+* **character:** add useCharacterGraph state management hook ([5b05a0e](https://github.com/toniDefez/storytellerFrontMVP/commit/5b05a0e463f4c4fa034af0ffb33c2cec114aa298))
+* **character:** add VoiceRegisterEditor component ([138ba84](https://github.com/toniDefez/storytellerFrontMVP/commit/138ba847125f80c5a48dd07f04ef18447d78dee3))
+* **location:** add narrativeFunction tag, source_hint tooltip, and dramaticCharge selector ([1f69912](https://github.com/toniDefez/storytellerFrontMVP/commit/1f699125e291c874655cfb862e90103b1d087c1c))
+* **seed:** add SeedTemplatePicker to CreateWorldPage ([8571752](https://github.com/toniDefez/storytellerFrontMVP/commit/8571752125c1ba2c9056938598e3307025f88665))
+
 # [1.11.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.10.0...v1.11.0) (2026-04-02)
 
 
