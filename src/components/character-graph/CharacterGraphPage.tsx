@@ -72,7 +72,7 @@ export function CharacterGraphPage({ characterId }: Props) {
   }
 
   // Handle harvest from chat
-  const handleHarvest = async (_messageContent: string) => {
+  const handleHarvest = async () => {
     // For now, open a pre-filled node form. Later: AI proposes a node.
     setEditingNode(undefined)
     setShowNodeForm(true)

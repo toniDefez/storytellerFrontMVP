@@ -10,9 +10,6 @@ import NotFoundPage from './pages/NotFoundPage'
 import ErrorPage from './pages/ErrorPage'
 import WorldDetailPage from './pages/home/WorldDetailPage'
 import WorldBiblePage from './pages/home/WorldBiblePage'
-import CreateCharacterPage from './pages/characters/CreateCharacterPage.sanderson'
-import EditCharacterPage from './pages/characters/EditCharacterPage'
-import CharacterDetailPage from './pages/characters/CharacterDetailPage'
 import CreateScenePage from './pages/scenes/CreateScenePage'
 import EditScenePage from './pages/scenes/EditScenePage'
 import SceneDetailPage from './pages/scenes/SceneDetailPage'
@@ -34,9 +31,6 @@ export const router = createBrowserRouter([
           { path: 'worlds/:id', element: <WorldDetailPage /> },
           { path: 'worlds/:id/bible', element: <WorldBiblePage /> },
           { path: 'worlds/:id/edit', element: <EditWorldPage /> },
-          { path: 'worlds/:id/characters/create', element: <CreateCharacterPage /> },
-          { path: 'worlds/:worldId/characters/:characterId', element: <CharacterDetailPage /> },
-          { path: 'worlds/:worldId/characters/:characterId/edit', element: <EditCharacterPage /> },
           { path: 'worlds/:id/scenes/create', element: <CreateScenePage /> },
           { path: 'worlds/:worldId/scenes/:sceneId', element: <SceneDetailPage /> },
           { path: 'worlds/:worldId/scenes/:sceneId/edit', element: <EditScenePage /> },
