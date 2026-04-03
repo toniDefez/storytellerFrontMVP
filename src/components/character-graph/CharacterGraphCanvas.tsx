@@ -47,16 +47,6 @@ const PIPELINE_STAGES: StageMeta[] = [
     accent: '#64748b20',
   },
   {
-    domain: 'tension',
-    label: 'SEÑAL',
-    subtitle: 'Cómo lo ven los demás',
-    emoji: '◇',
-    bg: '#fffbeb',
-    border: '#d97706',
-    text: '#92400e',
-    accent: '#d9770620',
-  },
-  {
     domain: 'bond',
     label: 'QUIEBRE',
     subtitle: 'Lo que lo rompe',
@@ -198,7 +188,7 @@ export function CharacterGraphCanvas({ nodes, selectedNodeId, onSelectNode, onSe
 
       {/* Flow description */}
       <p className="text-[9px] text-muted-foreground/25 mt-6 text-center max-w-lg">
-        Algo pasa → el miedo filtra cómo lo interpreta → la necesidad reacciona → la armadura se activa → la señal es lo que sale → a no ser que el quiebre se dispare
+        Algo pasa → el miedo filtra cómo lo interpreta → la necesidad reacciona → la armadura se activa → a no ser que el quiebre se dispare
       </p>
     </div>
   )

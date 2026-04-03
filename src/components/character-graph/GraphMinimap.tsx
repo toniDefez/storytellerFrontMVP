@@ -11,7 +11,7 @@ const DOMAIN_META: Record<string, { label: string; color: string; bg: string }> 
 }
 
 // Fixed order for pipeline display
-const PIPELINE_ORDER = ['fear', 'drive', 'mask', 'tension', 'bond']
+const PIPELINE_ORDER = ['fear', 'drive', 'mask', 'bond']
 
 interface Props {
   nodes: CharacterNode[]

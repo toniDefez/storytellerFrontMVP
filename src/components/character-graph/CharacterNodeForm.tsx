@@ -6,7 +6,6 @@ const DOMAINS: { value: CharacterNodeDomain; label: string; color: string }[] = 
   { value: 'fear', label: 'Miedo', color: 'bg-red-100 text-red-700' },
   { value: 'drive', label: 'Necesidad', color: 'bg-emerald-100 text-emerald-700' },
   { value: 'mask', label: 'Armadura', color: 'bg-slate-100 text-slate-700' },
-  { value: 'tension', label: 'Señal', color: 'bg-amber-100 text-amber-700' },
   { value: 'bond', label: 'Quiebre', color: 'bg-purple-100 text-purple-700' },
 ]
 

@@ -50,9 +50,9 @@ export function CharacterChatPanel({
     (idx === 0 || messages[idx - 1].role !== 'character')
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
+    <div className="h-full flex flex-col">
+      {/* Messages — scrollable */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-3 py-4 space-y-2">
         {messages.map((msg, i) => (
           <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
             {showCharacterLabel(i) && (
@@ -98,13 +98,13 @@ export function CharacterChatPanel({
         )}
       </div>
 
-      {/* Voice register */}
-      <div className="px-3 pb-2">
+      {/* Voice register — collapsible, max height limited */}
+      <div className="shrink-0 border-t border-border/30 max-h-[50vh] overflow-y-auto">
         <VoiceRegisterEditor voiceRegister={voiceRegister} onChange={onVoiceChange} />
       </div>
 
-      {/* Input */}
-      <div className="px-3 pb-3 flex items-end gap-2">
+      {/* Input — always visible */}
+      <div className="shrink-0 border-t border-border/30 p-3 flex items-end gap-2">
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
