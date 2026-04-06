@@ -760,26 +760,26 @@ export function createWorldCatalogNode(data: {
 }
 
 export function addNodeFromCatalog(characterId: number, catalogNodeId: number) {
-  return request<CharacterNode>(`/character/nodes/from-catalog?character_id=${characterId}`, {
+  return request<CharacterNode>(`/character/node/add-from-catalog`, {
     method: 'POST',
-    body: JSON.stringify({ catalog_node_id: catalogNodeId }),
+    body: JSON.stringify({ character_id: characterId, catalog_node_id: catalogNodeId }),
   })
 }
 
 export function addNodeFromWorldCatalog(characterId: number, worldCatalogNodeId: number) {
-  return request<CharacterNode>(`/character/nodes/from-world-catalog?character_id=${characterId}`, {
+  return request<CharacterNode>(`/character/node/add-from-world-catalog`, {
     method: 'POST',
-    body: JSON.stringify({ world_catalog_node_id: worldCatalogNodeId }),
+    body: JSON.stringify({ character_id: characterId, world_catalog_node_id: worldCatalogNodeId }),
   })
 }
 
 export function synthesizeDomain(characterId: number, domain: string) {
-  return request<DomainSynthesis>(`/character/synthesize?character_id=${characterId}`, {
+  return request<DomainSynthesis>(`/character/domain/synthesize`, {
     method: 'POST',
-    body: JSON.stringify({ domain }),
+    body: JSON.stringify({ character_id: characterId, domain }),
   })
 }
 
 export function getSynthesis(characterId: number) {
-  return request<DomainSynthesis[]>(`/character/synthesis?character_id=${characterId}`)
+  return request<DomainSynthesis[]>(`/character/domain/synthesis?character_id=${characterId}`)
 }

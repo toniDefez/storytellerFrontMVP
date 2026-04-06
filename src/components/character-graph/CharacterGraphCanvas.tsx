@@ -53,7 +53,6 @@ const SALIENCE_SIZE: Record<string, number> = {
   low: 22,
 }
 
-const ORBITAL_RADIUS = 150
 
 /* ── Label node (entry / exit markers) ────────────────────────── */
 
@@ -81,8 +80,6 @@ interface ContainerData extends Record<string, unknown> {
   synthesis: string
   isStale: boolean
   isSynthesisLoading: boolean
-  onContainerClick: (domain: CharacterNodeDomain) => void
-  onRegenerate: (domain: CharacterNodeDomain) => void
 }
 
 function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
@@ -90,18 +87,6 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
   const hasSynthesis = !!(data.synthesis as string)
   const isStale = data.isStale as boolean
   const isLoading = data.isSynthesisLoading as boolean
-
-  const handleClick = (e: React.MouseEvent | React.PointerEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    data.onContainerClick(data.domain as CharacterNodeDomain)
-  }
-
-  const handleRegenerate = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    data.onRegenerate(data.domain as CharacterNodeDomain)
-  }
 
   return (
     <div
@@ -117,7 +102,6 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
           : `2px solid ${data.color}35`,
         opacity: isEmpty ? 0.5 : 1,
       }}
-      onClick={handleClick}
     >
       {/* Header */}
       <div
@@ -132,73 +116,38 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
             {data.subtitle as string}
           </span>
         </div>
-        <div
-          role="button"
-          className="nopan nodrag w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-white/60 transition-colors shrink-0"
-          style={{ color: data.color as string }}
-          onPointerDown={e => e.stopPropagation()}
-          onMouseDown={e => e.stopPropagation()}
-          onClick={handleClick}
-        >
-          <BookOpen className="w-4 h-4" />
-        </div>
+        <BookOpen className="w-4 h-4 shrink-0 opacity-40" style={{ color: data.color as string }} />
       </div>
 
       {/* Stale banner */}
       {isStale && !isLoading && (
-        <div
-          className="nopan nodrag px-3 py-1.5 flex items-center justify-between bg-amber-50 border-b border-amber-200"
-          onPointerDown={e => e.stopPropagation()}
-          onMouseDown={e => e.stopPropagation()}
-        >
-          <span className="text-[10px] text-amber-700">Sintesis desactualizada</span>
-          <button
-            onClick={handleRegenerate}
-            className="text-[10px] font-medium text-amber-600 hover:text-amber-800 flex items-center gap-1 transition-colors"
-          >
-            <RefreshCw className="w-3 h-3" />
-            Regenerar
-          </button>
+        <div className="px-3 py-1.5 flex items-center gap-2 bg-amber-50 border-b border-amber-200">
+          <RefreshCw className="w-3 h-3 text-amber-600" />
+          <span className="text-[10px] text-amber-700">Sintesis desactualizada — click para regenerar</span>
         </div>
       )}
 
-      {/* Body */}
+      {/* Body — purely visual, no event handlers */}
       <div
-        className="nopan nodrag px-3 py-2 overflow-y-auto cursor-pointer"
+        className="px-3 py-2 overflow-y-auto"
         style={{ height: CONTAINER_HEIGHT - 44 - (isStale && !isLoading ? 32 : 0) }}
-        onPointerDown={e => e.stopPropagation()}
-        onMouseDown={e => e.stopPropagation()}
-        onClick={handleClick}
       >
         {isLoading ? (
           <div className="space-y-2 animate-pulse">
             <div className="h-3 rounded bg-stone-200/60 w-full" />
             <div className="h-3 rounded bg-stone-200/40 w-3/4" />
             <div className="h-3 rounded bg-stone-200/30 w-1/2" />
-            {hasSynthesis && (
-              <p className="text-[10px] leading-relaxed text-stone-400 mt-2 opacity-60">
-                {data.synthesis as string}
-              </p>
-            )}
           </div>
         ) : hasSynthesis ? (
           <p className="text-[11px] leading-relaxed text-stone-600">
             {data.synthesis as string}
           </p>
         ) : isEmpty ? (
-          <div
-            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity h-full"
-            style={{ color: `${data.color}35` }}
-            onClick={handleClick}
-          >
+          <div className="flex items-center justify-center h-full" style={{ color: `${data.color}35` }}>
             <span className="text-[11px]">Click para anadir {(data.label as string).toLowerCase()}</span>
           </div>
         ) : (
-          <div
-            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity h-full"
-            style={{ color: `${data.color}50` }}
-            onClick={handleClick}
-          >
+          <div className="flex items-center justify-center h-full" style={{ color: `${data.color}50` }}>
             <span className="text-[11px]">Abrir catalogo para sintetizar</span>
           </div>
         )}
@@ -303,8 +252,6 @@ function buildElements(
   selectedId: number | null,
   synthesis: DomainSynthesis[],
   synthesisLoading: string | null,
-  onContainerClick: (domain: CharacterNodeDomain) => void,
-  onRegenerate: (domain: CharacterNodeDomain) => void,
   onSelect: (id: number) => void,
 ): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = []
@@ -339,7 +286,7 @@ function buildElements(
       type: 'container',
       position: pos,
       draggable: false,
-      selectable: false,
+      selectable: true,
       data: {
         domain: meta.domain,
         label: meta.label,
@@ -350,8 +297,6 @@ function buildElements(
         synthesis: domainSynth?.synthesis || '',
         isStale: domainSynth?.is_stale ?? false,
         isSynthesisLoading: synthesisLoading === meta.domain,
-        onContainerClick,
-        onRegenerate,
       },
     })
 
@@ -455,7 +400,6 @@ interface Props {
   synthesisLoading: string | null
   onSelectNode: (id: number | null) => void
   onContainerClick: (domain: CharacterNodeDomain) => void
-  onRegenerateSynthesis: (domain: CharacterNodeDomain) => void
   onContextMenu?: (event: ContextMenuEvent) => void
 }
 
@@ -466,7 +410,6 @@ export function CharacterGraphCanvas({
   synthesisLoading,
   onSelectNode,
   onContainerClick,
-  onRegenerateSynthesis,
   onContextMenu,
 }: Props) {
   const handleSelectNode = useCallback(
@@ -480,11 +423,9 @@ export function CharacterGraphCanvas({
       selectedNodeId,
       synthesis,
       synthesisLoading,
-      onContainerClick,
-      onRegenerateSynthesis,
       handleSelectNode,
     ),
-    [charNodes, selectedNodeId, synthesis, synthesisLoading, onContainerClick, onRegenerateSynthesis, handleSelectNode],
+    [charNodes, selectedNodeId, synthesis, synthesisLoading, handleSelectNode],
   )
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
