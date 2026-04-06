@@ -20,10 +20,12 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     nodes, voiceRegister, chatMessages, characterName,
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
+    soul, soulLoading,
     loadGraph, removeNode,
     updateVoice, sendMessage, generateNodes, clearChat,
     toggleMode, setSelectedNodeId,
     addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
+    regenerateSoul,
   } = useCharacterGraph(characterId)
 
   const [selectedNode, setSelectedNode] = useState<CharacterNode | undefined>()
@@ -142,6 +144,24 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0">
         <span className="text-sm font-medium text-foreground/80">{characterName}</span>
         <div className="flex items-center gap-2">
+          {soul === null && synthesis.length > 0 && (
+            <button
+              onClick={regenerateSoul}
+              disabled={soulLoading}
+              className="text-xs text-amber-600 hover:text-amber-700 disabled:opacity-50"
+            >
+              {soulLoading ? '...' : 'Generar alma del personaje'}
+            </button>
+          )}
+          {soul?.is_stale && (
+            <button
+              onClick={regenerateSoul}
+              disabled={soulLoading}
+              className="text-xs text-amber-600 hover:text-amber-700 disabled:opacity-50"
+            >
+              {soulLoading ? '...' : 'Regenerar alma (desactualizada)'}
+            </button>
+          )}
           <div className="flex gap-1 bg-muted/30 rounded-lg p-0.5">
             <button
               onClick={() => { if (mode !== 'graph') toggleMode() }}
@@ -283,12 +303,26 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
 
         {mode === 'talk' && (
           <div className="absolute inset-0 grid grid-cols-[200px_1fr] min-h-0">
-            <div className="border-r border-border/30 overflow-hidden min-h-0">
-              <GraphMinimap
-                nodes={nodes}
-                selectedNodeId={selectedNodeId}
-                onSelectNode={(id) => setSelectedNodeId(id)}
-              />
+            <div className="border-r border-border/30 overflow-hidden min-h-0 flex flex-col">
+              <div className="shrink-0 px-3 py-1.5 border-b border-border/20 flex justify-end">
+                {soul && !soul.is_stale && (
+                  <span className="text-[10px] text-emerald-600/50">alma activa</span>
+                )}
+                {soul?.is_stale && (
+                  <span className="text-[10px] text-amber-600/50">alma desactualizada</span>
+                )}
+                {!soul && (
+                  <span className="text-[10px] text-muted-foreground/30">sin alma</span>
+                )}
+              </div>
+              <div className="flex-1 overflow-hidden min-h-0">
+                <GraphMinimap
+                  nodes={nodes}
+                  selectedNodeId={selectedNodeId}
+                  onSelectNode={(id) => setSelectedNodeId(id)}
+                  onRemoveNode={handleRemoveNode}
+                />
+              </div>
             </div>
             <div className="overflow-hidden min-h-0">
               <CharacterChatPanel
