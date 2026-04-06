@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { CharacterNode, CharacterEdge, VoiceRegister, ChatMessage, DomainSynthesis } from '@/services/api'
+import type { CharacterNode, CharacterEdge, VoiceRegister, ChatMessage, DomainSynthesis, CharacterSoul } from '@/services/api'
 import {
   getCharacterGraph, getCharacterById, getCharacterChatHistory,
   createCharacterNode, updateCharacterNode, deleteCharacterNode, updateNodePosition,
@@ -10,6 +10,8 @@ import {
   addNodeFromWorldCatalog as apiAddFromWorldCatalog,
   synthesizeDomain as apiSynthesizeDomain,
   getSynthesis as apiGetSynthesis,
+  getCharacterSoul,
+  regenerateCharacterSoul,
 } from '@/services/api'
 
 export type CharacterGraphMode = 'graph' | 'talk'
@@ -30,19 +32,23 @@ export function useCharacterGraph(characterId: number) {
   const [error, setError] = useState('')
   const [synthesis, setSynthesis] = useState<DomainSynthesis[]>([])
   const [synthesisLoading, setSynthesisLoading] = useState<string | null>(null)
+  const [soul, setSoul] = useState<CharacterSoul | null>(null)
+  const [soulLoading, setSoulLoading] = useState(false)
 
   const loadGraph = useCallback(async () => {
     setLoading(true)
     try {
-      const [graph, char, history, synth] = await Promise.all([
+      const [graph, char, history, synth, soulResult] = await Promise.all([
         getCharacterGraph(characterId),
         getCharacterById(characterId),
         getCharacterChatHistory(characterId).catch(() => [] as ChatMessage[]),
         apiGetSynthesis(characterId).catch(() => [] as DomainSynthesis[]),
+        getCharacterSoul(characterId).catch(() => null),
       ])
       setNodes(graph.nodes ?? [])
       setEdges(graph.edges ?? [])
       setSynthesis(synth ?? [])
+      setSoul(soulResult)
       setVoiceRegister(char.voice_register || { emotional_rhythm: '', social_posture: '', cognitive_tempo: '', expressive_style: '' })
       setCharacterName(char.name)
       setChatMessages(history ?? [])
@@ -57,6 +63,7 @@ export function useCharacterGraph(characterId: number) {
     try {
       const created = await createCharacterNode(characterId, node)
       setNodes(prev => [...prev, created])
+      setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return created
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error creating node')
@@ -78,6 +85,7 @@ export function useCharacterGraph(characterId: number) {
       await deleteCharacterNode(id)
       setNodes(prev => prev.filter(n => n.id !== id))
       setEdges(prev => prev.filter(e => e.source_node_id !== id && e.target_node_id !== id))
+      setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       if (selectedNodeId === id) setSelectedNodeId(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error deleting node')
@@ -148,6 +156,7 @@ export function useCharacterGraph(characterId: number) {
       const result = await generateCharacterNodes(characterId, premise)
       setNodes(prev => [...prev, ...(result.nodes || [])])
       if (result.voice_register) setVoiceRegister(result.voice_register)
+      setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return result
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error generating nodes')
@@ -172,6 +181,7 @@ export function useCharacterGraph(characterId: number) {
       setNodes(prev => [...prev, created])
       // Mark domain synthesis as stale locally
       setSynthesis(prev => prev.map(s => s.domain === created.domain ? { ...s, is_stale: true } : s))
+      setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return created
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error adding node from catalog')
@@ -184,6 +194,7 @@ export function useCharacterGraph(characterId: number) {
       const created = await apiAddFromWorldCatalog(characterId, worldCatalogNodeId)
       setNodes(prev => [...prev, created])
       setSynthesis(prev => prev.map(s => s.domain === created.domain ? { ...s, is_stale: true } : s))
+      setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return created
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error adding node from world catalog')
@@ -200,12 +211,23 @@ export function useCharacterGraph(characterId: number) {
         if (exists) return prev.map(s => s.domain === result.domain ? result : s)
         return [...prev, result]
       })
+      setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return result
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error regenerating synthesis')
       return null
     } finally {
       setSynthesisLoading(null)
+    }
+  }, [characterId])
+
+  const regenerateSoul = useCallback(async () => {
+    setSoulLoading(true)
+    try {
+      const result = await regenerateCharacterSoul(characterId)
+      setSoul(result)
+    } finally {
+      setSoulLoading(false)
     }
   }, [characterId])
 
@@ -218,10 +240,12 @@ export function useCharacterGraph(characterId: number) {
     nodes, edges, voiceRegister, chatMessages, characterName,
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
+    soul, soulLoading,
     // Actions
     loadGraph, addNode, editNode, removeNode, moveNode,
     addEdge, removeEdge, updateVoice, sendMessage, generateNodes,
     clearChat, toggleMode, setSelectedNodeId, setMode,
     loadSynthesis, addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
+    regenerateSoul,
   }
 }

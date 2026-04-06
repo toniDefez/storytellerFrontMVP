@@ -783,3 +783,27 @@ export function synthesizeDomain(characterId: number, domain: string) {
 export function getSynthesis(characterId: number) {
   return request<DomainSynthesis[]>(`/character/domain/synthesis?character_id=${characterId}`)
 }
+
+export interface CharacterSoul {
+  instructions: string[]
+  is_stale: boolean
+  generated_at: string
+}
+
+export async function getCharacterSoul(characterId: number): Promise<CharacterSoul | null> {
+  const res = await fetch(`${API_URL}/character/soul?character_id=${characterId}`, {
+    headers: authHeaders(),
+  })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error('Failed to fetch soul')
+  return res.json()
+}
+
+export async function regenerateCharacterSoul(characterId: number): Promise<CharacterSoul> {
+  const res = await fetch(`${API_URL}/character/soul/regenerate?character_id=${characterId}`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to regenerate soul')
+  return res.json()
+}
