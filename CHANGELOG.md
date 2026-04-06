@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.18.2...v1.19.0) (2026-04-06)
+
+
+### Features
+
+* **character:** redesign graph canvas with orbital nodes and catalog drawer ([f82392f](https://github.com/toniDefez/storytellerFrontMVP/commit/f82392f5b3802302700f116ed3f75d59268ebefb))
+
 ## [1.18.2](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.18.1...v1.18.2) (2026-04-03)
 
 
