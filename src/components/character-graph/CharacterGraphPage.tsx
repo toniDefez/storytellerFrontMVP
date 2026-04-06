@@ -5,6 +5,7 @@ import { CharacterGraphCanvas } from './CharacterGraphCanvas'
 import { CharacterChatPanel } from './CharacterChatPanel'
 import { GraphMinimap } from './GraphMinimap'
 import { CharacterNodeForm } from './CharacterNodeForm'
+import { CatalogDrawer } from './CatalogDrawer'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import type { CharacterNode, CharacterNodeDomain } from '@/services/api'
 
@@ -14,19 +15,22 @@ interface Props {
   onDelete?: () => void
 }
 
-export function CharacterGraphPage({ characterId, onDelete }: Props) {
+export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
   const {
     nodes, voiceRegister, chatMessages, characterName,
     mode, selectedNodeId, loading, chatLoading, generating, error,
+    synthesis, synthesisLoading,
     loadGraph, addNode, editNode, removeNode,
     updateVoice, sendMessage, generateNodes, clearChat,
     toggleMode, setSelectedNodeId,
+    addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
   } = useCharacterGraph(characterId)
 
   const [showNodeForm, setShowNodeForm] = useState(false)
   const [editingNode, setEditingNode] = useState<CharacterNode | undefined>()
   const [newNodeDomain, setNewNodeDomain] = useState<CharacterNodeDomain | undefined>()
   const [premise, setPremise] = useState('')
+  const [selectedContainer, setSelectedContainer] = useState<CharacterNodeDomain | null>(null)
 
   useEffect(() => { loadGraph() }, [loadGraph])
 
@@ -45,11 +49,24 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
     }
   }
 
-  const handleSelectStage = (domain: CharacterNodeDomain) => {
-    // Open form to create a node for this stage
-    setEditingNode(undefined)
-    setNewNodeDomain(domain)
-    setShowNodeForm(true)
+  const handleContainerClick = (domain: CharacterNodeDomain) => {
+    setSelectedContainer(domain)
+  }
+
+  const handleCloseDrawer = () => {
+    setSelectedContainer(null)
+  }
+
+  const handleAddFromCatalog = async (catalogNodeId: number) => {
+    await addFromCatalog(catalogNodeId)
+  }
+
+  const handleAddFromWorldCatalog = async (worldCatalogNodeId: number) => {
+    await addFromWorldCatalog(worldCatalogNodeId)
+  }
+
+  const handleRegenerateSynthesis = (domain: CharacterNodeDomain) => {
+    regenerateSynthesis(domain)
   }
 
   const handleSaveNode = async (data: Omit<CharacterNode, 'id'>) => {
@@ -86,12 +103,12 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
           Definir personaje
         </p>
         <p className="text-sm text-muted-foreground/60 mb-4 text-center">
-          Escribe una premisa para generar el flujo de decisión de <strong>{characterName}</strong>
+          Escribe una premisa para generar el flujo de decision de <strong>{characterName}</strong>
         </p>
         <textarea
           value={premise}
           onChange={e => setPremise(e.target.value)}
-          placeholder="Una excavadora que descubrió que el Acuífero es un mito..."
+          placeholder="Una excavadora que descubrio que el Acuifero es un mito..."
           rows={3}
           className="w-full border-2 border-dashed border-amber-400/25 rounded-xl px-4 py-3
                      text-sm font-display italic text-foreground/80
@@ -107,7 +124,7 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
                      transition-all duration-200"
         >
           <Sparkles className="w-4 h-4" />
-          Generar flujo de decisión
+          Generar flujo de decision
         </button>
         {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
       </div>
@@ -164,8 +181,11 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
             <CharacterGraphCanvas
               nodes={nodes}
               selectedNodeId={selectedNodeId}
+              synthesis={synthesis}
+              synthesisLoading={synthesisLoading}
               onSelectNode={handleSelectNode}
-              onSelectStage={handleSelectStage}
+              onContainerClick={handleContainerClick}
+              onRegenerateSynthesis={handleRegenerateSynthesis}
             />
             {/* Node form — centered below pipeline */}
             {showNodeForm && (
@@ -181,6 +201,16 @@ export function CharacterGraphPage({ characterId, onDelete }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Catalog drawer */}
+            <CatalogDrawer
+              open={selectedContainer !== null}
+              domain={selectedContainer}
+              worldId={worldId}
+              onClose={handleCloseDrawer}
+              onAddFromCatalog={handleAddFromCatalog}
+              onAddFromWorldCatalog={handleAddFromWorldCatalog}
+            />
           </div>
         )}
 

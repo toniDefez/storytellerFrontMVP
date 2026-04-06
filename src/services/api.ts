@@ -705,3 +705,81 @@ export function createWorldFromSeed(seedId: number, name: string, premise: strin
     body: JSON.stringify({ seed_id: seedId, name, premise }),
   })
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Character Node Catalog
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface CatalogNode {
+  id: number
+  domain: CharacterNodeDomain
+  label: string
+  description: string
+  salience: 'high' | 'medium' | 'low'
+  sort_order: number
+}
+
+export interface WorldCatalogNode {
+  id: number
+  world_id: number
+  domain: CharacterNodeDomain
+  label: string
+  description: string
+  salience: 'high' | 'medium' | 'low'
+  source: 'manual' | 'ai_suggested'
+}
+
+export interface DomainSynthesis {
+  character_id: number
+  domain: CharacterNodeDomain
+  synthesis: string
+  is_stale: boolean
+}
+
+export function getCatalog(domain?: string) {
+  const qs = domain ? `?domain=${domain}` : ''
+  return request<CatalogNode[]>(`/character/catalog${qs}`)
+}
+
+export function getWorldCatalog(worldId: number, domain?: string) {
+  const qs = domain ? `&domain=${domain}` : ''
+  return request<WorldCatalogNode[]>(`/character/world-catalog?world_id=${worldId}${qs}`)
+}
+
+export function createWorldCatalogNode(data: {
+  world_id: number
+  domain: CharacterNodeDomain
+  label: string
+  description: string
+  salience: 'high' | 'medium' | 'low'
+}) {
+  return request<WorldCatalogNode>('/character/world-catalog', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function addNodeFromCatalog(characterId: number, catalogNodeId: number) {
+  return request<CharacterNode>(`/character/nodes/from-catalog?character_id=${characterId}`, {
+    method: 'POST',
+    body: JSON.stringify({ catalog_node_id: catalogNodeId }),
+  })
+}
+
+export function addNodeFromWorldCatalog(characterId: number, worldCatalogNodeId: number) {
+  return request<CharacterNode>(`/character/nodes/from-world-catalog?character_id=${characterId}`, {
+    method: 'POST',
+    body: JSON.stringify({ world_catalog_node_id: worldCatalogNodeId }),
+  })
+}
+
+export function synthesizeDomain(characterId: number, domain: string) {
+  return request<DomainSynthesis>(`/character/synthesize?character_id=${characterId}`, {
+    method: 'POST',
+    body: JSON.stringify({ domain }),
+  })
+}
+
+export function getSynthesis(characterId: number) {
+  return request<DomainSynthesis[]>(`/character/synthesis?character_id=${characterId}`)
+}
