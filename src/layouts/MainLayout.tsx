@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Globe, Settings, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const NAV_ITEM_DEFS = [
   { to: '/worlds', labelKey: 'nav.worlds', Icon: Globe },
@@ -72,8 +73,11 @@ function Sidebar({ onLogout, collapsed, onToggle }: {
       {/* Nav — contextual */}
       <SidebarNav collapsed={collapsed} />
 
-      {/* Toggle */}
-      <div className="px-3 pb-2">
+      {/* Theme + Toggle */}
+      <div className="px-3 pb-2 space-y-1">
+        <div className={`flex ${collapsed ? 'justify-center' : 'px-2'}`}>
+          <ThemeToggle />
+        </div>
         <button
           onClick={onToggle}
           className="hidden md:flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-[#5a4a72] hover:text-[#8a7a9e] hover:bg-white/[0.04] rounded-sm transition-all duration-150"

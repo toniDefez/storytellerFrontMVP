@@ -76,6 +76,33 @@
     --chart-5: 0 84% 60%;
   }
 
+  .dark {
+    --background: 24 10% 10%;
+    --foreground: 35 15% 88%;
+    --card: 24 10% 12%;
+    --card-foreground: 35 15% 88%;
+    --popover: 24 10% 12%;
+    --popover-foreground: 35 15% 88%;
+    --primary: 5 47% 45%;
+    --primary-foreground: 35 15% 95%;
+    --secondary: 24 8% 18%;
+    --secondary-foreground: 35 12% 72%;
+    --muted: 24 8% 18%;
+    --muted-foreground: 30 8% 55%;
+    --accent: 24 10% 16%;
+    --accent-foreground: 5 47% 55%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 24 8% 20%;
+    --input: 24 8% 20%;
+    --ring: 5 47% 45%;
+    --chart-1: 5 47% 45%;
+    --chart-2: 180 45% 38%;
+    --chart-3: 17 55% 48%;
+    --chart-4: 260 35% 52%;
+    --chart-5: 0 72% 55%;
+  }
+
   * {
     @apply border-border;
   }
@@ -109,6 +136,10 @@ html, body, #root {
   outline-offset: 2px;
 }
 
+.dark :focus-visible {
+  outline-color: #c47a6e;
+}
+
 /* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -125,11 +156,22 @@ html, body, #root {
   background-size: 24px 24px;
 }
 
+.dark .vellum-texture {
+  background-image: radial-gradient(circle, hsl(24 10% 18% / 0.5) 0.5px, transparent 0.5px);
+}
+
 .shadow-ambient {
   box-shadow:
     0 0 0 1px rgba(27, 28, 26, 0.04),
     0 2px 6px rgba(27, 28, 26, 0.05),
     0 8px 24px rgba(27, 28, 26, 0.04);
+}
+
+.dark .shadow-ambient {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .shadow-ambient-hover {
@@ -139,12 +181,23 @@ html, body, #root {
     0 16px 40px rgba(27, 28, 26, 0.06);
 }
 
+.dark .shadow-ambient-hover {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    0 16px 40px rgba(0, 0, 0, 0.16);
+}
+
 .prose-literary {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 300;
   line-height: 1.75;
   color: hsl(30 8% 28%);
+}
+
+.dark .prose-literary {
+  color: hsl(35 12% 72%);
 }
 
 .prose-drop-cap::first-letter {

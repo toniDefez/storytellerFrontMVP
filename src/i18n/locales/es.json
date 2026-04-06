@@ -35,7 +35,12 @@
     "language": "Idioma",
     "languageHint": "Selecciona el idioma de la interfaz",
     "languageEs": "Español",
-    "languageEn": "English"
+    "languageEn": "English",
+    "appearance": "Apariencia",
+    "appearanceHint": "Elige el tema visual de la interfaz",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro",
+    "themeSystem": "Sistema"
   },
   "auth": {
     "welcomeTitle": "Bienvenido",

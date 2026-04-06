@@ -35,7 +35,12 @@
     "language": "Language",
     "languageHint": "Select the interface language",
     "languageEs": "Español",
-    "languageEn": "English"
+    "languageEn": "English",
+    "appearance": "Appearance",
+    "appearanceHint": "Choose the visual theme for the interface",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System"
   },
   "auth": {
     "welcomeTitle": "Welcome",
