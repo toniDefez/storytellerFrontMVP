@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Network, MessageCircle, Sparkles, Trash2 } from 'lucide-react'
+import { Network, MessageCircle, Sparkles, Trash2, X } from 'lucide-react'
 import { useCharacterGraph } from './useCharacterGraph'
-import { CharacterGraphCanvas } from './CharacterGraphCanvas'
+import { CharacterGraphCanvas, type ContextMenuEvent } from './CharacterGraphCanvas'
 import { CharacterChatPanel } from './CharacterChatPanel'
 import { GraphMinimap } from './GraphMinimap'
-import { CharacterNodeForm } from './CharacterNodeForm'
 import { CatalogDrawer } from './CatalogDrawer'
+import { ContainerContextMenu, OrbitalContextMenu } from './CharacterContextMenu'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import type { CharacterNode, CharacterNodeDomain } from '@/services/api'
 
@@ -26,11 +26,10 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
   } = useCharacterGraph(characterId)
 
-  const [showNodeForm, setShowNodeForm] = useState(false)
-  const [editingNode, setEditingNode] = useState<CharacterNode | undefined>()
-  const [newNodeDomain, setNewNodeDomain] = useState<CharacterNodeDomain | undefined>()
+  const [selectedNode, setSelectedNode] = useState<CharacterNode | undefined>()
   const [premise, setPremise] = useState('')
   const [selectedContainer, setSelectedContainer] = useState<CharacterNodeDomain | null>(null)
+  const [contextMenu, setContextMenu] = useState<ContextMenuEvent | null>(null)
 
   useEffect(() => { loadGraph() }, [loadGraph])
 
@@ -38,19 +37,17 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     setSelectedNodeId(id)
     if (id) {
       const node = nodes.find(n => n.id === id)
-      if (node) {
-        setEditingNode(node)
-        setNewNodeDomain(undefined)
-        setShowNodeForm(true)
-      }
+      setSelectedNode(node)
+      setSelectedContainer(null) // close catalog if open
     } else {
-      setEditingNode(undefined)
-      setShowNodeForm(false)
+      setSelectedNode(undefined)
     }
   }
 
   const handleContainerClick = (domain: CharacterNodeDomain) => {
     setSelectedContainer(domain)
+    setSelectedNode(undefined) // close detail if open
+    setSelectedNodeId(null)
   }
 
   const handleCloseDrawer = () => {
@@ -69,20 +66,20 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     regenerateSynthesis(domain)
   }
 
-  const handleSaveNode = async (data: Omit<CharacterNode, 'id'>) => {
-    if (editingNode) {
-      await editNode(editingNode.id, data)
-    } else {
-      await addNode(data)
-    }
-    setShowNodeForm(false)
-    setEditingNode(undefined)
-    setNewNodeDomain(undefined)
+  const handleRemoveNode = async (id: number) => {
+    await removeNode(id)
+    setSelectedNode(undefined)
+    setSelectedNodeId(null)
   }
 
+  const handleContextMenu = (event: ContextMenuEvent) => {
+    setContextMenu(event)
+  }
+
+  const closeContextMenu = () => setContextMenu(null)
+
   const handleHarvest = async () => {
-    setEditingNode(undefined)
-    setShowNodeForm(true)
+    // TODO: harvest from chat — open catalog for the relevant domain
   }
 
   const handleGenerate = async () => {
@@ -177,27 +174,68 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
       {/* Content */}
       <div className="flex-1 relative overflow-hidden">
         {mode === 'graph' && (
-          <div className="absolute inset-0">
-            <CharacterGraphCanvas
-              nodes={nodes}
-              selectedNodeId={selectedNodeId}
-              synthesis={synthesis}
-              synthesisLoading={synthesisLoading}
-              onSelectNode={handleSelectNode}
-              onContainerClick={handleContainerClick}
-              onRegenerateSynthesis={handleRegenerateSynthesis}
-            />
-            {/* Node form — centered below pipeline */}
-            {showNodeForm && (
-              <div className="absolute bottom-0 left-0 right-0 flex justify-center p-4 z-10 bg-gradient-to-t from-[hsl(40_20%_97%)] via-[hsl(40_20%_97%/0.95)] to-transparent pt-8">
-                <div className="w-full max-w-md">
-                  <CharacterNodeForm
-                    node={editingNode}
-                    defaultDomain={newNodeDomain}
-                    onSave={handleSaveNode}
-                    onDelete={editingNode ? () => { removeNode(editingNode.id); setShowNodeForm(false) } : undefined}
-                    onCancel={() => { setShowNodeForm(false); setEditingNode(undefined); setNewNodeDomain(undefined) }}
-                  />
+          <div className="absolute inset-0 flex">
+            {/* Canvas */}
+            <div className="flex-1 relative">
+              <CharacterGraphCanvas
+                nodes={nodes}
+                selectedNodeId={selectedNodeId}
+                synthesis={synthesis}
+                synthesisLoading={synthesisLoading}
+                onSelectNode={handleSelectNode}
+                onContainerClick={handleContainerClick}
+                onRegenerateSynthesis={handleRegenerateSynthesis}
+                onContextMenu={handleContextMenu}
+              />
+            </div>
+
+            {/* Right panel — node detail */}
+            {selectedNode && (
+              <div className="w-[320px] border-l border-border/30 bg-background overflow-y-auto shrink-0">
+                <div className="px-4 py-3 border-b border-border/20 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">
+                    Detalle
+                  </span>
+                  <button
+                    onClick={() => { setSelectedNode(undefined); setSelectedNodeId(null) }}
+                    className="p-1 rounded hover:bg-muted/30 text-muted-foreground/40 hover:text-foreground transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="px-4 py-4 space-y-4">
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Dominio</p>
+                    <span className="text-xs font-medium text-foreground/80 capitalize">{selectedNode.domain}</span>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Label</p>
+                    <p className="text-sm font-semibold text-foreground">{selectedNode.label}</p>
+                  </div>
+                  {selectedNode.description && (
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Descripcion</p>
+                      <p className="text-xs text-foreground/70 leading-relaxed">{selectedNode.description}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Saliencia</p>
+                    <span className="text-xs text-foreground/60 capitalize">{selectedNode.salience || 'medium'}</span>
+                  </div>
+                  {selectedNode.arc_destination && (
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Destino del arco</p>
+                      <p className="text-xs text-foreground/70 italic">{selectedNode.arc_destination}</p>
+                    </div>
+                  )}
+                  <div className="pt-3 border-t border-border/20">
+                    <button
+                      onClick={() => handleRemoveNode(selectedNode.id)}
+                      className="w-full px-3 py-2 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 border border-red-200 transition-colors"
+                    >
+                      Quitar del personaje
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -211,6 +249,36 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
               onAddFromCatalog={handleAddFromCatalog}
               onAddFromWorldCatalog={handleAddFromWorldCatalog}
             />
+
+            {/* Context menus */}
+            {contextMenu?.type === 'container' && contextMenu.domain && (
+              <ContainerContextMenu
+                x={contextMenu.x}
+                y={contextMenu.y}
+                domainLabel={contextMenu.domainLabel || ''}
+                hasNodes={contextMenu.hasNodes || false}
+                isStale={contextMenu.isStale || false}
+                onOpenCatalog={() => handleContainerClick(contextMenu.domain!)}
+                onRegenerate={() => handleRegenerateSynthesis(contextMenu.domain!)}
+                onClose={closeContextMenu}
+              />
+            )}
+            {contextMenu?.type === 'orbital' && contextMenu.nodeId && (
+              <OrbitalContextMenu
+                x={contextMenu.x}
+                y={contextMenu.y}
+                nodeLabel={contextMenu.nodeLabel || ''}
+                onViewDetail={() => {
+                  handleSelectNode(contextMenu.nodeId!)
+                  closeContextMenu()
+                }}
+                onRemove={() => {
+                  handleRemoveNode(contextMenu.nodeId!)
+                  closeContextMenu()
+                }}
+                onClose={closeContextMenu}
+              />
+            )}
           </div>
         )}
 

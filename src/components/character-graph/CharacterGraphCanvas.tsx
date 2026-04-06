@@ -33,13 +33,13 @@ const ALL_CONTAINERS: ContainerMeta[] = [
   { domain: 'mask',   label: 'MASCARAS',  subtitle: '¿Que muestra?',      color: '#10B981', bg: '#ecfdf5' },
 ]
 
-// Snake layout positions
+// Vertical flow — top to bottom, orbitals to the right
 const CONTAINER_POSITIONS: Record<string, { x: number; y: number }> = {
-  origin: { x: 50,  y: 80 },
-  fear:   { x: 350, y: 80 },
-  drive:  { x: 650, y: 80 },
-  bond:   { x: 650, y: 420 },
-  mask:   { x: 50,  y: 420 },
+  origin: { x: 100, y: 60 },
+  fear:   { x: 100, y: 430 },
+  drive:  { x: 100, y: 800 },
+  bond:   { x: 100, y: 1170 },
+  mask:   { x: 100, y: 1540 },
 }
 
 const CONTAINER_WIDTH = 250
@@ -105,7 +105,7 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
 
   return (
     <div
-      className="rounded-xl overflow-hidden transition-all duration-300"
+      className="rounded-xl overflow-hidden transition-all duration-300 cursor-pointer"
       style={{
         width: CONTAINER_WIDTH,
         height: CONTAINER_HEIGHT,
@@ -117,6 +117,7 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
           : `2px solid ${data.color}35`,
         opacity: isEmpty ? 0.5 : 1,
       }}
+      onClick={handleClick}
     >
       {/* Header */}
       <div
@@ -163,10 +164,11 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
 
       {/* Body */}
       <div
-        className="nopan nodrag px-3 py-2 overflow-y-auto"
+        className="nopan nodrag px-3 py-2 overflow-y-auto cursor-pointer"
         style={{ height: CONTAINER_HEIGHT - 44 - (isStale && !isLoading ? 32 : 0) }}
         onPointerDown={e => e.stopPropagation()}
         onMouseDown={e => e.stopPropagation()}
+        onClick={handleClick}
       >
         {isLoading ? (
           <div className="space-y-2 animate-pulse">
@@ -230,7 +232,7 @@ function OrbitalNode({ data }: NodeProps<Node<OrbitalData>>) {
 
   return (
     <div
-      className="nopan nodrag cursor-pointer flex items-center justify-center rounded-full transition-all duration-150 hover:scale-110"
+      className="cursor-pointer flex items-center justify-center rounded-full transition-all duration-150 hover:scale-110"
       style={{
         width: size,
         height: size,
@@ -240,9 +242,7 @@ function OrbitalNode({ data }: NodeProps<Node<OrbitalData>>) {
           : `0 2px 8px ${data.color}40`,
         color: 'white',
       }}
-      onPointerDown={e => e.stopPropagation()}
-      onMouseDown={e => e.stopPropagation()}
-      onClick={(e) => { e.stopPropagation(); data.onSelect(data.nodeId) }}
+      onClick={(e) => { e.stopPropagation(); data.onSelect(data.nodeId as number) }}
     >
       <span
         className="font-semibold leading-tight text-center overflow-hidden text-ellipsis px-0.5"
@@ -279,26 +279,21 @@ function getOrbitalPositions(
 ): { x: number; y: number }[] {
   if (count === 0) return []
 
-  const centerX = containerX + CONTAINER_WIDTH / 2
-  const radius = ORBITAL_RADIUS
+  const baseX = containerX + CONTAINER_WIDTH + 40
+  const centerY = containerY + CONTAINER_HEIGHT / 2
 
   if (count === 1) {
-    return [{ x: centerX, y: containerY - radius }]
+    return [{ x: baseX + 60, y: centerY }]
   }
 
-  // Spread from 30 to 150 degrees (arc above container)
-  const totalSpread = Math.min(120, 30 + count * 25)
-  const startAngle = 90 - totalSpread / 2
-  const step = count > 1 ? totalSpread / (count - 1) : 0
+  // Spread vertically alongside the container
+  const spacing = Math.min(65, (CONTAINER_HEIGHT - 20) / (count - 1))
+  const startY = centerY - (count - 1) * spacing / 2
 
-  return Array.from({ length: count }, (_, i) => {
-    const angleDeg = startAngle + i * step
-    const angleRad = (angleDeg * Math.PI) / 180
-    return {
-      x: centerX + radius * Math.cos(angleRad),
-      y: containerY - radius * Math.sin(angleRad),
-    }
-  })
+  return Array.from({ length: count }, (_, i) => ({
+    x: baseX + 50 + (i % 2 === 0 ? 0 : 35),
+    y: startY + i * spacing,
+  }))
 }
 
 /* ── Build ReactFlow elements ──────────────────────────────────── */
@@ -319,7 +314,7 @@ function buildElements(
   nodes.push({
     id: 'label-entry',
     type: 'label',
-    position: { x: 50, y: 56 },
+    position: { x: 50, y: 176 },
     draggable: false,
     selectable: false,
     data: { text: '<- estimulo externo' },
@@ -327,7 +322,7 @@ function buildElements(
   nodes.push({
     id: 'label-exit',
     type: 'label',
-    position: { x: 50, y: 420 + CONTAINER_HEIGHT + 10 },
+    position: { x: 50, y: 600 + CONTAINER_HEIGHT + 10 },
     draggable: false,
     selectable: false,
     data: { text: 'reaccion al mundo ->' },
@@ -373,8 +368,8 @@ function buildElements(
         id: `node-${cn.id}`,
         type: 'child',
         position: { x: oPos.x - size / 2, y: oPos.y - size / 2 },
-        draggable: false,
-        selectable: false,
+        draggable: true,
+        selectable: true,
         data: {
           nodeId: cn.id,
           label: cn.label,
@@ -403,11 +398,12 @@ function buildElements(
   }
 
   // Flow edges — snake pattern with solid arrows
+  // Vertical flow: all arrows go bottom→top
   const flowPath = [
-    { from: 'origin', to: 'fear',  sourceHandle: undefined, targetHandle: undefined },
-    { from: 'fear',   to: 'drive', sourceHandle: undefined, targetHandle: undefined },
-    { from: 'drive',  to: 'bond',  sourceHandle: 'bottom',  targetHandle: 'top'    },
-    { from: 'bond',   to: 'mask',  sourceHandle: 'left',    targetHandle: 'right'  },
+    { from: 'origin', to: 'fear',  sourceHandle: 'bottom', targetHandle: 'top' },
+    { from: 'fear',   to: 'drive', sourceHandle: 'bottom', targetHandle: 'top' },
+    { from: 'drive',  to: 'bond',  sourceHandle: 'bottom', targetHandle: 'top' },
+    { from: 'bond',   to: 'mask',  sourceHandle: 'bottom', targetHandle: 'top' },
   ]
 
   for (const { from, to, sourceHandle, targetHandle } of flowPath) {
@@ -438,6 +434,20 @@ function buildElements(
 
 /* ── Main canvas component ─────────────────────────────────────── */
 
+export interface ContextMenuEvent {
+  type: 'container' | 'orbital'
+  x: number
+  y: number
+  // Container fields
+  domain?: CharacterNodeDomain
+  domainLabel?: string
+  hasNodes?: boolean
+  isStale?: boolean
+  // Orbital fields
+  nodeId?: number
+  nodeLabel?: string
+}
+
 interface Props {
   nodes: CharacterNode[]
   selectedNodeId: number | null
@@ -446,6 +456,7 @@ interface Props {
   onSelectNode: (id: number | null) => void
   onContainerClick: (domain: CharacterNodeDomain) => void
   onRegenerateSynthesis: (domain: CharacterNodeDomain) => void
+  onContextMenu?: (event: ContextMenuEvent) => void
 }
 
 export function CharacterGraphCanvas({
@@ -456,6 +467,7 @@ export function CharacterGraphCanvas({
   onSelectNode,
   onContainerClick,
   onRegenerateSynthesis,
+  onContextMenu,
 }: Props) {
   const handleSelectNode = useCallback(
     (id: number) => onSelectNode(id === selectedNodeId ? null : id),
@@ -483,6 +495,51 @@ export function CharacterGraphCanvas({
 
   const handlePaneClick = useCallback(() => onSelectNode(null), [onSelectNode])
 
+  // ReactFlow-level click — works reliably unlike onClick inside custom nodes
+  const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    if (node.id.startsWith('container-')) {
+      const domain = node.id.replace('container-', '') as CharacterNodeDomain
+      onContainerClick(domain)
+    } else if (node.id.startsWith('node-')) {
+      const nodeId = parseInt(node.id.replace('node-', ''), 10)
+      if (!isNaN(nodeId)) handleSelectNode(nodeId)
+    }
+  }, [onContainerClick, handleSelectNode])
+
+  // Right-click context menu
+  const handleNodeContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
+    e.preventDefault()
+    if (!onContextMenu) return
+
+    if (node.id.startsWith('container-')) {
+      const domain = node.id.replace('container-', '') as CharacterNodeDomain
+      const meta = ALL_CONTAINERS.find(c => c.domain === domain)
+      const domainNodes = charNodes.filter(n => n.domain === domain)
+      const syn = synthesis.find(s => s.domain === domain)
+      onContextMenu({
+        type: 'container',
+        x: e.clientX,
+        y: e.clientY,
+        domain,
+        domainLabel: meta?.label || domain,
+        hasNodes: domainNodes.length > 0,
+        isStale: syn?.is_stale ?? false,
+      })
+    } else if (node.id.startsWith('node-')) {
+      const nodeId = parseInt(node.id.replace('node-', ''), 10)
+      const charNode = charNodes.find(n => n.id === nodeId)
+      if (charNode) {
+        onContextMenu({
+          type: 'orbital',
+          x: e.clientX,
+          y: e.clientY,
+          nodeId: charNode.id,
+          nodeLabel: charNode.label,
+        })
+      }
+    }
+  }, [onContextMenu, charNodes, synthesis])
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -490,8 +547,10 @@ export function CharacterGraphCanvas({
       onNodesChange={onNodesChange}
       nodeTypes={nodeTypes}
       onPaneClick={handlePaneClick}
+      onNodeClick={handleNodeClick}
+      onNodeContextMenu={handleNodeContextMenu}
       fitView
-      fitViewOptions={{ padding: 0.18 }}
+      fitViewOptions={{ padding: 0.12 }}
       minZoom={0.5}
       maxZoom={1.5}
       className="bg-[hsl(40_20%_97%)]"
