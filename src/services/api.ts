@@ -683,6 +683,53 @@ export function createWorldFromSeed(seedId: number, name: string, premise: strin
   })
 }
 
+// --- Character Profiles ---
+
+export interface ProfileTemplateBrief {
+  id: number
+  title: string
+  description: string
+  tags: string[]
+  node_count: number
+}
+
+export interface ProfileTemplate {
+  id: number
+  title: string
+  description: string
+  tags: string[]
+  nodes: CatalogNode[]
+}
+
+export interface CharacterPremiseAnalysis {
+  origen: string
+  deseo: string
+  conflicto: string
+  stakes: string
+}
+
+export function getCharacterProfiles() {
+  return request<ProfileTemplateBrief[]>('/character/profiles')
+}
+
+export function getCharacterProfile(id: number) {
+  return request<ProfileTemplate>(`/character/profile/get?id=${id}`)
+}
+
+export function refineCharacterPremise(premise: string) {
+  return request<{ analysis: CharacterPremiseAnalysis; premise: string }>('/character/refine-premise', {
+    method: 'POST',
+    body: JSON.stringify({ premise }),
+  })
+}
+
+export function applyCharacterProfile(characterId: number, profileId: number) {
+  return request<CharacterNode[]>('/character/apply-profile', {
+    method: 'POST',
+    body: JSON.stringify({ character_id: characterId, profile_id: profileId }),
+  })
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Character Node Catalog
 // ────────────────────────────────────────────────────────────────────────────
