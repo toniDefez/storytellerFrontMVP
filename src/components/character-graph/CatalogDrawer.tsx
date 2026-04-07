@@ -18,8 +18,6 @@ const DOMAIN_META: Record<CharacterNodeDomain, { label: string; subtitle: string
   drive:   { label: 'Deseos',     subtitle: '¿Que persigue?',      color: '#F59E0B' },
   bond:    { label: 'Grietas',    subtitle: '¿Donde se rompe?',    color: '#8B5CF6' },
   mask:    { label: 'Mascaras',   subtitle: '¿Que muestra?',       color: '#10B981' },
-  tension: { label: 'Tensiones',  subtitle: '¿Que le divide?',     color: '#EC4899' },
-  belief:  { label: 'Creencias',  subtitle: '¿Que cree?',          color: '#6366F1' },
 }
 
 const SALIENCE_DOT: Record<string, string> = {

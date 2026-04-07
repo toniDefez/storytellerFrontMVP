@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
-import type { CharacterNode, CharacterEdge, VoiceRegister, ChatMessage, DomainSynthesis, CharacterSoul } from '@/services/api'
+import type { CharacterNode, VoiceRegister, ChatMessage, DomainSynthesis, CharacterSoul } from '@/services/api'
 import {
   getCharacterGraph, getCharacterById, getCharacterChatHistory,
   createCharacterNode, updateCharacterNode, deleteCharacterNode, updateNodePosition,
-  createCharacterEdge, deleteCharacterEdge,
+
   updateVoiceRegister as apiUpdateVoiceRegister,
   generateCharacterNodes, characterChat,
   addNodeFromCatalog as apiAddFromCatalog,
@@ -18,7 +18,6 @@ export type CharacterGraphMode = 'graph' | 'talk'
 
 export function useCharacterGraph(characterId: number) {
   const [nodes, setNodes] = useState<CharacterNode[]>([])
-  const [edges, setEdges] = useState<CharacterEdge[]>([])
   const [voiceRegister, setVoiceRegister] = useState<VoiceRegister>({
     emotional_rhythm: '', social_posture: '', cognitive_tempo: '', expressive_style: '',
   })
@@ -46,7 +45,6 @@ export function useCharacterGraph(characterId: number) {
         getCharacterSoul(characterId).catch(() => null),
       ])
       setNodes(graph.nodes ?? [])
-      setEdges(graph.edges ?? [])
       setSynthesis(synth ?? [])
       setSoul(soulResult)
       setVoiceRegister(char.voice_register || { emotional_rhythm: '', social_posture: '', cognitive_tempo: '', expressive_style: '' })
@@ -84,7 +82,6 @@ export function useCharacterGraph(characterId: number) {
     try {
       await deleteCharacterNode(id)
       setNodes(prev => prev.filter(n => n.id !== id))
-      setEdges(prev => prev.filter(e => e.source_node_id !== id && e.target_node_id !== id))
       setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       if (selectedNodeId === id) setSelectedNodeId(null)
     } catch (err) {
@@ -98,26 +95,6 @@ export function useCharacterGraph(characterId: number) {
       await updateNodePosition(id, x, y)
     } catch {
       // silent — position is non-critical
-    }
-  }, [])
-
-  const addEdge = useCallback(async (edge: Omit<CharacterEdge, 'id'>) => {
-    try {
-      const created = await createCharacterEdge(characterId, edge)
-      setEdges(prev => [...prev, created])
-      return created
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error creating edge')
-      return null
-    }
-  }, [characterId])
-
-  const removeEdge = useCallback(async (id: number) => {
-    try {
-      await deleteCharacterEdge(id)
-      setEdges(prev => prev.filter(e => e.id !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error deleting edge')
     }
   }, [])
 
@@ -237,13 +214,13 @@ export function useCharacterGraph(characterId: number) {
 
   return {
     // State
-    nodes, edges, voiceRegister, chatMessages, characterName,
+    nodes, voiceRegister, chatMessages, characterName,
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
     // Actions
     loadGraph, addNode, editNode, removeNode, moveNode,
-    addEdge, removeEdge, updateVoice, sendMessage, generateNodes,
+    updateVoice, sendMessage, generateNodes,
     clearChat, toggleMode, setSelectedNodeId, setMode,
     loadSynthesis, addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
     regenerateSoul,

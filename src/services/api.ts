@@ -303,10 +303,8 @@ export interface Character {
 
 // --- Character Psychological Graph ---
 
-export type CharacterNodeDomain = 'origin' | 'belief' | 'drive' | 'fear' | 'mask' | 'tension' | 'bond'
+export type CharacterNodeDomain = 'origin' | 'drive' | 'fear' | 'mask' | 'bond'
 export type CharacterNodeRole = 'trait' | 'wound' | 'arc_seed'
-export type CharacterEdgeType = 'forged_by' | 'masks' | 'contradicts' | 'fuels' | 'constrains' | 'costs' | 'evolved_from' | 'could_resolve'
-
 export interface CharacterNode {
   id: number
   domain: CharacterNodeDomain
@@ -319,16 +317,8 @@ export interface CharacterNode {
   canvas_y: number
 }
 
-export interface CharacterEdge {
-  id: number
-  source_node_id: number
-  target_node_id: number
-  edge_type: CharacterEdgeType
-}
-
 export interface CharacterGraph {
   nodes: CharacterNode[]
-  edges: CharacterEdge[]
 }
 
 export interface VoiceRegister {
@@ -419,19 +409,6 @@ export function updateNodePosition(nodeId: number, x: number, y: number) {
   return request<void>(`/character/nodes/position?node_id=${nodeId}`, {
     method: 'PUT',
     body: JSON.stringify({ canvas_x: x, canvas_y: y }),
-  })
-}
-
-export function createCharacterEdge(characterId: number, edge: Omit<CharacterEdge, 'id'>) {
-  return request<CharacterEdge>(`/character/edges?character_id=${characterId}`, {
-    method: 'POST',
-    body: JSON.stringify(edge),
-  })
-}
-
-export function deleteCharacterEdge(edgeId: number) {
-  return request<void>(`/character/edges/delete?edge_id=${edgeId}`, {
-    method: 'DELETE',
   })
 }
 
