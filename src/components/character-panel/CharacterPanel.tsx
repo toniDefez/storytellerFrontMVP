@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter } from '@/services/api'
+import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise, applyCharacterProfile } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
-import { Users, Sparkles } from 'lucide-react'
+import { CharacterProfilePicker } from './CharacterProfilePicker'
+import { Users, Sparkles, RefreshCw } from 'lucide-react'
 
 interface Props {
   worldId: number
@@ -22,6 +23,8 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   const [premise, setPremise] = useState('')
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
+  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null)
+  const [refining, setRefining] = useState(false)
 
   useEffect(() => {
     if (characterBriefs.length === 0) {
@@ -56,7 +59,21 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     setSelectedId(null)
     setPremise('')
     setError('')
+    setSelectedProfileId(null)
     setMode('new')
+  }
+
+  const handleRefine = async () => {
+    if (!premise.trim()) return
+    setRefining(true)
+    try {
+      const result = await refineCharacterPremise(premise.trim())
+      setPremise(result.premise)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al refinar')
+    } finally {
+      setRefining(false)
+    }
   }
 
   const handleDerive = async () => {
@@ -64,7 +81,6 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     setGenerating(true)
     setError('')
     try {
-      // 1. Create minimal character in DB
       const result = await createCharacter({
         name: premise.trim().slice(0, 50),
         role: '',
@@ -76,10 +92,14 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         premise: premise.trim(),
       })
 
-      // 2. Generate nodes for this character
+      // Apply profile nodes if selected
+      if (selectedProfileId) {
+        await applyCharacterProfile(result.id, selectedProfileId)
+      }
+
+      // Generate additional nodes from premise
       await generateCharacterNodes(result.id, premise.trim())
 
-      // 3. Load and show
       const newChar = await getCharacterById(result.id)
       setCharacters(prev => [...prev, newChar])
       setSelectedId(result.id)
@@ -112,25 +132,50 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         )}
 
         {mode === 'new' && !generating && (
-          <div className="flex flex-col items-center justify-center h-full px-8 max-w-xl mx-auto">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600/60 mb-6">
+          <div className="flex flex-col items-center justify-center h-full px-8 max-w-xl mx-auto gap-6">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600/60">
               Nuevo personaje
             </p>
-            <textarea
-              value={premise}
-              onChange={e => setPremise(e.target.value)}
-              placeholder="Una excavadora que descubrio que el Acuifero es un mito..."
-              rows={3}
-              className="w-full border-2 border-dashed border-amber-400/25 rounded-xl px-4 py-3
-                         text-sm font-display italic text-foreground/80
-                         placeholder:text-foreground/20 resize-none
-                         focus:outline-none focus:border-amber-400/50 bg-transparent"
-            />
-            {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
+
+            {/* Premise + refine */}
+            <div className="w-full space-y-2">
+              <textarea
+                value={premise}
+                onChange={e => setPremise(e.target.value)}
+                placeholder="Una excavadora que descubrio que el Acuifero es un mito..."
+                rows={3}
+                className="w-full border-2 border-dashed border-amber-400/25 rounded-xl px-4 py-3
+                           text-sm font-display italic text-foreground/80
+                           placeholder:text-foreground/20 resize-none
+                           focus:outline-none focus:border-amber-400/50 bg-transparent"
+              />
+              {premise.trim().length > 10 && (
+                <button
+                  onClick={handleRefine}
+                  disabled={refining}
+                  className="flex items-center gap-1.5 text-[11px] text-amber-600/60 hover:text-amber-600
+                             disabled:opacity-40 transition-colors"
+                >
+                  <RefreshCw className={`w-3 h-3 ${refining ? 'animate-spin' : ''}`} />
+                  {refining ? 'Refinando...' : 'Refinar premisa'}
+                </button>
+              )}
+            </div>
+
+            {/* Profile picker */}
+            <div className="w-full">
+              <CharacterProfilePicker
+                selectedId={selectedProfileId}
+                onSelect={setSelectedProfileId}
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-500">{error}</p>}
+
             <button
               onClick={handleDerive}
               disabled={!premise.trim()}
-              className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
                          bg-gradient-to-r from-amber-600 to-orange-500 text-white font-medium text-sm
                          disabled:opacity-40 hover:shadow-lg hover:shadow-amber-500/20
                          transition-all duration-200"
