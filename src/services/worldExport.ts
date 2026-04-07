@@ -28,8 +28,6 @@ export interface StoryTellerExport {
       premise?: string
       social_position?: string
       internal_contradiction?: string
-      relation_to_collective_lie?: string
-      personal_fear?: string
       faction_affiliation?: string
     }>
     scenes: Array<{
@@ -117,8 +115,6 @@ export async function exportWorld(worldId: number): Promise<void> {
         ...(c.premise && { premise: c.premise }),
         ...(c.social_position && { social_position: c.social_position }),
         ...(c.internal_contradiction && { internal_contradiction: c.internal_contradiction }),
-        ...(c.relation_to_collective_lie && { relation_to_collective_lie: c.relation_to_collective_lie }),
-        ...(c.personal_fear && { personal_fear: c.personal_fear }),
         ...(c.faction_affiliation && { faction_affiliation: c.faction_affiliation }),
       })),
       scenes: scenesWithEvents.map(({ scene, events }) => ({
@@ -179,12 +175,9 @@ export async function importWorld(data: StoryTellerExport): Promise<ImportResult
             background: c.background,
             goals: c.goals ?? [],
             world_id: worldId,
-            state: {},
             ...(c.premise && { premise: c.premise }),
             ...(c.social_position && { social_position: c.social_position }),
             ...(c.internal_contradiction && { internal_contradiction: c.internal_contradiction }),
-            ...(c.relation_to_collective_lie && { relation_to_collective_lie: c.relation_to_collective_lie }),
-            ...(c.personal_fear && { personal_fear: c.personal_fear }),
             ...(c.faction_affiliation && { faction_affiliation: c.faction_affiliation }),
           }),
         ),

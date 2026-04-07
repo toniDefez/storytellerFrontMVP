@@ -268,14 +268,6 @@ export function deleteSubtree(worldId: number, nodeId: number) {
 // --- World Detail ---
 
 export type ConsciousnessState = 'dormido' | 'inquieto' | 'despierto' | 'explotador' | 'subversivo'
-export type FactionPowerTier   = 0 | 1 | 2
-export type GoalCategory       = 'world_tension' | 'subversive' | 'personal'
-
-export interface StructuredGoal {
-  text: string
-  category: GoalCategory
-}
-
 export interface Character {
   id: number
   name: string
@@ -284,20 +276,13 @@ export interface Character {
   background: string
   goals: string[]
   world_id: number
-  state: Record<string, string>
   // prose derivation fields
   premise?: string
   social_position?: string
   internal_contradiction?: string
-  relation_to_collective_lie?: string
-  personal_fear?: string
   faction_affiliation?: string
-  // structured fields powering visualizations directly (no heuristics)
+  // structured fields
   consciousness_state?: ConsciousnessState
-  faction_power_tier?: FactionPowerTier
-  contradiction_declared?: string
-  contradiction_operative?: string
-  structured_goals?: StructuredGoal[]
   voice_register?: VoiceRegister
 }
 
