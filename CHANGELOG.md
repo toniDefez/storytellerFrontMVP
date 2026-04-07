@@ -1,3 +1,11 @@
+# [1.21.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.20.0...v1.21.0) (2026-04-07)
+
+
+### Features
+
+* **character:** add CharacterProfilePicker and enrich creation flow ([1f55992](https://github.com/toniDefez/storytellerFrontMVP/commit/1f559924f5a9babb7425b0c7b5a38ddb2eac85da))
+* **frontend:** add character profile types and API functions ([4940504](https://github.com/toniDefez/storytellerFrontMVP/commit/4940504377d7ea0a8d7cb4632cc22717623e37c2))
+
 # [1.20.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.19.0...v1.20.0) (2026-04-07)
 
 
