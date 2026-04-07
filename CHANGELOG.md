@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.24.0...v1.25.0) (2026-04-07)
+
+
+### Features
+
+* **character:** make profile and premise-generation mutually exclusive ([f0ea0f7](https://github.com/toniDefez/storytellerFrontMVP/commit/f0ea0f7efba9ad4fe58142e19e95a1425467843c))
+
 # [1.24.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.23.0...v1.24.0) (2026-04-07)
 
 
