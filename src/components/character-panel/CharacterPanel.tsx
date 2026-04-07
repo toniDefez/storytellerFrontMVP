@@ -88,7 +88,6 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         background: '',
         goals: [],
         world_id: worldId,
-        state: {},
         premise: premise.trim(),
       })
 
