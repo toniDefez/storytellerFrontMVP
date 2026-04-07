@@ -708,6 +708,13 @@ export function refineCharacterPremise(premise: string) {
   })
 }
 
+export function createCharacterFromProfile(worldId: number, profileId: number, premise: string) {
+  return request<{ character_id: number }>('/character/create-from-profile', {
+    method: 'POST',
+    body: JSON.stringify({ world_id: worldId, profile_id: profileId, premise }),
+  })
+}
+
 export function applyCharacterProfile(characterId: number, profileId: number) {
   return request<CharacterNode[]>('/character/apply-profile', {
     method: 'POST',

@@ -14,6 +14,7 @@ import CreateScenePage from './pages/scenes/CreateScenePage'
 import EditScenePage from './pages/scenes/EditScenePage'
 import SceneDetailPage from './pages/scenes/SceneDetailPage'
 import SettingsPage from './pages/settings/SettingsPage'
+import CreateCharacterPage from './pages/characters/CreateCharacterPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <LoginPage />, errorElement: <ErrorPage /> },
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
           { path: 'worlds/:id', element: <WorldDetailPage /> },
           { path: 'worlds/:id/bible', element: <WorldBiblePage /> },
           { path: 'worlds/:id/edit', element: <EditWorldPage /> },
+          { path: 'worlds/:id/characters/create', element: <CreateCharacterPage /> },
           { path: 'worlds/:id/scenes/create', element: <CreateScenePage /> },
           { path: 'worlds/:worldId/scenes/:sceneId', element: <SceneDetailPage /> },
           { path: 'worlds/:worldId/scenes/:sceneId/edit', element: <EditScenePage /> },
