@@ -1,3 +1,19 @@
+# [1.20.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.19.0...v1.20.0) (2026-04-07)
+
+
+### Bug Fixes
+
+* **character:** align API URLs with backend, clean unused vars, add husky ([e332377](https://github.com/toniDefez/storytellerFrontMVP/commit/e33237790d82b31b9ab4524e201f759123c9bdb5))
+* **character:** enable regenerate always + add delete button in minimap nodes ([9467c94](https://github.com/toniDefez/storytellerFrontMVP/commit/9467c9425c742190954ef6fce0155286a782e6a6))
+
+
+### Features
+
+* add dark mode with warm literary palette + husky pre-commit lint ([dd91ae2](https://github.com/toniDefez/storytellerFrontMVP/commit/dd91ae20e287627ddac620571768d9e0856e4ff3))
+* add soul API integration and state management ([a2f01ce](https://github.com/toniDefez/storytellerFrontMVP/commit/a2f01ce2f65299229536008a431972db9a47aef2))
+* add soul UI indicators and regeneration button ([34830b7](https://github.com/toniDefez/storytellerFrontMVP/commit/34830b76dd8e6259aa6f6e8ef4b96a820d563841))
+* **character:** vertical layout, context menus, lateral detail panel ([ed928c0](https://github.com/toniDefez/storytellerFrontMVP/commit/ed928c0bb8d306d5d5eba66afb6acc5a170c4d0f))
+
 # [1.19.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.18.2...v1.19.0) (2026-04-06)
 
 
