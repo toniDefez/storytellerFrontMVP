@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.22.0...v1.23.0) (2026-04-07)
+
+
+### Features
+
+* **character:** redesign profile picker as card grid with motion ([0cb44d9](https://github.com/toniDefez/storytellerFrontMVP/commit/0cb44d9f51bea33b12bc340349a641816f447d68))
+
 # [1.22.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.21.1...v1.22.0) (2026-04-07)
 
 
