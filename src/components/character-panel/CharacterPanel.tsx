@@ -5,7 +5,7 @@ import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import { CharacterProfilePicker } from './CharacterProfilePicker'
-import { Users, Sparkles, RefreshCw } from 'lucide-react'
+import { Users, Sparkles, Wand2, Loader2 } from 'lucide-react'
 
 interface Props {
   worldId: number
@@ -136,8 +136,38 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
               Nuevo personaje
             </p>
 
-            {/* Premise + refine */}
-            <div className="w-full space-y-2">
+            {/* Premise + enrich */}
+            <div className="w-full">
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  className="text-[10px] tracking-[0.2em] uppercase"
+                  style={{ fontFamily: 'var(--font-ui)', color: 'hsl(24 60% 45%)' }}
+                >
+                  La premisa del personaje
+                </label>
+                {premise.trim().length > 10 && (
+                  <button
+                    onClick={handleRefine}
+                    disabled={refining}
+                    className="flex items-center gap-1.5 text-xs disabled:opacity-50 cursor-pointer"
+                    style={{ fontFamily: 'var(--font-ui)', color: 'hsl(24 60% 40%)' }}
+                  >
+                    {refining ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span className="italic" style={{ fontFamily: 'var(--font-display)', color: 'hsl(24 40% 50%)' }}>
+                          enriqueciendo...
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-3.5 w-3.5" />
+                        <span>Enriquecer</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
               <textarea
                 value={premise}
                 onChange={e => setPremise(e.target.value)}
@@ -148,17 +178,6 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
                            placeholder:text-foreground/20 resize-none
                            focus:outline-none focus:border-amber-400/50 bg-transparent"
               />
-              {premise.trim().length > 10 && (
-                <button
-                  onClick={handleRefine}
-                  disabled={refining}
-                  className="flex items-center gap-1.5 text-[11px] text-amber-600/60 hover:text-amber-600
-                             disabled:opacity-40 transition-colors"
-                >
-                  <RefreshCw className={`w-3 h-3 ${refining ? 'animate-spin' : ''}`} />
-                  {refining ? 'Refinando...' : 'Refinar premisa'}
-                </button>
-              )}
             </div>
 
             {/* Profile picker */}
