@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.21.1...v1.22.0) (2026-04-07)
+
+
+### Features
+
+* **character:** add CreateCharacterPage with profile template picker ([775ba32](https://github.com/toniDefez/storytellerFrontMVP/commit/775ba32a0f39fb752e7cbb6cb79fb8425037f3f0))
+
 ## [1.21.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.21.0...v1.21.1) (2026-04-07)
 
 
