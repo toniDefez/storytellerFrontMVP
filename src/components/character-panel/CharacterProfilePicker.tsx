@@ -1,52 +1,107 @@
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { Loader2 } from 'lucide-react'
 import { getCharacterProfiles } from '@/services/api'
 import type { ProfileTemplateBrief } from '@/services/api'
-import { User, Check } from 'lucide-react'
+
+const ARCHETYPE_ICONS: Record<string, string> = {
+  control: '🎯',
+  dependencia: '🤲',
+  trauma: '🩹',
+  orden: '🔍',
+  carisma: '✨',
+}
+
+function pickIcon(tags: string[]): string {
+  for (const tag of tags) {
+    if (ARCHETYPE_ICONS[tag]) return ARCHETYPE_ICONS[tag]
+  }
+  return '🧠'
+}
 
 interface Props {
   selectedId: number | null
   onSelect: (id: number | null) => void
 }
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+  }),
+}
+
 export function CharacterProfilePicker({ selectedId, onSelect }: Props) {
   const [profiles, setProfiles] = useState<ProfileTemplateBrief[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getCharacterProfiles().then(setProfiles).catch(() => {})
+    getCharacterProfiles()
+      .then(p => setProfiles(p ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-4">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   if (profiles.length === 0) return null
 
   return (
-    <div className="space-y-2">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/30">
-        Perfil psicologico (opcional)
-      </p>
-      <div className="grid grid-cols-1 gap-2">
-        {profiles.map(p => {
-          const active = selectedId === p.id
+    <div>
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="text-[10px] tracking-[0.2em] uppercase"
+          style={{ fontFamily: 'var(--font-ui)', color: 'hsl(24 60% 45%)' }}>
+          Empieza desde un arquetipo
+        </p>
+        {selectedId && (
+          <button
+            onClick={() => onSelect(null)}
+            className="text-[10px] underline underline-offset-2"
+            style={{ fontFamily: 'var(--font-ui)', color: 'hsl(24 60% 40%)' }}
+          >
+            Desde cero
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {profiles.map((p, i) => {
+          const isSelected = selectedId === p.id
+          const icon = pickIcon(p.tags ?? [])
           return (
-            <button
+            <motion.button
               key={p.id}
-              onClick={() => onSelect(active ? null : p.id)}
-              className={`text-left px-3 py-2.5 rounded-lg border transition-all duration-150
-                ${active
-                  ? 'border-amber-400/60 bg-amber-50/50 dark:bg-amber-900/10'
-                  : 'border-border/30 hover:border-border/60 hover:bg-muted/30'}`}
+              type="button"
+              onClick={() => onSelect(isSelected ? null : p.id)}
+              custom={i}
+              initial="hidden"
+              animate="show"
+              variants={cardVariants}
+              className={`text-left rounded-xl border p-3 transition-all duration-200 cursor-pointer
+                ${isSelected
+                  ? 'border-amber-500/60 bg-amber-50/60 shadow-[0_0_0_2px_hsl(24_80%_50%/0.12)]'
+                  : 'border-border/40 bg-background hover:border-amber-400/40'}`}
             >
-              <div className="flex items-start gap-2">
-                <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0
-                  ${active ? 'bg-amber-500 text-white' : 'bg-muted/50 text-muted-foreground/40'}`}>
-                  {active ? <Check className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-base leading-none mt-0.5">{icon}</span>
                 <div className="min-w-0">
-                  <p className={`text-xs font-medium ${active ? 'text-amber-700 dark:text-amber-400' : 'text-foreground/70'}`}>
+                  <div className="font-medium text-xs text-foreground leading-tight mb-0.5"
+                    style={{ fontFamily: 'var(--font-display)' }}>
                     {p.title}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">
+                    {p.description}
                   </p>
-                  <p className="text-[11px] text-foreground/40 mt-0.5 line-clamp-2">{p.description}</p>
                 </div>
               </div>
-            </button>
+            </motion.button>
           )
         })}
       </div>
