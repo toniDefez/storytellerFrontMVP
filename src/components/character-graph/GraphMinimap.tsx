@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react'
 import type { CharacterNode } from '@/services/api'
 
 const DOMAIN_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -15,9 +16,10 @@ interface Props {
   nodes: CharacterNode[]
   selectedNodeId: number | null
   onSelectNode: (id: number) => void
+  onRemoveNode?: (id: number) => void
 }
 
-export function GraphMinimap({ nodes, selectedNodeId, onSelectNode }: Props) {
+export function GraphMinimap({ nodes, selectedNodeId, onSelectNode, onRemoveNode }: Props) {
   const nodeByDomain = new Map<string, CharacterNode[]>()
   for (const node of nodes) {
     const list = nodeByDomain.get(node.domain) || []
@@ -65,16 +67,31 @@ export function GraphMinimap({ nodes, selectedNodeId, onSelectNode }: Props) {
 
             {/* Nodes in this stage */}
             {domainNodes.map(n => (
-              <button
+              <div
                 key={n.id}
-                onClick={() => onSelectNode(n.id)}
-                className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-all duration-150 ml-1
+                className={`group flex items-center gap-1 rounded-md transition-all duration-150 ml-1
                   ${selectedNodeId === n.id
-                    ? 'bg-amber-100 text-amber-900 font-medium shadow-sm'
-                    : 'text-foreground/70 hover:bg-muted/50'}`}
+                    ? 'bg-amber-100 shadow-sm'
+                    : 'hover:bg-muted/50'}`}
               >
-                {n.label}
-              </button>
+                <button
+                  onClick={() => onSelectNode(n.id)}
+                  className={`flex-1 text-left px-2 py-1.5 text-[11px] min-w-0 truncate
+                    ${selectedNodeId === n.id
+                      ? 'text-amber-900 font-medium'
+                      : 'text-foreground/70'}`}
+                >
+                  {n.label}
+                </button>
+                {onRemoveNode && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRemoveNode(n.id) }}
+                    className="p-1 mr-1 rounded opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-red-500 hover:bg-red-50 transition-all"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             ))}
 
             {/* Arrow between stages */}

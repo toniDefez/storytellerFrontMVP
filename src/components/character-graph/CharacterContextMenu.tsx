@@ -58,12 +58,11 @@ export function ContainerContextMenu({
           <div className="h-px bg-border/50 my-1" />
           <button
             onClick={() => { onRegenerate(); onClose() }}
-            disabled={!isStale}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-left
                        disabled:opacity-40 disabled:cursor-default"
           >
             <RefreshCw className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            {isStale ? 'Regenerar sintesis' : 'Sintesis actualizada'}
+            {isStale ? 'Regenerar sintesis' : 'Generar sintesis'}
           </button>
         </>
       )}
@@ -81,7 +80,7 @@ interface OrbitalMenuProps extends MenuPosition {
 }
 
 export function OrbitalContextMenu({
-  x, y, nodeLabel, onViewDetail, onRemove, onClose,
+  x, y, onViewDetail, onRemove, onClose,
 }: OrbitalMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
 
