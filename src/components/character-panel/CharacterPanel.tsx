@@ -91,13 +91,12 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         premise: premise.trim(),
       })
 
-      // Apply profile nodes if selected
+      // Exclusive: profile defines psychology OR premise-driven generation — not both
       if (selectedProfileId) {
         await applyCharacterProfile(result.id, selectedProfileId)
+      } else {
+        await generateCharacterNodes(result.id, premise.trim())
       }
-
-      // Generate additional nodes from premise
-      await generateCharacterNodes(result.id, premise.trim())
 
       const newChar = await getCharacterById(result.id)
       setCharacters(prev => [...prev, newChar])
@@ -143,9 +142,9 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
                   className="text-[10px] tracking-[0.2em] uppercase"
                   style={{ fontFamily: 'var(--font-ui)', color: 'hsl(24 60% 45%)' }}
                 >
-                  La premisa del personaje
+                  {selectedProfileId ? 'Contexto del personaje' : 'La premisa del personaje'}
                 </label>
-                {premise.trim().length > 10 && (
+                {!selectedProfileId && premise.trim().length > 10 && (
                   <button
                     onClick={handleRefine}
                     disabled={refining}
