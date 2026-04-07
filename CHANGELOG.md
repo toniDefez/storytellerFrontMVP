@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.23.0...v1.24.0) (2026-04-07)
+
+
+### Features
+
+* **character:** add Enriquecer button matching world creation UX ([5b2e15f](https://github.com/toniDefez/storytellerFrontMVP/commit/5b2e15ff0ac96725729054dc20cf22342703a515))
+
 # [1.23.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.22.0...v1.23.0) (2026-04-07)
 
 
