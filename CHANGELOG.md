@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.21.0...v1.21.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* remove ghost 'state' field from createCharacter call ([d4b991f](https://github.com/toniDefez/storytellerFrontMVP/commit/d4b991fc70a7b7fd0aaec4f55f274fe13c2cb63d))
+
 # [1.21.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.20.0...v1.21.0) (2026-04-07)
 
 
