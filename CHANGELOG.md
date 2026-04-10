@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.27.0...v1.28.0) (2026-04-10)
+
+
+### Features
+
+* **location:** AI expand nodes + depth-aware visual hierarchy + ellipsis ([5fe26c0](https://github.com/toniDefez/storytellerFrontMVP/commit/5fe26c0138739376deec269bf13b417006faa452))
+
 # [1.27.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.26.1...v1.27.0) (2026-04-10)
 
 
