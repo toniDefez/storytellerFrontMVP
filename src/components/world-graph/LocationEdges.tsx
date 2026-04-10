@@ -105,3 +105,10 @@ export const RoadEdge = memo((props: EdgeProps) => (
     style={{ stroke: '#14b8a6' }}
   />
 ))
+
+export const HierarchyEdge = memo((props: EdgeProps) => (
+  <FloatingLocationEdge
+    {...props}
+    style={{ stroke: '#94a3b8', strokeDasharray: '5,4', strokeWidth: 1.5 }}
+  />
+))

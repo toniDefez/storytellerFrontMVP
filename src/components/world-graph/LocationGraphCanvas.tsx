@@ -18,7 +18,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { Plus } from 'lucide-react'
 import { LocationNode as LocationNodeComponent } from './LocationNode'
-import { WaterwayEdge, WildernessEdge, RoadEdge } from './LocationEdges'
+import { WaterwayEdge, WildernessEdge, RoadEdge, HierarchyEdge } from './LocationEdges'
 import { LocationSidePanel } from './LocationSidePanel'
 import { LocationNodeFormDialog, type LocationNodeFormInput } from './LocationNodeFormDialog'
 import type { LocationNode, LocationEdge } from '@/services/api'
@@ -26,7 +26,7 @@ import type { SelectedLocation } from '@/hooks/useLocationGraph'
 
 // Define outside component to avoid re-renders
 const nodeTypes = { location: LocationNodeComponent }
-const edgeTypes = { waterway: WaterwayEdge, wilderness: WildernessEdge, road: RoadEdge }
+const edgeTypes = { waterway: WaterwayEdge, wilderness: WildernessEdge, road: RoadEdge, hierarchy: HierarchyEdge }
 
 type FormState =
   | { mode: 'create'; parentId?: number; parentName?: string }
@@ -79,8 +79,8 @@ function buildFlowNodes(locationNodes: LocationNode[], selectedId?: number): Nod
   })
 }
 
-function buildFlowEdges(locationEdges: LocationEdge[], selectedId?: number): Edge[] {
-  return locationEdges.map(e => ({
+function buildFlowEdges(locationEdges: LocationEdge[], locationNodes: LocationNode[], selectedId?: number): Edge[] {
+  const geographic: Edge[] = locationEdges.map(e => ({
     id: String(e.id),
     source: String(e.source_node_id),
     target: String(e.target_node_id),
@@ -89,6 +89,19 @@ function buildFlowEdges(locationEdges: LocationEdge[], selectedId?: number): Edg
     data: { effort: e.effort, dramatic_charge: e.dramatic_charge, bidirectional: e.bidirectional, note: e.note },
     markerEnd: e.bidirectional ? undefined : { type: MarkerType.ArrowClosed, color: '#14b8a6' },
   }))
+
+  const hierarchy: Edge[] = locationNodes
+    .filter(n => n.parent_id != null)
+    .map(n => ({
+      id: `parent-${n.parent_id}-${n.id}`,
+      source: String(n.parent_id),
+      target: String(n.id),
+      type: 'hierarchy',
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+      data: {},
+    }))
+
+  return [...geographic, ...hierarchy]
 }
 
 function LocationGraphInner({
@@ -106,7 +119,7 @@ function LocationGraphInner({
   const selectedEdgeId = selected?.type === 'edge' ? selected.item.id : undefined
 
   const flowNodes = useMemo(() => buildFlowNodes(locationNodes, selectedNodeId), [locationNodes, selectedNodeId])
-  const flowEdges = useMemo(() => buildFlowEdges(locationEdges, selectedEdgeId), [locationEdges, selectedEdgeId])
+  const flowEdges = useMemo(() => buildFlowEdges(locationEdges, locationNodes, selectedEdgeId), [locationEdges, locationNodes, selectedEdgeId])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
