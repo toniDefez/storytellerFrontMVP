@@ -4,7 +4,7 @@ import {
   getLocationGraph, createLocationNode, updateLocationNode,
   updateLocationNodePosition, deleteLocationNode,
   createLocationEdge, updateLocationEdge, deleteLocationEdge,
-  generateLocationRegions, expandLocationNode,
+  generateLocationRegions, expandLocationNode, enrichLocationNode,
 } from '@/services/api'
 
 async function fetchGraph(worldId: number) {
@@ -24,6 +24,7 @@ export function useLocationGraph(worldId: number | null) {
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [expandingNodeId, setExpandingNodeId] = useState<number | null>(null)
+  const [enrichingNodeId, setEnrichingNodeId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
   const loadGraph = useCallback(async () => {
@@ -86,6 +87,22 @@ export function useLocationGraph(worldId: number | null) {
     }
   }, [])
 
+  const enrichNode = useCallback(async (worldId: number, nodeId: number) => {
+    setEnrichingNodeId(nodeId)
+    setError('')
+    try {
+      const updated = await enrichLocationNode(worldId, nodeId)
+      setNodes(prev => prev.map(n => n.id === nodeId ? updated : n))
+      if (selected?.type === 'node' && selected.item.id === nodeId) {
+        setSelected({ type: 'node', item: updated })
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error completando localización')
+    } finally {
+      setEnrichingNodeId(null)
+    }
+  }, [selected])
+
   const addNode = useCallback(async (node: Omit<LocationNode, 'id'>) => {
     const created = await createLocationNode(node)
     setNodes(prev => [...prev, created])
@@ -128,8 +145,8 @@ export function useLocationGraph(worldId: number | null) {
 
   return {
     nodes, edges, selected, setSelected,
-    loading, generating, expandingNodeId, error,
-    loadGraph, generate, addRegions, expandNode,
+    loading, generating, expandingNodeId, enrichingNodeId, error,
+    loadGraph, generate, addRegions, expandNode, enrichNode,
     addNode, editNode, moveNode, removeNode,
     addEdge, editEdge, removeEdge,
   }

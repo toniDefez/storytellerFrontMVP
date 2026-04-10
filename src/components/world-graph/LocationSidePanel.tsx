@@ -12,13 +12,15 @@ interface Props {
   onAddChildNode: (parentNode: LocationNode) => void
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
+  onEnrichWithAI: (node: LocationNode) => void
+  enrichingNodeId: number | null
   onSelectNode: (node: LocationNode) => void
   onUpdateEdge: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'dramatic_charge' | 'bidirectional' | 'note'>) => Promise<void>
   onDeleteEdge: (id: number) => void
   onClose: () => void
 }
 
-export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDeleteNode, onAddChildNode, onExpandWithAI, expandingNodeId, onSelectNode, onUpdateEdge, onDeleteEdge, onClose }: Props) {
+export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDeleteNode, onAddChildNode, onExpandWithAI, expandingNodeId, onEnrichWithAI, enrichingNodeId, onSelectNode, onUpdateEdge, onDeleteEdge, onClose }: Props) {
   if (!selected) return (
     <div className="w-64 border-l border-border/50 flex flex-col items-center justify-center gap-3 p-6">
       <p className="text-sm text-muted-foreground italic text-center">
@@ -47,6 +49,8 @@ export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDelete
           onAddChild={onAddChildNode}
           onExpandWithAI={onExpandWithAI}
           expandingNodeId={expandingNodeId}
+          onEnrichWithAI={onEnrichWithAI}
+          enrichingNodeId={enrichingNodeId}
           onSelectChild={onSelectNode}
           onClose={onClose}
         />

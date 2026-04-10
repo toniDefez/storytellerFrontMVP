@@ -65,8 +65,9 @@ export default function WorldDetailPage() {
     selected: locationSelected, setSelected: setLocationSelected,
     generating: locationGenerating,
     expandingNodeId: locationExpandingNodeId,
+    enrichingNodeId: locationEnrichingNodeId,
     loadGraph: loadLocationGraph, generate: generateLocations, addRegions: addLocationRegions,
-    expandNode: expandLocationNode,
+    expandNode: expandLocationNode, enrichNode: enrichLocationNode,
     moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
     editEdge, removeEdge,
   } = useLocationGraph(Number(id))
@@ -394,6 +395,8 @@ export default function WorldDetailPage() {
               generating={locationGenerating}
               onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
               expandingNodeId={locationExpandingNodeId}
+              onEnrichWithAI={node => enrichLocationNode(Number(id), node.id)}
+              enrichingNodeId={locationEnrichingNodeId}
             />
           </div>
 

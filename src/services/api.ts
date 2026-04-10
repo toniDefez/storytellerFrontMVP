@@ -295,11 +295,18 @@ export interface CharacterGraph {
   nodes: CharacterNode[]
 }
 
+export interface VoiceExample {
+  id: string
+  userLine: string
+  characterLine: string
+}
+
 export interface VoiceRegister {
   emotional_rhythm: string
   social_posture: string
   cognitive_tempo: string
   expressive_style: string
+  voice_examples?: VoiceExample[]
 }
 
 export interface ChatMessage {
@@ -637,6 +644,13 @@ export function generateLocationRegions(worldId: number, additive = false) {
 
 export function expandLocationNode(worldId: number, nodeId: number) {
   return request<LocationGraph>('/location/expand-node', {
+    method: 'POST',
+    body: JSON.stringify({ world_id: worldId, node_id: nodeId }),
+  })
+}
+
+export function enrichLocationNode(worldId: number, nodeId: number) {
+  return request<LocationNode>('/location/enrich-node', {
     method: 'POST',
     body: JSON.stringify({ world_id: worldId, node_id: nodeId }),
   })

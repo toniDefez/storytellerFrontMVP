@@ -53,6 +53,8 @@ interface Props {
   generating: boolean
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
+  onEnrichWithAI: (node: LocationNode) => void
+  enrichingNodeId: number | null
 }
 
 function buildDepthMap(locationNodes: LocationNode[]): Map<number, number> {
@@ -143,6 +145,7 @@ function LocationGraphInner({
   onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
   onGenerate, onAddRegions, generating,
   onExpandWithAI, expandingNodeId,
+  onEnrichWithAI, enrichingNodeId,
 }: Props) {
   const { fitView } = useReactFlow()
   const [formState, setFormState] = useState<FormState>(null)
@@ -334,6 +337,8 @@ function LocationGraphInner({
         onAddChildNode={node => setFormState({ mode: 'create', parentId: node.id, parentName: node.name })}
         onExpandWithAI={onExpandWithAI}
         expandingNodeId={expandingNodeId}
+        onEnrichWithAI={onEnrichWithAI}
+        enrichingNodeId={enrichingNodeId}
         onSelectNode={node => onSelectNode(node)}
         onUpdateEdge={onUpdateEdge}
         onDeleteEdge={onDeleteEdge}
