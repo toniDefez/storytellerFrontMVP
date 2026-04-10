@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Trash2, Pencil, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Trash2, Pencil, Plus, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { LocationNode, LocationNodeType, NarrativeFunction } from '@/services/api'
 
@@ -33,11 +33,14 @@ interface Props {
   onEdit: (node: LocationNode) => void
   onDelete: (id: number) => void
   onAddChild: (parentNode: LocationNode) => void
+  onExpandWithAI: (node: LocationNode) => void
+  expandingNodeId: number | null
   onSelectChild: (node: LocationNode) => void
   onClose: () => void
 }
 
-export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEdit, onDelete, onAddChild, onSelectChild, onClose }: Props) {
+export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEdit, onDelete, onAddChild, onExpandWithAI, expandingNodeId, onSelectChild, onClose }: Props) {
+  const isExpanding = expandingNodeId === node.id
   const [storyLayerOpen, setStoryLayerOpen] = useState(false)
   const p = node.properties
 
@@ -51,7 +54,7 @@ export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEd
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <h3 className="font-[var(--font-display)] text-lg font-semibold">{node.name}</h3>
+        <h3 className="font-[var(--font-display)] text-lg font-semibold truncate">{node.name}</h3>
 
         {node.narrative_function && (
           <span className={`inline-block text-xs px-2 py-0.5 rounded-full border font-medium ${NARRATIVE_FN_COLORS[node.narrative_function] ?? ''}`}>
@@ -140,10 +143,20 @@ export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEd
         <Button
           variant="outline"
           size="sm"
+          className="w-full gap-1.5 text-violet-600 border-violet-300/50 hover:bg-violet-50 hover:border-violet-400/60 disabled:opacity-50"
+          onClick={() => onExpandWithAI(node)}
+          disabled={isExpanding}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          {isExpanding ? 'Generando lugares…' : 'Generar lugares con IA'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           className="w-full gap-1.5 text-[#14b8a6] border-[#14b8a6]/30 hover:bg-[#14b8a6]/10 hover:border-[#14b8a6]/50"
           onClick={() => onAddChild(node)}
         >
-          <Plus className="w-3.5 h-3.5" /> Añadir lugar dentro
+          <Plus className="w-3.5 h-3.5" /> Añadir lugar manualmente
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => onEdit(node)}>

@@ -109,6 +109,6 @@ export const RoadEdge = memo((props: EdgeProps) => (
 export const HierarchyEdge = memo((props: EdgeProps) => (
   <FloatingLocationEdge
     {...props}
-    style={{ stroke: '#94a3b8', strokeDasharray: '5,4', strokeWidth: 1.5 }}
+    style={{ stroke: '#d97706', strokeDasharray: '3,5', strokeWidth: 1.5, opacity: 0.7 }}
   />
 ))

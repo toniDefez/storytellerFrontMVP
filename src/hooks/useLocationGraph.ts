@@ -4,7 +4,7 @@ import {
   getLocationGraph, createLocationNode, updateLocationNode,
   updateLocationNodePosition, deleteLocationNode,
   createLocationEdge, updateLocationEdge, deleteLocationEdge,
-  generateLocationRegions,
+  generateLocationRegions, expandLocationNode,
 } from '@/services/api'
 
 export type SelectedLocation =
@@ -18,6 +18,7 @@ export function useLocationGraph(worldId: number | null) {
   const [selected, setSelected] = useState<SelectedLocation>(null)
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [expandingNodeId, setExpandingNodeId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
   const loadGraph = useCallback(async () => {
@@ -48,6 +49,20 @@ export function useLocationGraph(worldId: number | null) {
       setGenerating(false)
     }
   }, [worldId])
+
+  const expandNode = useCallback(async (worldId: number, nodeId: number) => {
+    setExpandingNodeId(nodeId)
+    setError('')
+    try {
+      const graph = await expandLocationNode(worldId, nodeId)
+      setNodes(prev => [...prev, ...(graph.nodes ?? [])])
+      setEdges(prev => [...prev, ...(graph.edges ?? [])])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error expandiendo localización')
+    } finally {
+      setExpandingNodeId(null)
+    }
+  }, [])
 
   const addNode = useCallback(async (node: Omit<LocationNode, 'id'>) => {
     const created = await createLocationNode(node)
@@ -91,8 +106,8 @@ export function useLocationGraph(worldId: number | null) {
 
   return {
     nodes, edges, selected, setSelected,
-    loading, generating, error,
-    loadGraph, generate,
+    loading, generating, expandingNodeId, error,
+    loadGraph, generate, expandNode,
     addNode, editNode, moveNode, removeNode,
     addEdge, editEdge, removeEdge,
   }

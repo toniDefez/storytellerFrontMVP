@@ -646,6 +646,13 @@ export function generateLocationRegions(worldId: number) {
   })
 }
 
+export function expandLocationNode(worldId: number, nodeId: number) {
+  return request<LocationGraph>('/location/expand-node', {
+    method: 'POST',
+    body: JSON.stringify({ world_id: worldId, node_id: nodeId }),
+  })
+}
+
 // --- Seed Templates ---
 
 export interface SeedTemplateBrief {

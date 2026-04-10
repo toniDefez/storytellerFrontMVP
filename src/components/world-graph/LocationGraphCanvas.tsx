@@ -50,12 +50,40 @@ interface Props {
   onDeleteEdge: (id: number) => void
   onGenerate: () => void
   generating: boolean
+  onExpandWithAI: (node: LocationNode) => void
+  expandingNodeId: number | null
+}
+
+function buildDepthMap(locationNodes: LocationNode[]): Map<number, number> {
+  const depthMap = new Map<number, number>()
+  locationNodes.forEach(n => { if (!n.parent_id) depthMap.set(n.id, 0) })
+  // Resolve children iteratively (handles up to arbitrary depth)
+  let changed = true
+  while (changed) {
+    changed = false
+    locationNodes.forEach(n => {
+      if (n.parent_id != null && !depthMap.has(n.id)) {
+        const parentDepth = depthMap.get(n.parent_id)
+        if (parentDepth !== undefined) {
+          depthMap.set(n.id, parentDepth + 1)
+          changed = true
+        }
+      }
+    })
+  }
+  return depthMap
 }
 
 function buildFlowNodes(locationNodes: LocationNode[], selectedId?: number): Node[] {
-  // If all nodes are at origin, distribute them in a grid
   const needsLayout = locationNodes.length > 1 &&
     locationNodes.every(n => n.canvas_x === 0 && n.canvas_y === 0)
+  const depthMap = buildDepthMap(locationNodes)
+  const childCounts = new Map<number, number>()
+  locationNodes.forEach(n => {
+    if (n.parent_id != null) {
+      childCounts.set(n.parent_id, (childCounts.get(n.parent_id) ?? 0) + 1)
+    }
+  })
 
   return locationNodes.map((n, i) => {
     let position = { x: n.canvas_x, y: n.canvas_y }
@@ -74,6 +102,8 @@ function buildFlowNodes(locationNodes: LocationNode[], selectedId?: number): Nod
         narrative_function: n.narrative_function,
         source_hint: n.source_hint,
         isSelected: n.id === selectedId,
+        depth: depthMap.get(n.id) ?? 0,
+        childCount: childCounts.get(n.id) ?? 0,
       } as unknown as Record<string, unknown>,
     }
   })
@@ -111,6 +141,7 @@ function LocationGraphInner({
   onMoveNode, onConnect: onConnectProp,
   onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
   onGenerate, generating,
+  onExpandWithAI, expandingNodeId,
 }: Props) {
   const { fitView } = useReactFlow()
   const [formState, setFormState] = useState<FormState>(null)
@@ -292,6 +323,8 @@ function LocationGraphInner({
         onEditNode={node => setFormState({ mode: 'edit', node })}
         onDeleteNode={onDeleteNode}
         onAddChildNode={node => setFormState({ mode: 'create', parentId: node.id, parentName: node.name })}
+        onExpandWithAI={onExpandWithAI}
+        expandingNodeId={expandingNodeId}
         onSelectNode={node => onSelectNode(node)}
         onUpdateEdge={onUpdateEdge}
         onDeleteEdge={onDeleteEdge}

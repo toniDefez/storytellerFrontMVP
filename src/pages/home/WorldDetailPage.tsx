@@ -64,7 +64,9 @@ export default function WorldDetailPage() {
     nodes: locationNodes, edges: locationEdges,
     selected: locationSelected, setSelected: setLocationSelected,
     generating: locationGenerating,
+    expandingNodeId: locationExpandingNodeId,
     loadGraph: loadLocationGraph, generate: generateLocations,
+    expandNode: expandLocationNode,
     moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
     editEdge, removeEdge,
   } = useLocationGraph(Number(id))
@@ -389,6 +391,8 @@ export default function WorldDetailPage() {
               onDeleteEdge={removeEdge}
               onGenerate={() => setConfirmRegen(true)}
               generating={locationGenerating}
+              onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
+              expandingNodeId={locationExpandingNodeId}
             />
           </div>
 
