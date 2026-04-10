@@ -4,7 +4,7 @@ import {
   getLocationGraph, createLocationNode, updateLocationNode,
   updateLocationNodePosition, deleteLocationNode,
   createLocationEdge, updateLocationEdge, deleteLocationEdge,
-  generateLocationGraph,
+  generateLocationRegions,
 } from '@/services/api'
 
 export type SelectedLocation =
@@ -39,7 +39,7 @@ export function useLocationGraph(worldId: number | null) {
     setGenerating(true)
     setError('')
     try {
-      const graph = await generateLocationGraph(worldId)
+      const graph = await generateLocationRegions(worldId)
       setNodes(graph.nodes ?? [])
       setEdges(graph.edges ?? [])
     } catch (e) {

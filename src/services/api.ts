@@ -639,10 +639,10 @@ export function deleteLocationEdge(id: number) {
   return request<void>(`/location/edges/delete?id=${id}`, { method: 'DELETE' })
 }
 
-export function generateLocationGraph(worldId: number, nodeCountHint = 12) {
-  return request<LocationGraph>('/location/generate', {
+export function generateLocationRegions(worldId: number) {
+  return request<LocationGraph>('/location/generate-regions', {
     method: 'POST',
-    body: JSON.stringify({ world_id: worldId, node_count_hint: nodeCountHint }),
+    body: JSON.stringify({ world_id: worldId }),
   })
 }
 
