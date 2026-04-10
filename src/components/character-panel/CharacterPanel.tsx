@@ -20,6 +20,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   const [mode, setMode] = useState<Mode>('empty')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
+  const [name, setName] = useState('')
   const [premise, setPremise] = useState('')
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
@@ -57,6 +58,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
 
   const handleNewCharacter = () => {
     setSelectedId(null)
+    setName('')
     setPremise('')
     setError('')
     setSelectedProfileId(null)
@@ -82,11 +84,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     setError('')
     try {
       const result = await createCharacter({
-        name: premise.trim().slice(0, 50),
-        role: '',
-        personality: '',
-        background: '',
-        goals: [],
+        name: name.trim() || premise.trim().slice(0, 50),
         world_id: worldId,
         premise: premise.trim(),
       })
@@ -134,6 +132,26 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
             <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600/60">
               Nuevo personaje
             </p>
+
+            {/* Name — optional */}
+            <div className="w-full">
+              <label
+                className="block text-[10px] tracking-[0.2em] uppercase mb-2"
+                style={{ fontFamily: 'var(--font-ui)', color: 'hsl(24 60% 45%)' }}
+              >
+                Nombre <span style={{ color: 'hsl(30 6% 65%)', textTransform: 'none', letterSpacing: 0 }}>— opcional</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Ej. Mira, El Viejo, Comandante Vera..."
+                className="w-full border-b border-amber-400/30 bg-transparent px-0 py-2
+                           text-sm font-display text-foreground/80
+                           placeholder:text-foreground/20
+                           focus:outline-none focus:border-amber-400/60"
+              />
+            </div>
 
             {/* Premise + enrich */}
             <div className="w-full">

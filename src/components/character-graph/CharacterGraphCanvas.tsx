@@ -2,10 +2,12 @@ import { useMemo, useCallback, useEffect } from 'react'
 import {
   ReactFlow,
   Background,
+  Panel,
   useNodesState,
   useEdgesState,
   Handle,
   Position,
+  NodeToolbar,
   MarkerType,
   type Node,
   type Edge,
@@ -45,24 +47,57 @@ const CONTAINER_POSITIONS: Record<string, { x: number; y: number }> = {
 const CONTAINER_WIDTH = 250
 const CONTAINER_HEIGHT = 300
 
-/* ── Orbital sizing ─────────────────────────────────────────────── */
 
-function getSalienceSize(salience: number): number {
-  const clamped = Math.max(1, Math.min(10, salience))
-  return Math.round(20 + (clamped - 1) * 3)
-}
+/* ── Entry node ────────────────────────────────────────────────── */
 
-
-/* ── Label node (entry / exit markers) ────────────────────────── */
-
-interface LabelData extends Record<string, unknown> {
-  text: string
-}
-
-function LabelNode({ data }: NodeProps<Node<LabelData>>) {
+function EntryNode() {
   return (
-    <div className="text-[9px] font-semibold tracking-[0.12em] uppercase text-stone-400/50 select-none whitespace-nowrap">
-      {data.text as string}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '6px 14px',
+      borderRadius: 999,
+      background: '#f5f0eb',
+      border: '1.5px dashed #c4b9ae',
+      color: '#a8a29e',
+      fontSize: 10,
+      fontWeight: 600,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
+      whiteSpace: 'nowrap',
+      userSelect: 'none',
+    }}>
+      <span style={{ fontSize: 13 }}>↓</span>
+      Estímulo externo
+      <Handle type="source" position={Position.Bottom} className="!w-0 !h-0 !opacity-0" />
+    </div>
+  )
+}
+
+/* ── Exit node ──────────────────────────────────────────────────── */
+
+function ExitNode() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '6px 14px',
+      borderRadius: 999,
+      background: '#f5f0eb',
+      border: '1.5px dashed #c4b9ae',
+      color: '#a8a29e',
+      fontSize: 10,
+      fontWeight: 600,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
+      whiteSpace: 'nowrap',
+      userSelect: 'none',
+    }}>
+      Reacción al mundo
+      <span style={{ fontSize: 13 }}>↓</span>
+      <Handle type="target" position={Position.Top} className="!w-0 !h-0 !opacity-0" />
     </div>
   )
 }
@@ -163,50 +198,90 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
   )
 }
 
+/* ── Orbital sizing ─────────────────────────────────────────────── */
+
+function getSalienceSize(salience: number): number {
+  const clamped = Math.max(1, Math.min(10, salience))
+  return Math.round(48 + (clamped - 1) * 8)  // 48px → 120px
+}
+
 /* ── Orbital node ────────────────────────────────────────────────── */
 
 interface OrbitalData extends Record<string, unknown> {
   nodeId: number
   label: string
   color: string
-  size: number
+  salience: number
   isSelected: boolean
   onSelect: (id: number) => void
 }
 
 function OrbitalNode({ data }: NodeProps<Node<OrbitalData>>) {
-  const size = data.size as number
-  const fontSize = size >= 44 ? 10 : size >= 32 ? 9 : 7
+  const size       = getSalienceSize(data.salience as number)
+  const color      = data.color as string
+  const isSelected = data.isSelected as boolean
+  const fontSize   = size >= 96 ? 11 : size >= 72 ? 10 : 9
 
   return (
-    <div
-      className="cursor-pointer flex items-center justify-center rounded-full transition-all duration-150 hover:scale-110"
-      style={{
-        width: size,
-        height: size,
-        background: data.color as string,
-        boxShadow: data.isSelected
-          ? `0 0 0 3px white, 0 0 0 5px ${data.color}`
-          : `0 2px 8px ${data.color}40`,
-        color: 'white',
-      }}
-      onClick={(e) => { e.stopPropagation(); data.onSelect(data.nodeId as number) }}
-    >
-      <span
-        className="font-semibold leading-tight text-center overflow-hidden text-ellipsis px-0.5"
-        style={{
-          fontSize: `${fontSize}px`,
-          maxWidth: size - 6,
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}
+    <>
+      {/* Tooltip with full label — only on hover via CSS */}
+      <NodeToolbar
+        isVisible={isSelected}
+        position={Position.Top}
+        offset={6}
+        style={{ pointerEvents: 'none' }}
       >
-        {data.label as string}
-      </span>
-      <Handle type="source" position={Position.Bottom} className="!w-0 !h-0 !opacity-0" />
-      <Handle type="target" position={Position.Bottom} id="orbital-target" className="!w-0 !h-0 !opacity-0" />
-    </div>
+        <div
+          style={{
+            background: 'white',
+            border: `1px solid ${color}40`,
+            borderRadius: 6,
+            padding: '4px 8px',
+            fontSize: 11,
+            fontWeight: 500,
+            color: '#292524',
+            boxShadow: `0 2px 8px ${color}20`,
+            whiteSpace: 'nowrap',
+            maxWidth: 220,
+          }}
+        >
+          {data.label as string}
+        </div>
+      </NodeToolbar>
+
+      <div
+        className="cursor-pointer rounded-full transition-all duration-150 hover:scale-110 flex items-center justify-center"
+        style={{
+          width: size,
+          height: size,
+          background: color,
+          boxShadow: isSelected
+            ? `0 0 0 3px white, 0 0 0 5px ${color}`
+            : `0 2px 8px ${color}40`,
+        }}
+        onClick={(e) => { e.stopPropagation(); data.onSelect(data.nodeId as number) }}
+      >
+        <span
+          style={{
+            fontSize,
+            fontWeight: 600,
+            color: 'white',
+            textAlign: 'center',
+            lineHeight: 1.25,
+            padding: '0 6px',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {data.label as string}
+        </span>
+      </div>
+
+      <Handle type="source" position={Position.Left} className="!w-0 !h-0 !opacity-0" />
+      <Handle type="target" position={Position.Left} id="orbital-target" className="!w-0 !h-0 !opacity-0" />
+    </>
   )
 }
 
@@ -215,7 +290,8 @@ function OrbitalNode({ data }: NodeProps<Node<OrbitalData>>) {
 const nodeTypes = {
   container: ContainerNode,
   child: OrbitalNode,
-  label: LabelNode,
+  entry: EntryNode,
+  exit: ExitNode,
 }
 
 /* ── Calculate orbital positions ─────────────────────────────────── */
@@ -244,6 +320,54 @@ function getOrbitalPositions(
   }))
 }
 
+/* ── Collision resolution ────────────────────────────────────────── */
+
+const MARGIN = 12
+
+function resolveCollisions(nodes: Node[]): Node[] {
+  type Box = { id: string; x: number; y: number; w: number; h: number }
+
+  const boxes: Box[] = nodes.map(n => ({
+    id: n.id,
+    x: n.position.x,
+    y: n.position.y,
+    w: (n.measured?.width  ?? 60) + MARGIN,
+    h: (n.measured?.height ?? 60) + MARGIN,
+  }))
+
+  const MAX_ITER = 20
+  for (let iter = 0; iter < MAX_ITER; iter++) {
+    let moved = false
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i], b = boxes[j]
+        const ax = a.x + a.w / 2, ay = a.y + a.h / 2
+        const bx = b.x + b.w / 2, by = b.y + b.h / 2
+        const dx = bx - ax, dy = by - ay
+        const overlapX = (a.w + b.w) / 2 - Math.abs(dx)
+        const overlapY = (a.h + b.h) / 2 - Math.abs(dy)
+        if (overlapX > 0 && overlapY > 0) {
+          moved = true
+          const push = overlapX < overlapY
+            ? overlapX / 2 * (dx > 0 ? 1 : -1)
+            : overlapY / 2 * (dy > 0 ? 1 : -1)
+          if (overlapX < overlapY) {
+            a.x -= push; b.x += push
+          } else {
+            a.y -= push; b.y += push
+          }
+        }
+      }
+    }
+    if (!moved) break
+  }
+
+  return nodes.map(n => {
+    const box = boxes.find(b => b.id === n.id)!
+    return { ...n, position: { x: box.x, y: box.y } }
+  })
+}
+
 /* ── Build ReactFlow elements ──────────────────────────────────── */
 
 function buildElements(
@@ -256,22 +380,56 @@ function buildElements(
   const nodes: Node[] = []
   const edges: Edge[] = []
 
-  // Entry / exit labels
+  // Entry node — sits above CREENCIAS
+  const originPos = CONTAINER_POSITIONS['origin']
+  const maskPos   = CONTAINER_POSITIONS['mask']
   nodes.push({
-    id: 'label-entry',
-    type: 'label',
-    position: { x: 50, y: 176 },
+    id: 'entry',
+    type: 'entry',
+    position: { x: originPos.x + CONTAINER_WIDTH / 2 - 80, y: originPos.y - 60 },
     draggable: false,
     selectable: false,
-    data: { text: '<- estimulo externo' },
+    data: {},
   })
+  edges.push({
+    id: 'edge-entry',
+    source: 'entry',
+    target: 'container-origin',
+    targetHandle: 'top',
+    type: 'smoothstep',
+    animated: false,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: '#c4b9ae',
+      width: 14,
+      height: 14,
+    },
+    style: { stroke: '#c4b9ae', strokeWidth: 1.5, strokeDasharray: '5 4' },
+  })
+
+  // Exit node — sits below MÁSCARAS
   nodes.push({
-    id: 'label-exit',
-    type: 'label',
-    position: { x: 50, y: 600 + CONTAINER_HEIGHT + 10 },
+    id: 'exit',
+    type: 'exit',
+    position: { x: maskPos.x + CONTAINER_WIDTH / 2 - 80, y: maskPos.y + CONTAINER_HEIGHT + 20 },
     draggable: false,
     selectable: false,
-    data: { text: 'reaccion al mundo ->' },
+    data: {},
+  })
+  edges.push({
+    id: 'edge-exit',
+    source: 'container-mask',
+    target: 'exit',
+    sourceHandle: 'bottom',
+    type: 'smoothstep',
+    animated: false,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: '#c4b9ae',
+      width: 14,
+      height: 14,
+    },
+    style: { stroke: '#c4b9ae', strokeWidth: 1.5, strokeDasharray: '5 4' },
   })
 
   // Containers
@@ -284,7 +442,7 @@ function buildElements(
       id: `container-${meta.domain}`,
       type: 'container',
       position: pos,
-      draggable: false,
+      draggable: true,
       selectable: true,
       data: {
         domain: meta.domain,
@@ -318,18 +476,18 @@ function buildElements(
           nodeId: cn.id,
           label: cn.label,
           color: meta.color,
-          size,
+          salience: cn.salience,
           isSelected: cn.id === selectedId,
           onSelect,
         },
       })
 
-      // Edge from orbital to container
+      // Edge from orbital (left) to container (right side)
       edges.push({
         id: `orbital-edge-${cn.id}`,
         source: `node-${cn.id}`,
         target: `container-${meta.domain}`,
-        targetHandle: 'top',
+        targetHandle: 'right',
         type: 'straight',
         animated: false,
         style: {
@@ -341,34 +499,58 @@ function buildElements(
     }
   }
 
-  // Flow edges — snake pattern with solid arrows
-  // Vertical flow: all arrows go bottom→top
+  // Flow edges — psychological chain, top to bottom
   const flowPath = [
-    { from: 'origin', to: 'fear',  sourceHandle: 'bottom', targetHandle: 'top' },
-    { from: 'fear',   to: 'drive', sourceHandle: 'bottom', targetHandle: 'top' },
-    { from: 'drive',  to: 'bond',  sourceHandle: 'bottom', targetHandle: 'top' },
-    { from: 'bond',   to: 'mask',  sourceHandle: 'bottom', targetHandle: 'top' },
+    {
+      from: 'origin', to: 'fear',
+      label: 'lo que da por hecho define lo que teme perder',
+    },
+    {
+      from: 'fear', to: 'drive',
+      label: 'el miedo se convierte en impulso y obsesión',
+    },
+    {
+      from: 'drive', to: 'bond',
+      label: 'perseguir sin descanso abre grietas profundas',
+    },
+    {
+      from: 'bond', to: 'mask',
+      label: 'las grietas exigen una máscara para seguir',
+    },
   ]
 
-  for (const { from, to, sourceHandle, targetHandle } of flowPath) {
+  for (const { from, to, label } of flowPath) {
     const fromMeta = ALL_CONTAINERS.find(c => c.domain === from)
     edges.push({
       id: `flow-${from}-${to}`,
       source: `container-${from}`,
       target: `container-${to}`,
-      sourceHandle: sourceHandle || undefined,
-      targetHandle: targetHandle || undefined,
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
       type: 'smoothstep',
       animated: false,
+      label,
+      labelStyle: {
+        fontSize: 10,
+        fontStyle: 'italic',
+        fill: '#a8a29e',
+        fontFamily: 'Lora, Georgia, serif',
+      },
+      labelBgStyle: {
+        fill: 'hsl(40 20% 97%)',
+        fillOpacity: 0.9,
+      },
+      labelBgPadding: [6, 4] as [number, number],
+      labelBgBorderRadius: 4,
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: `${fromMeta?.color}70`,
-        width: 14,
-        height: 14,
+        color: `${fromMeta?.color}90`,
+        width: 16,
+        height: 16,
       },
       style: {
-        stroke: `${fromMeta?.color}55`,
-        strokeWidth: 1.5,
+        stroke: `${fromMeta?.color}70`,
+        strokeWidth: 2,
       },
     })
   }
@@ -430,10 +612,22 @@ export function CharacterGraphCanvas({
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges] = useEdgesState(flowEdges)
 
-  useEffect(() => { setNodes(flowNodes) }, [flowNodes, setNodes])
+  useEffect(() => {
+    setNodes(prev => {
+      const posMap = new Map(prev.map(n => [n.id, n.position]))
+      return flowNodes.map(n => ({
+        ...n,
+        position: posMap.has(n.id) ? posMap.get(n.id)! : n.position,
+      }))
+    })
+  }, [flowNodes, setNodes])
   useEffect(() => { setEdges(flowEdges) }, [flowEdges, setEdges])
 
   const handlePaneClick = useCallback(() => onSelectNode(null), [onSelectNode])
+
+  const handleNodeDragStop = useCallback(() => {
+    setNodes(nds => resolveCollisions(nds))
+  }, [setNodes])
 
   // ReactFlow-level click — works reliably unlike onClick inside custom nodes
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -488,6 +682,7 @@ export function CharacterGraphCanvas({
       nodeTypes={nodeTypes}
       onPaneClick={handlePaneClick}
       onNodeClick={handleNodeClick}
+      onNodeDragStop={handleNodeDragStop}
       onNodeContextMenu={handleNodeContextMenu}
       fitView
       fitViewOptions={{ padding: 0.12 }}
@@ -497,6 +692,53 @@ export function CharacterGraphCanvas({
       proOptions={{ hideAttribution: true }}
     >
       <Background color="#e8e0d4" gap={20} size={1} />
+
+      <Panel position="top-right">
+        <div style={{
+          background: 'white',
+          border: '1px solid #e7e0d8',
+          borderRadius: 10,
+          padding: '12px 16px',
+          maxWidth: 200,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+        }}>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: '#78716c',
+            marginBottom: 8,
+          }}>
+            Arquitectura psicológica
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {ALL_CONTAINERS.map(m => (
+              <div key={m.domain} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: m.color, flexShrink: 0,
+                }} />
+                <span style={{ fontSize: 10, color: '#57534e', lineHeight: 1.3 }}>
+                  <strong style={{ color: m.color, fontWeight: 600 }}>{m.label}</strong>
+                  {' — '}{m.subtitle}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div style={{
+            marginTop: 10,
+            paddingTop: 8,
+            borderTop: '1px solid #f0ebe4',
+            fontSize: 9,
+            color: '#a8a29e',
+            fontStyle: 'italic',
+            lineHeight: 1.5,
+          }}>
+            Los nodos orbitales representan creencias concretas. Su tamaño indica cuánto peso tienen en la psicología del personaje.
+          </div>
+        </div>
+      </Panel>
     </ReactFlow>
   )
 }

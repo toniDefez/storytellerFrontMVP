@@ -7,6 +7,11 @@ import {
   generateLocationRegions, expandLocationNode,
 } from '@/services/api'
 
+async function fetchGraph(worldId: number) {
+  const graph = await getLocationGraph(worldId)
+  return { nodes: graph.nodes ?? [], edges: graph.edges ?? [] }
+}
+
 export type SelectedLocation =
   | { type: 'node'; item: LocationNode }
   | { type: 'edge'; item: LocationEdge }
@@ -55,9 +60,11 @@ export function useLocationGraph(worldId: number | null) {
     setGenerating(true)
     setError('')
     try {
-      const graph = await generateLocationRegions(worldId, true)
-      setNodes(prev => [...prev, ...(graph.nodes ?? [])])
-      setEdges(prev => [...prev, ...(graph.edges ?? [])])
+      await generateLocationRegions(worldId, true)
+      // Reload full graph from DB to get accurate state (includes pre-existing nodes)
+      const { nodes: fresh, edges: freshEdges } = await fetchGraph(worldId)
+      setNodes(fresh)
+      setEdges(freshEdges)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error añadiendo regiones')
     } finally {

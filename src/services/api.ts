@@ -267,22 +267,11 @@ export function deleteSubtree(worldId: number, nodeId: number) {
 
 // --- World Detail ---
 
-export type ConsciousnessState = 'dormido' | 'inquieto' | 'despierto' | 'explotador' | 'subversivo'
 export interface Character {
   id: number
   name: string
-  role: string
-  personality: string
-  background: string
-  goals: string[]
   world_id: number
-  // prose derivation fields
   premise?: string
-  social_position?: string
-  internal_contradiction?: string
-  faction_affiliation?: string
-  // structured fields
-  consciousness_state?: ConsciousnessState
   voice_register?: VoiceRegister
 }
 
@@ -639,10 +628,10 @@ export function deleteLocationEdge(id: number) {
   return request<void>(`/location/edges/delete?id=${id}`, { method: 'DELETE' })
 }
 
-export function generateLocationRegions(worldId: number) {
+export function generateLocationRegions(worldId: number, additive = false) {
   return request<LocationGraph>('/location/generate-regions', {
     method: 'POST',
-    body: JSON.stringify({ world_id: worldId }),
+    body: JSON.stringify({ world_id: worldId, additive }),
   })
 }
 
