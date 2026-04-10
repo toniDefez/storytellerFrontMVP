@@ -248,8 +248,9 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                       value={selectedNode.salience}
                       onChange={e => {
                         const val = Number(e.target.value)
-                        editNode(selectedNode.id, { salience: val })
-                        setSelectedNode(prev => prev ? { ...prev, salience: val } : prev)
+                        const updated = { ...selectedNode, salience: val }
+                        setSelectedNode(updated)
+                        editNode(selectedNode.id, updated)
                       }}
                       className="w-full accent-amber-500"
                     />
