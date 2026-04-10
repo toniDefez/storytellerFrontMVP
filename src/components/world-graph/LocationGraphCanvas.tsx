@@ -16,7 +16,7 @@ import {
   type OnConnect,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { LocationNode as LocationNodeComponent } from './LocationNode'
 import { WaterwayEdge, WildernessEdge, RoadEdge, HierarchyEdge } from './LocationEdges'
 import { LocationSidePanel } from './LocationSidePanel'
@@ -49,6 +49,7 @@ interface Props {
   onUpdateEdge: (id: number, data: Pick<LocationEdge, 'edge_type' | 'effort' | 'dramatic_charge' | 'bidirectional' | 'note'>) => Promise<void>
   onDeleteEdge: (id: number) => void
   onGenerate: () => void
+  onAddRegions: () => void
   generating: boolean
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
@@ -140,7 +141,7 @@ function LocationGraphInner({
   onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
   onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
-  onGenerate, generating,
+  onGenerate, onAddRegions, generating,
   onExpandWithAI, expandingNodeId,
 }: Props) {
   const { fitView } = useReactFlow()
@@ -304,6 +305,14 @@ function LocationGraphInner({
               className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-[#14b8a6] text-muted-foreground hover:text-[#14b8a6] transition-colors flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" /> Añadir
+            </button>
+            <button
+              onClick={onAddRegions}
+              disabled={generating}
+              className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              {generating ? 'Generando...' : 'Añadir regiones'}
             </button>
             <button
               onClick={onGenerate}

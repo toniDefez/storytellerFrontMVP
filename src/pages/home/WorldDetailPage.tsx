@@ -65,7 +65,7 @@ export default function WorldDetailPage() {
     selected: locationSelected, setSelected: setLocationSelected,
     generating: locationGenerating,
     expandingNodeId: locationExpandingNodeId,
-    loadGraph: loadLocationGraph, generate: generateLocations,
+    loadGraph: loadLocationGraph, generate: generateLocations, addRegions: addLocationRegions,
     expandNode: expandLocationNode,
     moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
     editEdge, removeEdge,
@@ -390,6 +390,7 @@ export default function WorldDetailPage() {
               onUpdateEdge={editEdge}
               onDeleteEdge={removeEdge}
               onGenerate={() => setConfirmRegen(true)}
+              onAddRegions={addLocationRegions}
               generating={locationGenerating}
               onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
               expandingNodeId={locationExpandingNodeId}

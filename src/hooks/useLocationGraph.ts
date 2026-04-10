@@ -50,6 +50,21 @@ export function useLocationGraph(worldId: number | null) {
     }
   }, [worldId])
 
+  const addRegions = useCallback(async () => {
+    if (!worldId) return
+    setGenerating(true)
+    setError('')
+    try {
+      const graph = await generateLocationRegions(worldId, true)
+      setNodes(prev => [...prev, ...(graph.nodes ?? [])])
+      setEdges(prev => [...prev, ...(graph.edges ?? [])])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error añadiendo regiones')
+    } finally {
+      setGenerating(false)
+    }
+  }, [worldId])
+
   const expandNode = useCallback(async (worldId: number, nodeId: number) => {
     setExpandingNodeId(nodeId)
     setError('')
@@ -107,7 +122,7 @@ export function useLocationGraph(worldId: number | null) {
   return {
     nodes, edges, selected, setSelected,
     loading, generating, expandingNodeId, error,
-    loadGraph, generate, expandNode,
+    loadGraph, generate, addRegions, expandNode,
     addNode, editNode, moveNode, removeNode,
     addEdge, editEdge, removeEdge,
   }
