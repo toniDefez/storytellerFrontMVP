@@ -1,3 +1,10 @@
+## [1.26.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.26.0...v1.26.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* send full node data on salience slider change ([09da61d](https://github.com/toniDefez/storytellerFrontMVP/commit/09da61d51fd85bdc1c9b5759cf2d14f71d02fb6c))
+
 # [1.26.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.25.0...v1.26.0) (2026-04-10)
 
 
