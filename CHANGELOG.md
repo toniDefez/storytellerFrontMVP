@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.25.0...v1.26.0) (2026-04-10)
+
+
+### Features
+
+* salience slider 1-10 in character graph UI ([a997e19](https://github.com/toniDefez/storytellerFrontMVP/commit/a997e191fc708c0c8825837702d5adf6fa44d5f3))
+
 # [1.25.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.24.0...v1.25.0) (2026-04-07)
 
 
