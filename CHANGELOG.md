@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.26.1...v1.27.0) (2026-04-10)
+
+
+### Features
+
+* **location:** draw hierarchy edges from parent to child nodes ([3d47e12](https://github.com/toniDefez/storytellerFrontMVP/commit/3d47e12bda50cee56405a93ed54657dbc422d1ba))
+
 ## [1.26.1](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.26.0...v1.26.1) (2026-04-10)
 
 
