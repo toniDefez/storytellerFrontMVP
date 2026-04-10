@@ -16,11 +16,6 @@ const ROLES: { value: CharacterNodeRole; label: string }[] = [
   { value: 'arc_seed', label: 'Semilla de arco' },
 ]
 
-const SALIENCE: { value: 'high' | 'medium' | 'low'; label: string }[] = [
-  { value: 'high', label: 'Alta' },
-  { value: 'medium', label: 'Media' },
-  { value: 'low', label: 'Baja' },
-]
 
 interface Props {
   node?: CharacterNode  // undefined = create mode
@@ -35,7 +30,7 @@ export function CharacterNodeForm({ node, defaultDomain, onSave, onDelete, onCan
   const [description, setDescription] = useState(node?.description || '')
   const [domain, setDomain] = useState<CharacterNodeDomain>(node?.domain || defaultDomain || 'fear')
   const [role, setRole] = useState<CharacterNodeRole>(node?.role || 'trait')
-  const [salience, setSalience] = useState(node?.salience || 'medium')
+  const [salience, setSalience] = useState(node?.salience ?? 5)
   const [arcDestination, setArcDestination] = useState(node?.arc_destination || '')
 
   const handleSubmit = () => {
@@ -105,19 +100,17 @@ export function CharacterNodeForm({ node, defaultDomain, onSave, onDelete, onCan
           </div>
         </div>
         <div>
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Saliencia</p>
-          <div className="flex gap-1">
-            {SALIENCE.map(s => (
-              <button
-                key={s.value}
-                onClick={() => setSalience(s.value)}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all
-                  ${salience === s.value ? 'bg-foreground/10 text-foreground ring-1 ring-foreground/20' : 'bg-muted/30 text-muted-foreground/50 hover:bg-muted/50'}`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1.5">
+            Intensidad <span className="text-foreground/60 font-bold">{salience}</span>/10
+          </p>
+          <input
+            type="range"
+            min={1}
+            max={10}
+            value={salience}
+            onChange={e => setSalience(Number(e.target.value))}
+            className="w-full accent-amber-500"
+          />
         </div>
       </div>
 

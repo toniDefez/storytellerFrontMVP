@@ -21,7 +21,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
-    loadGraph, removeNode,
+    loadGraph, removeNode, editNode,
     updateVoice, sendMessage, generateNodes, clearChat,
     toggleMode, setSelectedNodeId,
     addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
@@ -238,8 +238,21 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                     </div>
                   )}
                   <div>
-                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Saliencia</p>
-                    <span className="text-xs text-foreground/60 capitalize">{selectedNode.salience || 'medium'}</span>
+                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">
+                      Intensidad <span className="text-foreground/70 font-bold">{selectedNode.salience}</span>/10
+                    </p>
+                    <input
+                      type="range"
+                      min={1}
+                      max={10}
+                      value={selectedNode.salience}
+                      onChange={e => {
+                        const val = Number(e.target.value)
+                        editNode(selectedNode.id, { salience: val })
+                        setSelectedNode(prev => prev ? { ...prev, salience: val } : prev)
+                      }}
+                      className="w-full accent-amber-500"
+                    />
                   </div>
                   {selectedNode.arc_destination && (
                     <div>

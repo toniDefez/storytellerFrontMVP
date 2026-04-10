@@ -296,7 +296,7 @@ export interface CharacterNode {
   role: CharacterNodeRole
   label: string
   description: string
-  salience: 'high' | 'medium' | 'low'
+  salience: number
   arc_destination?: string
   canvas_x: number
   canvas_y: number
@@ -731,7 +731,7 @@ export interface CatalogNode {
   domain: CharacterNodeDomain
   label: string
   description: string
-  salience: 'high' | 'medium' | 'low'
+  salience: number
   sort_order: number
 }
 
@@ -741,7 +741,7 @@ export interface WorldCatalogNode {
   domain: CharacterNodeDomain
   label: string
   description: string
-  salience: 'high' | 'medium' | 'low'
+  salience: number
   source: 'manual' | 'ai_suggested'
 }
 
@@ -767,7 +767,7 @@ export function createWorldCatalogNode(data: {
   domain: CharacterNodeDomain
   label: string
   description: string
-  salience: 'high' | 'medium' | 'low'
+  salience: number
 }) {
   return request<WorldCatalogNode>('/character/world-catalog', {
     method: 'POST',

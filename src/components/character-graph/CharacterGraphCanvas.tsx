@@ -47,10 +47,9 @@ const CONTAINER_HEIGHT = 300
 
 /* ── Orbital sizing ─────────────────────────────────────────────── */
 
-const SALIENCE_SIZE: Record<string, number> = {
-  high: 44,
-  medium: 32,
-  low: 22,
+function getSalienceSize(salience: number): number {
+  const clamped = Math.max(1, Math.min(10, salience))
+  return Math.round(20 + (clamped - 1) * 3)
 }
 
 
@@ -307,7 +306,7 @@ function buildElements(
     for (let i = 0; i < domainNodes.length; i++) {
       const cn = domainNodes[i]
       const oPos = orbitalPos[i]
-      const size = SALIENCE_SIZE[cn.salience] || SALIENCE_SIZE.medium
+      const size = getSalienceSize(cn.salience)
 
       nodes.push({
         id: `node-${cn.id}`,

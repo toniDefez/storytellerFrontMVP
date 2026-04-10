@@ -20,10 +20,10 @@ const DOMAIN_META: Record<CharacterNodeDomain, { label: string; subtitle: string
   mask:    { label: 'Mascaras',   subtitle: '¿Que muestra?',       color: '#10B981' },
 }
 
-const SALIENCE_DOT: Record<string, string> = {
-  high:   'w-2.5 h-2.5',
-  medium: 'w-1.5 h-1.5',
-  low:    'w-1 h-1',
+function getSalienceDotSize(salience: number): string {
+  if (salience >= 7) return 'w-2.5 h-2.5'
+  if (salience >= 4) return 'w-1.5 h-1.5'
+  return 'w-1 h-1'
 }
 
 /* ── Catalog item ─────────────────────────────────────────────── */
@@ -31,7 +31,7 @@ const SALIENCE_DOT: Record<string, string> = {
 interface CatalogItemProps {
   label: string
   description: string
-  salience: string
+  salience: number
   color: string
   onClick: () => void
 }
@@ -45,7 +45,7 @@ function CatalogItem({ label, description, salience, color, onClick }: CatalogIt
     >
       <div className="flex items-center gap-2">
         <div
-          className={`rounded-full shrink-0 ${SALIENCE_DOT[salience] || SALIENCE_DOT.medium}`}
+          className={`rounded-full shrink-0 ${getSalienceDotSize(salience)}`}
           style={{ background: color }}
         />
         <span className="text-[12px] font-semibold text-stone-800 truncate">{label}</span>
@@ -112,7 +112,7 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
         domain,
         label: newLabel.trim(),
         description: '',
-        salience: 'medium',
+        salience: 5,
       })
       setWorldNodes(prev => [...prev, created])
       setNewLabel('')
