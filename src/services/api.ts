@@ -393,6 +393,31 @@ export function updateNodePosition(nodeId: number, x: number, y: number) {
   })
 }
 
+// --- Voice Options Catalog ---
+
+export interface VoiceOption {
+  id: number
+  dimension: string
+  value: string
+  label: string
+  description: string
+}
+
+export function getVoiceOptions() {
+  return request<VoiceOption[]>('/voice/options')
+}
+
+export function getVoiceSelections(characterId: number) {
+  return request<VoiceOption[]>(`/character/voice-selections?character_id=${characterId}`)
+}
+
+export function saveVoiceSelections(characterId: number, optionIds: number[]) {
+  return request<void>(`/character/voice-selections?character_id=${characterId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ option_ids: optionIds }),
+  })
+}
+
 export function updateVoiceRegister(characterId: number, vr: VoiceRegister) {
   return request<void>(`/character/voice-register?character_id=${characterId}`, {
     method: 'PUT',

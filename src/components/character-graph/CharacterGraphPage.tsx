@@ -374,6 +374,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
         {mode === 'voice' && (
           <div className="absolute inset-0">
             <VoiceTab
+              characterId={characterId}
               voiceRegister={voiceRegister}
               voiceExamples={voiceExamples}
               characterName={characterName}

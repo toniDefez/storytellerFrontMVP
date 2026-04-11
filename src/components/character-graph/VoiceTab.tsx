@@ -3,6 +3,7 @@ import { VoiceRegisterEditor } from './VoiceRegisterEditor'
 import { VoiceExamplesEditor } from './VoiceExamplesEditor'
 
 interface Props {
+  characterId: number
   voiceRegister: VoiceRegister
   voiceExamples: VoiceExample[]
   characterName: string
@@ -13,8 +14,8 @@ interface Props {
 }
 
 export function VoiceTab({
-  voiceRegister, voiceExamples, characterName,
-  onVoiceChange, onExamplesChange,
+  characterId, voiceExamples, characterName,
+  onExamplesChange,
   onGenerateExamples, generating,
 }: Props) {
   return (
@@ -25,7 +26,7 @@ export function VoiceTab({
           <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600/60 mb-3">
             Registro de voz
           </p>
-          <VoiceRegisterEditor voiceRegister={voiceRegister} onChange={onVoiceChange} />
+          <VoiceRegisterEditor characterId={characterId} />
         </section>
 
         {/* Voice examples */}
