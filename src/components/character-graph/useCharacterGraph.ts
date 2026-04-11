@@ -7,13 +7,14 @@ import {
   updateVoiceRegister as apiUpdateVoiceRegister,
   generateCharacterNodes, characterChat,
   addNodeFromCatalog as apiAddFromCatalog,
-  addNodeFromWorldCatalog as apiAddFromWorldCatalog,
+  addNodeFromContextual as apiAddFromContextual,
   synthesizeDomain as apiSynthesizeDomain,
   getSynthesis as apiGetSynthesis,
   getCharacterSoul,
   regenerateCharacterSoul,
   getVoiceExamples,
   saveVoiceExamples as apiSaveVoiceExamples,
+  generateVoiceExamples as apiGenerateVoiceExamples,
 } from '@/services/api'
 
 export type CharacterGraphMode = 'graph' | 'talk' | 'voice'
@@ -36,6 +37,8 @@ export function useCharacterGraph(characterId: number) {
   const [soul, setSoul] = useState<CharacterSoul | null>(null)
   const [soulLoading, setSoulLoading] = useState(false)
   const [voiceExamples, setVoiceExamples] = useState<VoiceExample[]>([])
+  const [premise, setPremise] = useState('')
+  const [generatingExamples, setGeneratingExamples] = useState(false)
 
   const loadGraph = useCallback(async () => {
     setLoading(true)
@@ -52,6 +55,7 @@ export function useCharacterGraph(characterId: number) {
       setSoul(soulResult)
       setVoiceRegister(char.voice_register || { emotional_rhythm: '', social_posture: '', cognitive_tempo: '', expressive_style: '' })
       setCharacterName(char.name)
+      setPremise(char.premise || '')
       setChatMessages(history ?? [])
       const examples = await getVoiceExamples(characterId)
       setVoiceExamples(examples ?? [])
@@ -122,6 +126,19 @@ export function useCharacterGraph(characterId: number) {
     }
   }, [characterId])
 
+  const generateExamples = useCallback(async () => {
+    setGeneratingExamples(true)
+    try {
+      const examples = await apiGenerateVoiceExamples(characterId)
+      setVoiceExamples(examples ?? [])
+    } catch (err) {
+      console.error('Failed to generate voice examples:', err)
+      setError(err instanceof Error ? err.message : 'Error generando muestras')
+    } finally {
+      setGeneratingExamples(false)
+    }
+  }, [characterId])
+
   const clearChat = useCallback(() => {
     setChatMessages([])
   }, [])
@@ -180,15 +197,15 @@ export function useCharacterGraph(characterId: number) {
     }
   }, [characterId])
 
-  const addFromWorldCatalog = useCallback(async (worldCatalogNodeId: number) => {
+  const addFromContextual = useCallback(async (contextualNodeId: number) => {
     try {
-      const created = await apiAddFromWorldCatalog(characterId, worldCatalogNodeId)
+      const created = await apiAddFromContextual(characterId, contextualNodeId)
       setNodes(prev => [...prev, created])
       setSynthesis(prev => prev.map(s => s.domain === created.domain ? { ...s, is_stale: true } : s))
       setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return created
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error adding node from world catalog')
+      setError(err instanceof Error ? err.message : 'Error adding node from contextual catalog')
       return null
     }
   }, [characterId])
@@ -232,12 +249,12 @@ export function useCharacterGraph(characterId: number) {
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
-    voiceExamples,
+    voiceExamples, premise, generatingExamples,
     // Actions
     loadGraph, addNode, editNode, removeNode, moveNode,
-    updateVoice, saveExamples, sendMessage, generateNodes,
+    updateVoice, saveExamples, generateExamples, sendMessage, generateNodes,
     clearChat, toggleMode, setSelectedNodeId, setMode,
-    loadSynthesis, addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
+    loadSynthesis, addFromCatalog, addFromContextual, regenerateSynthesis,
     regenerateSoul,
   }
 }

@@ -23,16 +23,16 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
-    voiceExamples,
+    voiceExamples, premise, generatingExamples,
     loadGraph, removeNode, editNode,
-    updateVoice, saveExamples, sendMessage, generateNodes, clearChat,
+    updateVoice, saveExamples, generateExamples, sendMessage, generateNodes, clearChat,
     toggleMode, setSelectedNodeId,
-    addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
+    addFromCatalog, addFromContextual, regenerateSynthesis,
     regenerateSoul,
   } = useCharacterGraph(characterId)
 
   const [selectedNode, setSelectedNode] = useState<CharacterNode | undefined>()
-  const [premise, setPremise] = useState('')
+  const [localPremise, setLocalPremise] = useState('')
   const [selectedContainer, setSelectedContainer] = useState<CharacterNodeDomain | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuEvent | null>(null)
 
@@ -63,8 +63,8 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     await addFromCatalog(catalogNodeId)
   }
 
-  const handleAddFromWorldCatalog = async (worldCatalogNodeId: number) => {
-    await addFromWorldCatalog(worldCatalogNodeId)
+  const handleAddFromContextual = async (contextualNodeId: number) => {
+    await addFromContextual(contextualNodeId)
   }
 
   const handleRegenerateSynthesis = (domain: CharacterNodeDomain) => {
@@ -88,9 +88,9 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
   }
 
   const handleGenerate = async () => {
-    if (!premise.trim()) return
-    await generateNodes(premise.trim())
-    setPremise('')
+    if (!localPremise.trim()) return
+    await generateNodes(localPremise.trim())
+    setLocalPremise('')
   }
 
   if (loading) {
@@ -108,8 +108,8 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
           Escribe una premisa para generar el flujo de decision de <strong>{characterName}</strong>
         </p>
         <textarea
-          value={premise}
-          onChange={e => setPremise(e.target.value)}
+          value={localPremise}
+          onChange={e => setLocalPremise(e.target.value)}
           placeholder="Una excavadora que descubrio que el Acuifero es un mito..."
           rows={3}
           className="w-full border-2 border-dashed border-amber-400/25 rounded-xl px-4 py-3
@@ -119,7 +119,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
         />
         <button
           onClick={handleGenerate}
-          disabled={!premise.trim()}
+          disabled={!localPremise.trim()}
           className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
                      bg-gradient-to-r from-amber-600 to-orange-500 text-white font-medium text-sm
                      disabled:opacity-40 hover:shadow-lg hover:shadow-amber-500/20
@@ -175,20 +175,20 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
               Flujo
             </button>
             <button
-              onClick={() => { if (mode !== 'talk') toggleMode('talk') }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
-                ${mode === 'talk' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground/60 hover:text-foreground/80'}`}
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              Hablar
-            </button>
-            <button
               onClick={() => { if (mode !== 'voice') toggleMode('voice') }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
                 ${mode === 'voice' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground/60 hover:text-foreground/80'}`}
             >
               <Mic className="w-3.5 h-3.5" />
               Voz
+            </button>
+            <button
+              onClick={() => { if (mode !== 'talk') toggleMode('talk') }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
+                ${mode === 'talk' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground/60 hover:text-foreground/80'}`}
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              Hablar
             </button>
           </div>
           {onDelete && (
@@ -291,7 +291,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
               worldId={worldId}
               onClose={handleCloseDrawer}
               onAddFromCatalog={handleAddFromCatalog}
-              onAddFromWorldCatalog={handleAddFromWorldCatalog}
+              onAddFromContextual={handleAddFromContextual}
             />
 
             {/* Context menus */}
@@ -362,7 +362,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                 onClearChat={clearChat}
                 voiceBadge={
                   <VoiceBadge
-                    voiceRegister={voiceRegister}
+                    characterId={characterId}
                     onClick={() => toggleMode('voice')}
                   />
                 }
@@ -378,8 +378,11 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
               voiceRegister={voiceRegister}
               voiceExamples={voiceExamples}
               characterName={characterName}
+              premise={premise}
               onVoiceChange={updateVoice}
               onExamplesChange={saveExamples}
+              onGenerateExamples={generateExamples}
+              generating={generatingExamples}
             />
           </div>
         )}

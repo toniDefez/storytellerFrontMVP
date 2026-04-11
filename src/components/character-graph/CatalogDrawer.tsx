@@ -7,8 +7,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
-import type { CharacterNodeDomain, CatalogNode, WorldCatalogNode } from '@/services/api'
-import { getCatalog, getWorldCatalog, createWorldCatalogNode } from '@/services/api'
+import type { CharacterNodeDomain, CatalogNode, ContextualCharacterNode } from '@/services/api'
+import { getCatalog, getContextualNodes, createContextualNode } from '@/services/api'
 
 /* ── Container metadata (mirrors canvas) ─────────────────────── */
 
@@ -67,12 +67,12 @@ interface Props {
   worldId: number
   onClose: () => void
   onAddFromCatalog: (catalogNodeId: number) => Promise<void>
-  onAddFromWorldCatalog: (worldCatalogNodeId: number) => Promise<void>
+  onAddFromContextual: (contextualNodeId: number) => Promise<void>
 }
 
-export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog, onAddFromWorldCatalog }: Props) {
+export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog, onAddFromContextual }: Props) {
   const [catalogNodes, setCatalogNodes] = useState<CatalogNode[]>([])
-  const [worldNodes, setWorldNodes] = useState<WorldCatalogNode[]>([])
+  const [contextualNodes, setContextualNodes] = useState<ContextualCharacterNode[]>([])
   const [loading, setLoading] = useState(false)
   const [newLabel, setNewLabel] = useState('')
   const [creating, setCreating] = useState(false)
@@ -82,10 +82,10 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
     setLoading(true)
     Promise.all([
       getCatalog(domain).catch(() => [] as CatalogNode[]),
-      getWorldCatalog(worldId, domain).catch(() => [] as WorldCatalogNode[]),
-    ]).then(([catalog, world]) => {
+      getContextualNodes(worldId, domain).catch(() => [] as ContextualCharacterNode[]),
+    ]).then(([catalog, contextual]) => {
       setCatalogNodes(catalog)
-      setWorldNodes(world)
+      setContextualNodes(contextual)
     }).finally(() => setLoading(false))
   }, [open, domain, worldId])
 
@@ -98,8 +98,8 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
     onClose()
   }
 
-  const handleAddFromWorld = async (id: number) => {
-    await onAddFromWorldCatalog(id)
+  const handleAddFromContextual = async (id: number) => {
+    await onAddFromContextual(id)
     onClose()
   }
 
@@ -107,17 +107,17 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
     if (!newLabel.trim() || !domain) return
     setCreating(true)
     try {
-      const created = await createWorldCatalogNode({
+      const created = await createContextualNode({
         world_id: worldId,
         domain,
         label: newLabel.trim(),
         description: '',
         salience: 5,
       })
-      setWorldNodes(prev => [...prev, created])
+      setContextualNodes(prev => [...prev, created])
       setNewLabel('')
     } catch (err) {
-      console.error('Error creating world catalog node:', err)
+      console.error('Error creating contextual node:', err)
     } finally {
       setCreating(false)
     }
@@ -165,21 +165,21 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
               </div>
             )}
 
-            {/* World / contextual catalog */}
+            {/* Contextual catalog */}
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50 mb-2">
                 Contextual
               </p>
-              {worldNodes.length > 0 ? (
+              {contextualNodes.length > 0 ? (
                 <div className="space-y-0.5">
-                  {worldNodes.map(node => (
+                  {contextualNodes.map(node => (
                     <CatalogItem
-                      key={`world-${node.id}`}
+                      key={`contextual-${node.id}`}
                       label={node.label}
                       description={node.description}
                       salience={node.salience}
                       color={meta.color}
-                      onClick={() => handleAddFromWorld(node.id)}
+                      onClick={() => handleAddFromContextual(node.id)}
                     />
                   ))}
                 </div>

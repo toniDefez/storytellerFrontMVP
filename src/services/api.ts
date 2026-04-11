@@ -436,6 +436,12 @@ export function saveVoiceExamples(characterId: number, examples: VoiceExample[])
   })
 }
 
+export function generateVoiceExamples(characterId: number) {
+  return request<VoiceExample[]>(`/character/voice-examples/generate?character_id=${characterId}`, {
+    method: 'POST',
+  })
+}
+
 export function generateCharacterNodes(characterId: number, premise: string) {
   return request<{ nodes: CharacterNode[]; voice_register: VoiceRegister }>(`/character/generate-nodes?character_id=${characterId}`, {
     method: 'POST',
@@ -781,7 +787,7 @@ export interface CatalogNode {
   sort_order: number
 }
 
-export interface WorldCatalogNode {
+export interface ContextualCharacterNode {
   id: number
   world_id: number
   domain: CharacterNodeDomain
@@ -803,19 +809,19 @@ export function getCatalog(domain?: string) {
   return request<CatalogNode[]>(`/character/catalog${qs}`)
 }
 
-export function getWorldCatalog(worldId: number, domain?: string) {
+export function getContextualNodes(worldId: number, domain?: string) {
   const qs = domain ? `&domain=${domain}` : ''
-  return request<WorldCatalogNode[]>(`/character/world-catalog?world_id=${worldId}${qs}`)
+  return request<ContextualCharacterNode[]>(`/character/catalog/world?world_id=${worldId}${qs}`)
 }
 
-export function createWorldCatalogNode(data: {
+export function createContextualNode(data: {
   world_id: number
   domain: CharacterNodeDomain
   label: string
   description: string
   salience: number
 }) {
-  return request<WorldCatalogNode>('/character/world-catalog', {
+  return request<ContextualCharacterNode>('/character/catalog/world/create', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -828,10 +834,10 @@ export function addNodeFromCatalog(characterId: number, catalogNodeId: number) {
   })
 }
 
-export function addNodeFromWorldCatalog(characterId: number, worldCatalogNodeId: number) {
+export function addNodeFromContextual(characterId: number, contextualNodeId: number) {
   return request<CharacterNode>(`/character/node/add-from-world-catalog`, {
     method: 'POST',
-    body: JSON.stringify({ character_id: characterId, world_catalog_node_id: worldCatalogNodeId }),
+    body: JSON.stringify({ character_id: characterId, contextual_node_id: contextualNodeId }),
   })
 }
 
