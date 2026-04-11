@@ -1,29 +1,26 @@
 import { useRef, useEffect, useState, type KeyboardEvent } from 'react'
 import { Send, Trash2 } from 'lucide-react'
-import type { ChatMessage, VoiceRegister } from '@/services/api'
-import { VoiceRegisterEditor } from './VoiceRegisterEditor'
+import type { ChatMessage } from '@/services/api'
 import { HarvestButton } from './HarvestButton'
 
 interface Props {
   messages: ChatMessage[]
   characterName: string
-  voiceRegister: VoiceRegister
   loading: boolean
   onSend: (text: string) => void
   onHarvest: (messageContent: string) => void
-  onVoiceChange: (vr: VoiceRegister) => void
   onClearChat?: () => void
+  voiceBadge?: React.ReactNode
 }
 
 export function CharacterChatPanel({
   messages,
   characterName,
-  voiceRegister,
   loading,
   onSend,
   onHarvest,
-  onVoiceChange,
   onClearChat,
+  voiceBadge,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState('')
@@ -66,6 +63,12 @@ export function CharacterChatPanel({
               Limpiar chat
             </button>
           )}
+        </div>
+      )}
+
+      {voiceBadge && (
+        <div className="shrink-0 px-3 py-1.5 border-b border-border/20">
+          {voiceBadge}
         </div>
       )}
 
@@ -118,11 +121,6 @@ export function CharacterChatPanel({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Voice register — collapsible, max height limited */}
-      <div className="shrink-0 border-t border-border/30 max-h-[50vh] overflow-y-auto">
-        <VoiceRegisterEditor voiceRegister={voiceRegister} onChange={onVoiceChange} />
       </div>
 
       {/* Input — always visible */}

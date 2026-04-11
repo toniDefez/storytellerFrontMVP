@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Network, MessageCircle, Sparkles, Trash2, X } from 'lucide-react'
+import { Network, MessageCircle, Sparkles, Trash2, X, Mic } from 'lucide-react'
+import { VoiceTab } from './VoiceTab'
+import { VoiceBadge } from './VoiceBadge'
 import { useCharacterGraph } from './useCharacterGraph'
 import { CharacterGraphCanvas, type ContextMenuEvent } from './CharacterGraphCanvas'
 import { CharacterChatPanel } from './CharacterChatPanel'
@@ -21,8 +23,9 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
+    voiceExamples,
     loadGraph, removeNode, editNode,
-    updateVoice, sendMessage, generateNodes, clearChat,
+    updateVoice, saveExamples, sendMessage, generateNodes, clearChat,
     toggleMode, setSelectedNodeId,
     addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
     regenerateSoul,
@@ -164,7 +167,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
           )}
           <div className="flex gap-1 bg-muted/30 rounded-lg p-0.5">
             <button
-              onClick={() => { if (mode !== 'graph') toggleMode() }}
+              onClick={() => { if (mode !== 'graph') toggleMode('graph') }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
                 ${mode === 'graph' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground/60 hover:text-foreground/80'}`}
             >
@@ -172,12 +175,20 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
               Flujo
             </button>
             <button
-              onClick={() => { if (mode !== 'talk') toggleMode() }}
+              onClick={() => { if (mode !== 'talk') toggleMode('talk') }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
                 ${mode === 'talk' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground/60 hover:text-foreground/80'}`}
             >
               <MessageCircle className="w-3.5 h-3.5" />
               Hablar
+            </button>
+            <button
+              onClick={() => { if (mode !== 'voice') toggleMode('voice') }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
+                ${mode === 'voice' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground/60 hover:text-foreground/80'}`}
+            >
+              <Mic className="w-3.5 h-3.5" />
+              Voz
             </button>
           </div>
           {onDelete && (
@@ -316,7 +327,8 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
         )}
 
         {mode === 'talk' && (
-          <div className="absolute inset-0 grid grid-cols-[200px_1fr] min-h-0">
+          <div className="absolute inset-0 grid grid-cols-[160px_1fr] min-h-0">
+            {/* Col 1 — minimap */}
             <div className="border-r border-border/30 overflow-hidden min-h-0 flex flex-col">
               <div className="shrink-0 px-3 py-1.5 border-b border-border/20 flex justify-end">
                 {soul && !soul.is_stale && (
@@ -338,18 +350,36 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                 />
               </div>
             </div>
+
+            {/* Col 2 — chat */}
             <div className="overflow-hidden min-h-0">
               <CharacterChatPanel
                 messages={chatMessages}
                 characterName={characterName}
-                voiceRegister={voiceRegister}
                 loading={chatLoading}
                 onSend={sendMessage}
                 onHarvest={handleHarvest}
-                onVoiceChange={updateVoice}
                 onClearChat={clearChat}
+                voiceBadge={
+                  <VoiceBadge
+                    voiceRegister={voiceRegister}
+                    onClick={() => toggleMode('voice')}
+                  />
+                }
               />
             </div>
+          </div>
+        )}
+
+        {mode === 'voice' && (
+          <div className="absolute inset-0">
+            <VoiceTab
+              voiceRegister={voiceRegister}
+              voiceExamples={voiceExamples}
+              characterName={characterName}
+              onVoiceChange={updateVoice}
+              onExamplesChange={saveExamples}
+            />
           </div>
         )}
       </div>

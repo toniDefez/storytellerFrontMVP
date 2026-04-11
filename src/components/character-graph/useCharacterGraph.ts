@@ -16,7 +16,7 @@ import {
   saveVoiceExamples as apiSaveVoiceExamples,
 } from '@/services/api'
 
-export type CharacterGraphMode = 'graph' | 'talk'
+export type CharacterGraphMode = 'graph' | 'talk' | 'voice'
 
 export function useCharacterGraph(characterId: number) {
   const [nodes, setNodes] = useState<CharacterNode[]>([])
@@ -222,8 +222,8 @@ export function useCharacterGraph(characterId: number) {
     }
   }, [characterId])
 
-  const toggleMode = useCallback(() => {
-    setMode(prev => prev === 'graph' ? 'talk' : 'graph')
+  const toggleMode = useCallback((target?: 'graph' | 'talk' | 'voice') => {
+    setMode(prev => target ?? (prev === 'graph' ? 'talk' : 'graph'))
   }, [])
 
   return {
