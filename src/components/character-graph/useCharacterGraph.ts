@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { CharacterNode, VoiceRegister, ChatMessage, DomainSynthesis, CharacterSoul } from '@/services/api'
+import type { CharacterNode, VoiceRegister, ChatMessage, DomainSynthesis, CharacterSoul, VoiceExample } from '@/services/api'
 import {
   getCharacterGraph, getCharacterById, getCharacterChatHistory,
   createCharacterNode, updateCharacterNode, deleteCharacterNode, updateNodePosition,
@@ -12,6 +12,8 @@ import {
   getSynthesis as apiGetSynthesis,
   getCharacterSoul,
   regenerateCharacterSoul,
+  getVoiceExamples,
+  saveVoiceExamples as apiSaveVoiceExamples,
 } from '@/services/api'
 
 export type CharacterGraphMode = 'graph' | 'talk'
@@ -33,6 +35,7 @@ export function useCharacterGraph(characterId: number) {
   const [synthesisLoading, setSynthesisLoading] = useState<string | null>(null)
   const [soul, setSoul] = useState<CharacterSoul | null>(null)
   const [soulLoading, setSoulLoading] = useState(false)
+  const [voiceExamples, setVoiceExamples] = useState<VoiceExample[]>([])
 
   const loadGraph = useCallback(async () => {
     setLoading(true)
@@ -50,6 +53,8 @@ export function useCharacterGraph(characterId: number) {
       setVoiceRegister(char.voice_register || { emotional_rhythm: '', social_posture: '', cognitive_tempo: '', expressive_style: '' })
       setCharacterName(char.name)
       setChatMessages(history ?? [])
+      const examples = await getVoiceExamples(characterId)
+      setVoiceExamples(examples ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading graph')
     } finally {
@@ -105,6 +110,15 @@ export function useCharacterGraph(characterId: number) {
     } catch (err) {
       console.error('Failed to save voice register:', err)
       setError('Error guardando la voz')
+    }
+  }, [characterId])
+
+  const saveExamples = useCallback(async (examples: VoiceExample[]) => {
+    setVoiceExamples(examples)
+    try {
+      await apiSaveVoiceExamples(characterId, examples)
+    } catch (err) {
+      console.error('Failed to save voice examples:', err)
     }
   }, [characterId])
 
@@ -218,9 +232,10 @@ export function useCharacterGraph(characterId: number) {
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
+    voiceExamples,
     // Actions
     loadGraph, addNode, editNode, removeNode, moveNode,
-    updateVoice, sendMessage, generateNodes,
+    updateVoice, saveExamples, sendMessage, generateNodes,
     clearChat, toggleMode, setSelectedNodeId, setMode,
     loadSynthesis, addFromCatalog, addFromWorldCatalog, regenerateSynthesis,
     regenerateSoul,

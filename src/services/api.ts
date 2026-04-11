@@ -296,9 +296,9 @@ export interface CharacterGraph {
 }
 
 export interface VoiceExample {
-  id: string
-  userLine: string
-  characterLine: string
+  id?: number
+  user_text: string
+  char_text: string
 }
 
 export interface VoiceRegister {
@@ -397,6 +397,17 @@ export function updateVoiceRegister(characterId: number, vr: VoiceRegister) {
   return request<void>(`/character/voice-register?character_id=${characterId}`, {
     method: 'PUT',
     body: JSON.stringify(vr),
+  })
+}
+
+export function getVoiceExamples(characterId: number) {
+  return request<VoiceExample[]>(`/character/voice-examples?character_id=${characterId}`)
+}
+
+export function saveVoiceExamples(characterId: number, examples: VoiceExample[]) {
+  return request<void>(`/character/voice-examples?character_id=${characterId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ examples }),
   })
 }
 
