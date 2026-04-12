@@ -7,6 +7,7 @@ interface Props {
   voiceRegister: VoiceRegister
   voiceExamples: VoiceExample[]
   characterName: string
+  premise?: string
   onVoiceChange: (vr: VoiceRegister) => void
   onExamplesChange: (examples: VoiceExample[]) => void
   onGenerateExamples?: () => void
@@ -14,13 +15,25 @@ interface Props {
 }
 
 export function VoiceTab({
-  characterId, voiceExamples, characterName,
+  characterId, voiceExamples, characterName, premise,
   onExamplesChange,
   onGenerateExamples, generating,
 }: Props) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
+        {/* Premise reference */}
+        {premise && (
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400/60 mb-2">
+              Premisa
+            </p>
+            <p className="text-sm italic text-foreground/50 leading-relaxed border-l-2 border-stone-200 pl-3">
+              {premise}
+            </p>
+          </section>
+        )}
+
         {/* Voice register */}
         <section>
           <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600/60 mb-3">

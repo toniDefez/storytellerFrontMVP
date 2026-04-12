@@ -1,28 +1,38 @@
+import { useEffect, useState } from 'react'
 import { Mic } from 'lucide-react'
-
-interface VoiceRegister {
-  emotional_rhythm: string
-  social_posture: string
-  cognitive_tempo: string
-  expressive_style: string
-}
+import { getVoiceOptions, getVoiceSelections, type VoiceOption } from '@/services/api'
 
 interface Props {
-  voiceRegister: VoiceRegister
+  characterId: number
   onClick: () => void
 }
 
-export function VoiceBadge({ voiceRegister, onClick }: Props) {
-  const parts = [
-    voiceRegister.emotional_rhythm,
-    voiceRegister.social_posture,
-    voiceRegister.cognitive_tempo,
-    voiceRegister.expressive_style,
-  ]
-    .filter(Boolean)
-    .map(s => s.split('—')[0].trim())
+export function VoiceBadge({ characterId, onClick }: Props) {
+  const [labels, setLabels] = useState<string[]>([])
 
-  if (parts.length === 0) return null
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const [options, selections] = await Promise.all([
+          getVoiceOptions(),
+          getVoiceSelections(characterId),
+        ])
+        if (cancelled) return
+        const selectedIds = new Set((selections ?? []).map((s: VoiceOption) => s.id))
+        const parts = (options ?? [])
+          .filter((o: VoiceOption) => selectedIds.has(o.id))
+          .map((o: VoiceOption) => o.label)
+        setLabels(parts)
+      } catch {
+        // badge is non-critical
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [characterId])
+
+  if (labels.length === 0) return null
 
   return (
     <button
@@ -32,7 +42,7 @@ export function VoiceBadge({ voiceRegister, onClick }: Props) {
                  hover:bg-amber-100 transition-colors"
     >
       <Mic className="w-3 h-3" />
-      <span className="truncate max-w-[180px]">{parts.join(' · ')}</span>
+      <span className="truncate max-w-[180px]">{labels.join(' · ')}</span>
     </button>
   )
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -8,7 +8,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import type { CharacterNodeDomain, CatalogNode, ContextualCharacterNode } from '@/services/api'
-import { getCatalog, getContextualNodes, createContextualNode } from '@/services/api'
+import { getCatalog, getContextualNodes, createContextualNode, updateContextualNode, deleteContextualNode } from '@/services/api'
 
 /* ── Container metadata (mirrors canvas) ─────────────────────── */
 
@@ -75,7 +75,11 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
   const [contextualNodes, setContextualNodes] = useState<ContextualCharacterNode[]>([])
   const [loading, setLoading] = useState(false)
   const [newLabel, setNewLabel] = useState('')
+  const [newDescription, setNewDescription] = useState('')
   const [creating, setCreating] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editLabel, setEditLabel] = useState('')
+  const [editDescription, setEditDescription] = useState('')
 
   useEffect(() => {
     if (!open || !domain) return
@@ -111,15 +115,59 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
         world_id: worldId,
         domain,
         label: newLabel.trim(),
-        description: '',
+        description: newDescription.trim(),
         salience: 5,
       })
       setContextualNodes(prev => [...prev, created])
       setNewLabel('')
+      setNewDescription('')
     } catch (err) {
       console.error('Error creating contextual node:', err)
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleDeleteContextual = async (id: number) => {
+    try {
+      await deleteContextualNode(id)
+      setContextualNodes(prev => prev.filter(n => n.id !== id))
+    } catch (err) {
+      console.error('Error deleting contextual node:', err)
+    }
+  }
+
+  const handleStartEdit = (node: ContextualCharacterNode) => {
+    setEditingId(node.id)
+    setEditLabel(node.label)
+    setEditDescription(node.description || '')
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditLabel('')
+    setEditDescription('')
+  }
+
+  const handleSaveEdit = async (node: ContextualCharacterNode) => {
+    if (!editLabel.trim()) return
+    try {
+      await updateContextualNode({
+        id: node.id,
+        label: editLabel.trim(),
+        description: editDescription.trim(),
+        salience: node.salience,
+      })
+      setContextualNodes(prev =>
+        prev.map(n =>
+          n.id === node.id
+            ? { ...n, label: editLabel.trim(), description: editDescription.trim() }
+            : n
+        )
+      )
+      handleCancelEdit()
+    } catch (err) {
+      console.error('Error updating contextual node:', err)
     }
   }
 
@@ -172,16 +220,77 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
               </p>
               {contextualNodes.length > 0 ? (
                 <div className="space-y-0.5">
-                  {contextualNodes.map(node => (
-                    <CatalogItem
-                      key={`contextual-${node.id}`}
-                      label={node.label}
-                      description={node.description}
-                      salience={node.salience}
-                      color={meta.color}
-                      onClick={() => handleAddFromContextual(node.id)}
-                    />
-                  ))}
+                  {contextualNodes.map(node =>
+                    editingId === node.id ? (
+                      <div
+                        key={`contextual-${node.id}`}
+                        className="px-3 py-2.5 rounded-lg border border-border/40 bg-white/60 space-y-2"
+                      >
+                        <input
+                          type="text"
+                          value={editLabel}
+                          onChange={e => setEditLabel(e.target.value)}
+                          className="w-full text-xs bg-transparent border border-border/30 rounded-lg px-3 py-1.5
+                                     focus:border-amber-400/60 focus:outline-none
+                                     placeholder:text-muted-foreground/30"
+                          onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(node) }}
+                          autoFocus
+                        />
+                        <textarea
+                          value={editDescription}
+                          onChange={e => setEditDescription(e.target.value)}
+                          rows={2}
+                          placeholder="Descripcion (opcional)..."
+                          className="w-full text-xs bg-transparent border border-border/30 rounded-lg px-3 py-1.5
+                                     focus:border-amber-400/60 focus:outline-none resize-none
+                                     placeholder:text-muted-foreground/30"
+                        />
+                        <div className="flex gap-1.5 justify-end">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-1 rounded hover:bg-stone-100 transition-colors"
+                          >
+                            <X className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={() => handleSaveEdit(node)}
+                            disabled={!editLabel.trim()}
+                            className="p-1 rounded hover:bg-stone-100 transition-colors disabled:opacity-40"
+                          >
+                            <Check className="w-3 h-3" style={{ color: meta.color }} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        key={`contextual-${node.id}`}
+                        className="relative group"
+                      >
+                        <CatalogItem
+                          label={node.label}
+                          description={node.description}
+                          salience={node.salience}
+                          color={meta.color}
+                          onClick={() => handleAddFromContextual(node.id)}
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1
+                                        opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={e => { e.stopPropagation(); handleStartEdit(node) }}
+                            className="p-1 rounded hover:bg-stone-200/60 transition-colors"
+                          >
+                            <Pencil className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={e => { e.stopPropagation(); handleDeleteContextual(node.id) }}
+                            className="p-1 rounded hover:bg-red-100/60 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  )}
                 </div>
               ) : (
                 <p className="text-[10px] text-muted-foreground/40 py-2">
@@ -216,6 +325,17 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
+              {newLabel.trim() && (
+                <textarea
+                  value={newDescription}
+                  onChange={e => setNewDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Descripcion (opcional)..."
+                  className="w-full mt-2 text-xs bg-transparent border border-border/30 rounded-lg px-3 py-2
+                             focus:border-amber-400/60 focus:outline-none resize-none
+                             placeholder:text-muted-foreground/30"
+                />
+              )}
             </div>
           </div>
         )}

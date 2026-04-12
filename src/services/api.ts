@@ -827,6 +827,24 @@ export function createContextualNode(data: {
   })
 }
 
+export function updateContextualNode(data: {
+  id: number
+  label: string
+  description: string
+  salience: number
+}) {
+  return request<{ ok: boolean }>('/character/catalog/world/update', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteContextualNode(id: number) {
+  return request<{ ok: boolean }>(`/character/catalog/world/delete?id=${id}`, {
+    method: 'DELETE',
+  })
+}
+
 export function addNodeFromCatalog(characterId: number, catalogNodeId: number) {
   return request<CharacterNode>(`/character/node/add-from-catalog`, {
     method: 'POST',

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChevronDown, ChevronUp, Mic } from 'lucide-react'
 import { getVoiceOptions, getVoiceSelections, saveVoiceSelections, type VoiceOption } from '@/services/api'
 
@@ -54,6 +54,7 @@ export function VoiceRegisterEditor({ characterId, expanded: initialExpanded }: 
   const [catalog, setCatalog] = useState<VoiceOption[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [loaded, setLoaded] = useState(false)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Load catalog + selections on mount
   useEffect(() => {
@@ -76,12 +77,15 @@ export function VoiceRegisterEditor({ characterId, expanded: initialExpanded }: 
     return () => { cancelled = true }
   }, [characterId])
 
-  const persist = useCallback(async (ids: Set<number>) => {
-    try {
-      await saveVoiceSelections(characterId, [...ids])
-    } catch (err) {
-      console.error('Failed to save voice selections:', err)
-    }
+  const persist = useCallback((ids: Set<number>) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await saveVoiceSelections(characterId, [...ids])
+      } catch (err) {
+        console.error('Failed to save voice selections:', err)
+      }
+    }, 400)
   }, [characterId])
 
   const handleToggle = useCallback((dimension: string, optionId: number, multi: boolean, max: number) => {
@@ -93,10 +97,8 @@ export function VoiceRegisterEditor({ characterId, expanded: initialExpanded }: 
 
       if (multi) {
         if (next.has(optionId)) {
-          // Deselect
           next.delete(optionId)
         } else if (currentDimSelected.length < max) {
-          // Add
           next.add(optionId)
         } else {
           // Replace oldest
@@ -104,15 +106,20 @@ export function VoiceRegisterEditor({ characterId, expanded: initialExpanded }: 
           next.add(optionId)
         }
       } else {
-        // Single select: remove all in dimension, add this one (or deselect if already selected)
+        // Single select
         for (const id of currentDimSelected) next.delete(id)
         if (!prev.has(optionId)) next.add(optionId)
       }
 
-      persist(next)
       return next
     })
-  }, [catalog, persist])
+  }, [catalog])
+
+  // Persist after selectedIds settles (avoids calling persist inside setState)
+  useEffect(() => {
+    if (!loaded) return
+    persist(selectedIds)
+  }, [selectedIds, loaded, persist])
 
   // Group catalog by dimension
   const grouped = DIMENSION_ORDER.map(dim => ({
