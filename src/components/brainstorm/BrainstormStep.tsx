@@ -17,6 +17,11 @@ interface Props {
   onSkip: () => void
 }
 
+interface AxisCache {
+  cards: CardType[]
+  fetched: boolean
+}
+
 export function BrainstormStep({ premise, onDone, onSkip }: Props) {
   const [axes, setAxes] = useState<BrainstormAxis[]>([])
   const [activeAxisIndex, setActiveAxisIndex] = useState(0)
@@ -28,8 +33,8 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
 
   const bufferRef = useRef<CardType[]>([])
   const fetchingRef = useRef(false)
+  const axisCacheRef = useRef<Map<number, AxisCache>>(new Map())
 
-  // Fetch 5 cards and split into visible + buffer
   const fetchCards = useCallback(async (axis: BrainstormAxis) => {
     try {
       const result = await generateBrainstormCards(premise, axis.topic, axis.question)
@@ -39,7 +44,19 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
     }
   }, [premise])
 
-  // Refill visible slots from buffer, prefetch if running low
+  // Prefetch all axes in background
+  const prefetchAllAxes = useCallback((allAxes: BrainstormAxis[], skipIndex: number) => {
+    allAxes.forEach((axis, i) => {
+      if (i === skipIndex) return // already fetching this one
+      if (axisCacheRef.current.has(i)) return
+      // Mark as in-flight to avoid duplicates
+      axisCacheRef.current.set(i, { cards: [], fetched: false })
+      fetchCards(axis).then(cards => {
+        axisCacheRef.current.set(i, { cards, fetched: true })
+      })
+    })
+  }, [fetchCards])
+
   const refillFromBuffer = useCallback((currentAxis: BrainstormAxis) => {
     setVisible(prev => {
       if (prev.length >= VISIBLE_COUNT) return prev
@@ -47,13 +64,11 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
       const fromBuffer = bufferRef.current.splice(0, needed)
       const updated = [...prev, ...fromBuffer]
 
-      // Prefetch if buffer is running low
       if (bufferRef.current.length < PREFETCH_THRESHOLD && !fetchingRef.current) {
         fetchingRef.current = true
         fetchCards(currentAxis).then(newCards => {
           bufferRef.current.push(...newCards)
           fetchingRef.current = false
-          // If visible is still short, trigger another refill
           setVisible(v => {
             if (v.length < VISIBLE_COUNT && bufferRef.current.length > 0) {
               const extra = bufferRef.current.splice(0, VISIBLE_COUNT - v.length)
@@ -77,9 +92,15 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
       if (result.axes.length > 0) {
         setActiveAxisIndex(0)
         setLoadingCards(true)
+
+        // Fetch first axis cards
         const cards = await fetchCards(result.axes[0])
         bufferRef.current = cards.slice(VISIBLE_COUNT)
         setVisible(cards.slice(0, VISIBLE_COUNT))
+        axisCacheRef.current.set(0, { cards, fetched: true })
+
+        // Prefetch all other axes in background
+        prefetchAllAxes(result.axes, 0)
       }
     } catch {
       // fall back silently
@@ -87,17 +108,28 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
       setLoadingAxes(false)
       setLoadingCards(false)
     }
-  }, [premise, fetchCards])
+  }, [premise, fetchCards, prefetchAllAxes])
 
   const selectAxis = useCallback(async (index: number) => {
     setActiveAxisIndex(index)
+    fetchingRef.current = false
+
+    // Check cache first
+    const cached = axisCacheRef.current.get(index)
+    if (cached?.fetched && cached.cards.length > 0) {
+      bufferRef.current = cached.cards.slice(VISIBLE_COUNT)
+      setVisible(cached.cards.slice(0, VISIBLE_COUNT))
+      return
+    }
+
+    // Not cached yet — fetch
     setLoadingCards(true)
     setVisible([])
     bufferRef.current = []
-    fetchingRef.current = false
     try {
       const axis = axes[index]
       const cards = await fetchCards(axis)
+      axisCacheRef.current.set(index, { cards, fetched: true })
       bufferRef.current = cards.slice(VISIBLE_COUNT)
       setVisible(cards.slice(0, VISIBLE_COUNT))
     } catch {
@@ -117,7 +149,6 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
 
     setVisible(prev => {
       const next = prev.filter((_, i) => i !== cardIndex)
-      // Fill from buffer
       if (bufferRef.current.length > 0) {
         const replacement = bufferRef.current.shift()!
         next.push(replacement)
@@ -125,7 +156,6 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
       return next
     })
 
-    // Prefetch if buffer low
     const currentAxis = axes[activeAxisIndex]
     if (currentAxis && bufferRef.current.length < PREFETCH_THRESHOLD && !fetchingRef.current) {
       fetchingRef.current = true
