@@ -9,14 +9,6 @@ interface Props {
   disabled?: boolean
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  RULE_WITH_LOOPHOLE: 'Regla con trampa',
-  CONCRETE_COST: 'Coste concreto',
-  STRUCTURAL_CONFLICT: 'Conflicto estructural',
-  UNINTENDED_CONSEQUENCE: 'Consecuencia no deseada',
-  MORAL_ASYMMETRY: 'Asimetria moral',
-}
-
 export function BrainstormCard({ card, onKeep, onReject, disabled }: Props) {
   return (
     <motion.div
@@ -24,16 +16,18 @@ export function BrainstormCard({ card, onKeep, onReject, disabled }: Props) {
       initial={{ opacity: 0, x: 30 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -30, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       className="rounded-lg p-4 mb-3"
       style={{ backgroundColor: 'hsl(260 20% 97%)', border: '1px solid hsl(260 20% 90%)' }}
     >
-      <span
-        className="inline-block text-[10px] tracking-[0.1em] uppercase px-2 py-0.5 rounded-full mb-2"
-        style={{ fontFamily: 'var(--font-ui)', backgroundColor: 'hsl(260 30% 92%)', color: 'hsl(260 30% 50%)' }}
-      >
-        {CATEGORY_LABELS[card.category] ?? card.category}
-      </span>
+      {card.category && (
+        <p
+          className="text-xs italic mb-1.5 opacity-60"
+          style={{ fontFamily: 'var(--font-display)', color: 'hsl(260 30% 50%)' }}
+        >
+          {card.category}
+        </p>
+      )}
       <p className="text-sm leading-relaxed mb-3" style={{ fontFamily: 'var(--font-body)', color: 'hsl(30 8% 25%)' }}>
         {card.content}
       </p>
