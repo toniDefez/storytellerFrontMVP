@@ -893,3 +893,29 @@ export async function regenerateCharacterSoul(characterId: number): Promise<Char
   if (!res.ok) throw new Error('Failed to regenerate soul')
   return res.json()
 }
+
+// --- Brainstorm ---
+
+export interface BrainstormAxis {
+  topic: string
+  question: string
+}
+
+export interface BrainstormCard {
+  category: string
+  content: string
+}
+
+export function suggestBrainstormAxes(premise: string) {
+  return request<{ axes: BrainstormAxis[] }>('/brainstorm/suggest-axes', {
+    method: 'POST',
+    body: JSON.stringify({ premise }),
+  })
+}
+
+export function generateBrainstormCards(premise: string, topic: string, question: string) {
+  return request<{ cards: BrainstormCard[] }>('/brainstorm/generate-cards', {
+    method: 'POST',
+    body: JSON.stringify({ premise, topic, question }),
+  })
+}
