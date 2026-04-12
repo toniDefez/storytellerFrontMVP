@@ -17,6 +17,8 @@ import {
 } from '@/services/api'
 import type { SeedTemplateBrief } from '@/services/api'
 import { SeedTemplatePicker } from '@/components/SeedTemplatePicker'
+import { BrainstormStep } from '@/components/brainstorm/BrainstormStep'
+import type { BrainstormCard } from '@/services/api'
 
 const LOADING_MESSAGES = [
   'Interpretando la premisa...',
@@ -38,6 +40,7 @@ export default function CreateWorldPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [messageIndex, setMessageIndex] = useState(0)
+  const [step, setStep] = useState<'premise' | 'brainstorm' | 'generating'>('premise')
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [refining, setRefining] = useState(false)
@@ -144,20 +147,38 @@ export default function CreateWorldPage() {
     e.preventDefault()
     if (!premise.trim()) return
     setError('')
+    setStep('brainstorm')
+  }
+
+  const handleGenerate = async (keepers: BrainstormCard[]) => {
+    setStep('generating')
     setLoading(true)
+    setError('')
     try {
+      const keeperTexts = keepers.map(k => k.content)
       if (selectedSeed) {
-        const { job_id } = await createWorldFromSeed(selectedSeed.id, selectedSeed.title, premise.trim())
+        let enrichedPremise = premise.trim()
+        if (keeperTexts.length > 0) {
+          enrichedPremise += '\n\nDecisiones creativas del usuario:\n' + keeperTexts.map((k, i) => `${i + 1}. ${k}`).join('\n')
+        }
+        const { job_id } = await createWorldFromSeed(selectedSeed.id, selectedSeed.title, enrichedPremise)
         startPolling(job_id)
       } else {
-        const { job_id } = await generateWorld(premise.trim())
+        let enrichedPremise = premise.trim()
+        if (keeperTexts.length > 0) {
+          enrichedPremise += '\n\nDecisiones creativas del usuario:\n' + keeperTexts.map((k, i) => `${i + 1}. ${k}`).join('\n')
+        }
+        const { job_id } = await generateWorld(enrichedPremise)
         startPolling(job_id)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error iniciando la generación')
+      setError(err instanceof Error ? err.message : 'Error iniciando la generacion')
       setLoading(false)
+      setStep('premise')
     }
   }
+
+  const handleSkipBrainstorm = () => handleGenerate([])
 
   if (installLoading) {
     return (
@@ -236,7 +257,7 @@ export default function CreateWorldPage() {
             </p>
           </div>
 
-          {loading ? (
+          {step === 'generating' || loading ? (
             <div className="flex flex-col items-center gap-4 py-16">
               <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'hsl(260 38% 40%)' }} />
               <p
@@ -246,6 +267,12 @@ export default function CreateWorldPage() {
                 {LOADING_MESSAGES[messageIndex]}
               </p>
             </div>
+          ) : step === 'brainstorm' ? (
+            <BrainstormStep
+              premise={premise}
+              onDone={handleGenerate}
+              onSkip={handleSkipBrainstorm}
+            />
           ) : (
             <form onSubmit={handleSubmit}>
               {/* ── Template picker ── */}
