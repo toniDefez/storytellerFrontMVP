@@ -273,6 +273,7 @@ export interface Character {
   world_id: number
   premise?: string
   voice_register?: VoiceRegister
+  speech_pattern?: string
 }
 
 // --- Character Psychological Graph ---
@@ -439,6 +440,13 @@ export function saveVoiceExamples(characterId: number, examples: VoiceExample[])
 export function generateVoiceExamples(characterId: number) {
   return request<VoiceExample[]>(`/character/voice-examples/generate?character_id=${characterId}`, {
     method: 'POST',
+  })
+}
+
+export function updateSpeechPattern(characterId: number, speechPattern: string) {
+  return request<{ status: string }>('/character/speech-pattern?id=' + characterId, {
+    method: 'POST',
+    body: JSON.stringify({ speech_pattern: speechPattern }),
   })
 }
 

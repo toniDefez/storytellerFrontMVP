@@ -23,7 +23,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
-    voiceExamples, premise, generatingExamples,
+    voiceExamples, premise, speechPattern, generatingExamples,
     loadGraph, removeNode, editNode,
     updateVoice, saveExamples, generateExamples, sendMessage, generateNodes, clearChat,
     toggleMode, setSelectedNodeId,
@@ -379,6 +379,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
               voiceExamples={voiceExamples}
               characterName={characterName}
               premise={premise}
+              speechPattern={speechPattern}
               onVoiceChange={updateVoice}
               onExamplesChange={saveExamples}
               onGenerateExamples={generateExamples}

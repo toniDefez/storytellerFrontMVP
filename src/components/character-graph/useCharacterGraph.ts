@@ -38,6 +38,7 @@ export function useCharacterGraph(characterId: number) {
   const [soulLoading, setSoulLoading] = useState(false)
   const [voiceExamples, setVoiceExamples] = useState<VoiceExample[]>([])
   const [premise, setPremise] = useState('')
+  const [speechPattern, setSpeechPattern] = useState('')
   const [generatingExamples, setGeneratingExamples] = useState(false)
 
   const loadGraph = useCallback(async () => {
@@ -56,6 +57,7 @@ export function useCharacterGraph(characterId: number) {
       setVoiceRegister(char.voice_register || { emotional_rhythm: '', social_posture: '', cognitive_tempo: '', expressive_style: '' })
       setCharacterName(char.name)
       setPremise(char.premise || '')
+      setSpeechPattern(char.speech_pattern || '')
       setChatMessages(history ?? [])
       const examples = await getVoiceExamples(characterId)
       setVoiceExamples(examples ?? [])
@@ -249,7 +251,7 @@ export function useCharacterGraph(characterId: number) {
     mode, selectedNodeId, loading, chatLoading, generating, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
-    voiceExamples, premise, generatingExamples,
+    voiceExamples, premise, speechPattern, generatingExamples,
     // Actions
     loadGraph, addNode, editNode, removeNode, moveNode,
     updateVoice, saveExamples, generateExamples, sendMessage, generateNodes,
