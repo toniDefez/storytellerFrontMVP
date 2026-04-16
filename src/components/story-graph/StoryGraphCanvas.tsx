@@ -48,8 +48,8 @@ function buildInicioNode(
     id: 'inicio',
     type: 'inicio',
     position: { x: 400, y: 200 },
-    draggable: false,
-    selectable: false,
+    draggable: true,
+    selectable: true,
     data: {
       storyTitle: story.title,
       isConfigured,
@@ -226,6 +226,9 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          onNodeClick={(_event, node) => {
+            if (node.id === 'inicio') openPanel()
+          }}
           onPaneClick={closePanel}
           fitView
           fitViewOptions={{ padding: 0.4 }}
