@@ -998,7 +998,7 @@ export function getStoriesByWorld(worldId: number) {
 }
 
 export function getStoryDetail(storyId: number) {
-  return request<StoryDetail>(`/story/${storyId}`)
+  return request<StoryDetail>(`/story/detail/${storyId}`)
 }
 
 export function updateStory(storyId: number, data: {
@@ -1007,27 +1007,27 @@ export function updateStory(storyId: number, data: {
   status?: string
   narrator_default?: NarratorConfig
 }) {
-  return request<void>(`/story/${storyId}/update`, {
+  return request<void>(`/story/update/${storyId}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   })
 }
 
 export function deleteStory(storyId: number) {
-  return request<void>(`/story/${storyId}/delete`, {
+  return request<void>(`/story/delete/${storyId}`, {
     method: 'DELETE',
   })
 }
 
 export function addStoryCharacter(storyId: number, characterId: number) {
-  return request<void>(`/story/${storyId}/character`, {
+  return request<void>(`/story/character/add/${storyId}`, {
     method: 'POST',
     body: JSON.stringify({ character_id: characterId }),
   })
 }
 
 export function removeStoryCharacter(storyId: number, characterId: number) {
-  return request<void>(`/story/${storyId}/character/${characterId}`, {
+  return request<void>(`/story/character/remove/${storyId}/${characterId}`, {
     method: 'DELETE',
   })
 }
@@ -1040,7 +1040,7 @@ export function createRelationship(storyId: number, rel: {
   description?: string
   directional: boolean
 }) {
-  return request<StoryRelationship>(`/story/${storyId}/relationship`, {
+  return request<StoryRelationship>(`/story/relationship/create/${storyId}`, {
     method: 'POST',
     body: JSON.stringify(rel),
   })
@@ -1052,7 +1052,7 @@ export function updateRelationship(relId: number, rel: {
   description?: string
   directional: boolean
 }) {
-  return request<void>(`/story/relationship/${relId}`, {
+  return request<void>(`/story/relationship/update/${relId}`, {
     method: 'PUT',
     body: JSON.stringify(rel),
   })
@@ -1065,14 +1065,14 @@ export function deleteRelationship(relId: number) {
 }
 
 export function createFact(storyId: number, content: string, knownBy: number[]) {
-  return request<StoryFact>(`/story/${storyId}/fact`, {
+  return request<StoryFact>(`/story/fact/create/${storyId}`, {
     method: 'POST',
     body: JSON.stringify({ content, known_by: knownBy }),
   })
 }
 
 export function updateFact(factId: number, content: string, knownBy: number[]) {
-  return request<void>(`/story/fact/${factId}`, {
+  return request<void>(`/story/fact/update/${factId}`, {
     method: 'PUT',
     body: JSON.stringify({ content, known_by: knownBy }),
   })
