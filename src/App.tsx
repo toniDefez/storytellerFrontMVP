@@ -14,6 +14,7 @@ import CreateScenePage from './pages/scenes/CreateScenePage'
 import EditScenePage from './pages/scenes/EditScenePage'
 import SceneDetailPage from './pages/scenes/SceneDetailPage'
 import SettingsPage from './pages/settings/SettingsPage'
+import StorySetupPage from './pages/story/StorySetupPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <LoginPage />, errorElement: <ErrorPage /> },
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
           { path: 'worlds/:id/scenes/create', element: <CreateScenePage /> },
           { path: 'worlds/:worldId/scenes/:sceneId', element: <SceneDetailPage /> },
           { path: 'worlds/:worldId/scenes/:sceneId/edit', element: <EditScenePage /> },
+          { path: 'worlds/:worldId/stories/:storyId', element: <StorySetupPage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'settings/installation', element: <Navigate to="/settings?tab=installation" replace /> },
         ],
