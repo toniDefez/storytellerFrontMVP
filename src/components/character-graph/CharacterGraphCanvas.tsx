@@ -17,6 +17,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { FloatingEdge } from './edges/FloatingEdge'
+import { LiteraryFlowEdge } from './edges/LiteraryFlowEdge'
 import { useReducedMotion } from 'framer-motion'
 import { BookOpen, RefreshCw } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, DomainSynthesis } from '@/services/api'
@@ -321,6 +322,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   floating: FloatingEdge,
+  literaryFlow: LiteraryFlowEdge,
 }
 
 /* ── Calculate orbital positions ─────────────────────────────────── */
@@ -556,37 +558,30 @@ function buildElements(
     },
   ]
 
-  for (const { from, to, label } of flowPath) {
+  for (let idx = 0; idx < flowPath.length; idx++) {
+    const { from, to, label } = flowPath[idx]
     const fromMeta = ALL_CONTAINERS.find(c => c.domain === from)
+    const color = fromMeta?.color ?? '#a8a29e'
     edges.push({
       id: `flow-${from}-${to}`,
       source: `container-${from}`,
       target: `container-${to}`,
       sourceHandle: 'bottom',
       targetHandle: 'top',
-      type: 'smoothstep',
-      animated: false,
-      label,
-      labelStyle: {
-        fontSize: 10,
-        fontStyle: 'italic',
-        fill: '#a8a29e',
-        fontFamily: 'Lora, Georgia, serif',
+      type: 'literaryFlow',
+      data: {
+        label,
+        domainColor: color,
+        chainIndex: idx,
       },
-      labelBgStyle: {
-        fill: 'hsl(40 20% 97%)',
-        fillOpacity: 0.9,
-      },
-      labelBgPadding: [6, 4] as [number, number],
-      labelBgBorderRadius: 4,
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: `${fromMeta?.color}90`,
+        color: `${color}90`,
         width: 16,
         height: 16,
       },
       style: {
-        stroke: `${fromMeta?.color}70`,
+        stroke: `${color}70`,
         strokeWidth: 2,
       },
     })
