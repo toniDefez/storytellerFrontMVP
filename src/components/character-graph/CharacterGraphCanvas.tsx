@@ -127,7 +127,17 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
 
   return (
     <div
-      className="rounded-xl overflow-hidden transition-all duration-300 cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={`Dominio ${data.label as string}, ${data.childCount as number} nodos`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          e.stopPropagation()
+          ;(e.currentTarget as HTMLElement).click()
+        }
+      }}
+      className="rounded-xl overflow-hidden transition-all duration-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 focus-visible:outline-offset-2"
       style={{
         width: CONTAINER_WIDTH,
         height: CONTAINER_HEIGHT,
@@ -253,7 +263,11 @@ function OrbitalNode({ data }: NodeProps<Node<OrbitalData>>) {
       </NodeToolbar>
 
       <div
-        className="cursor-pointer rounded-full transition-all duration-150 hover:scale-110 flex items-center justify-center"
+        role="button"
+        tabIndex={0}
+        aria-label={`${data.label as string}, intensidad ${data.salience as number}/10`}
+        aria-pressed={isSelected}
+        className="cursor-pointer rounded-full transition-all duration-150 hover:scale-110 flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 focus-visible:outline-offset-2"
         style={{
           width: size,
           height: size,
@@ -263,6 +277,13 @@ function OrbitalNode({ data }: NodeProps<Node<OrbitalData>>) {
             : `0 2px 8px ${color}40`,
         }}
         onClick={(e) => { e.stopPropagation(); data.onSelect(data.nodeId as number) }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            e.stopPropagation()
+            data.onSelect(data.nodeId as number)
+          }
+        }}
       >
         <span
           style={{
