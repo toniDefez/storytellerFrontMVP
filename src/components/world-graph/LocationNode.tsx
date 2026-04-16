@@ -75,6 +75,7 @@ export const LocationNode = memo(function LocationNode({ id, data }: NodeProps) 
         className="flex gap-0.5 bg-background border border-border/60 rounded-lg shadow-sm p-0.5"
       >
         <button
+          type="button"
           onClick={() => onEditNode(nodeId)}
           aria-label="Editar localización"
           title="Editar"
@@ -83,6 +84,7 @@ export const LocationNode = memo(function LocationNode({ id, data }: NodeProps) 
           <Pencil className="w-3.5 h-3.5" />
         </button>
         <button
+          type="button"
           onClick={() => onDeleteNode(nodeId)}
           aria-label="Eliminar localización"
           title="Eliminar"
