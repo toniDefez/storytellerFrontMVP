@@ -2,6 +2,8 @@ import { useStore } from '@xyflow/react'
 
 export type ZoomLevel = 'full' | 'compact'
 
+// Below this zoom, switch to compact rendering to keep panoramic views readable.
+// Value is a first approximation — tunable in QA with dense worlds.
 const COMPACT_THRESHOLD = 0.65
 
 /**
