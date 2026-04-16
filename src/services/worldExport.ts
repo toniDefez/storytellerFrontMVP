@@ -1,12 +1,9 @@
 import {
   getWorldById,
-  getSceneDetail,
   createWorld,
   createCharacter,
-  createScene,
-  createEvent,
 } from './api'
-import type { World, Character, Scene, Event } from './api'
+import type { World, Character } from './api'
 
 // ── Export Schema ──
 
@@ -29,16 +26,6 @@ export interface StoryTellerExport {
       social_position?: string
       internal_contradiction?: string
       faction_affiliation?: string
-    }>
-    scenes: Array<{
-      title: string
-      location: string
-      time: string
-      tone: string
-      context: string
-      events: Array<{
-        description: string
-      }>
     }>
   }
 }
@@ -74,27 +61,6 @@ export async function exportWorld(worldId: number): Promise<void> {
   const characters: Character[] = Array.isArray(raw.characters)
     ? (raw.characters as Character[])
     : []
-  const scenes: Scene[] = Array.isArray(raw.scenes)
-    ? (raw.scenes as Scene[])
-    : []
-
-  // Fetch events for each scene
-  const scenesWithEvents: Array<{
-    scene: Scene
-    events: Event[]
-  }> = await Promise.all(
-    scenes.map(async (scene) => {
-      try {
-        const detail = await getSceneDetail(scene.id)
-        return {
-          scene,
-          events: Array.isArray(detail.events) ? detail.events : [],
-        }
-      } catch {
-        return { scene, events: [] }
-      }
-    }),
-  )
 
   // Build export object
   const exportData: StoryTellerExport = {
@@ -108,24 +74,14 @@ export async function exportWorld(worldId: number): Promise<void> {
       },
       characters: characters.map((c) => ({
         name: c.name,
-        role: c.role,
-        personality: c.personality,
-        background: c.background,
-        goals: c.goals ?? [],
+        role: (c as unknown as Record<string, string>).role ?? '',
+        personality: (c as unknown as Record<string, string>).personality ?? '',
+        background: (c as unknown as Record<string, string>).background ?? '',
+        goals: (c as unknown as Record<string, string[]>).goals ?? [],
         ...(c.premise && { premise: c.premise }),
-        ...(c.social_position && { social_position: c.social_position }),
-        ...(c.internal_contradiction && { internal_contradiction: c.internal_contradiction }),
-        ...(c.faction_affiliation && { faction_affiliation: c.faction_affiliation }),
-      })),
-      scenes: scenesWithEvents.map(({ scene, events }) => ({
-        title: scene.title,
-        location: scene.location,
-        time: scene.time,
-        tone: scene.tone,
-        context: scene.context,
-        events: events.map((e) => ({
-          description: e.action,
-        })),
+        ...((c as unknown as Record<string, string>).social_position && { social_position: (c as unknown as Record<string, string>).social_position }),
+        ...((c as unknown as Record<string, string>).internal_contradiction && { internal_contradiction: (c as unknown as Record<string, string>).internal_contradiction }),
+        ...((c as unknown as Record<string, string>).faction_affiliation && { faction_affiliation: (c as unknown as Record<string, string>).faction_affiliation }),
       })),
     },
   }
@@ -153,7 +109,7 @@ export interface ImportResult {
 
 export async function importWorld(data: StoryTellerExport): Promise<ImportResult> {
   try {
-    const { world, characters, scenes } = data.storyteller_export
+    const { world, characters } = data.storyteller_export
 
     // 1. Create world
     const createdWorld = await createWorld(
@@ -170,45 +126,11 @@ export async function importWorld(data: StoryTellerExport): Promise<ImportResult
         characters.map((c) =>
           createCharacter({
             name: c.name,
-            role: c.role,
-            personality: c.personality,
-            background: c.background,
-            goals: c.goals ?? [],
             world_id: worldId,
             ...(c.premise && { premise: c.premise }),
-            ...(c.social_position && { social_position: c.social_position }),
-            ...(c.internal_contradiction && { internal_contradiction: c.internal_contradiction }),
-            ...(c.faction_affiliation && { faction_affiliation: c.faction_affiliation }),
           }),
         ),
       )
-    }
-
-    // 3. Create scenes and their events
-    if (scenes && scenes.length > 0) {
-      for (const scene of scenes) {
-        const createdScene = await createScene({
-          title: scene.title,
-          location: scene.location,
-          time: scene.time,
-          tone: scene.tone,
-          context: scene.context,
-          world_id: worldId,
-        })
-
-        // 4. Create events for this scene
-        if (scene.events && scene.events.length > 0) {
-          for (let i = 0; i < scene.events.length; i++) {
-            await createEvent({
-              scene_id: createdScene.id,
-              character_ids: [],
-              action: scene.events[i].description,
-              spot: '',
-              position: i + 1,
-            })
-          }
-        }
-      }
     }
 
     return { success: true, worldId }

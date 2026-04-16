@@ -62,19 +62,12 @@ export interface CharacterBrief {
   name: string
 }
 
-export interface SceneBrief {
-  id: number
-  title: string
-  position: number
-}
-
 export interface WorldDetail {
   id: number
   name: string
   summary: string
   premise: string
   characters: CharacterBrief[]
-  scenes: SceneBrief[]
   stories: StoryBrief[]
 }
 
@@ -318,17 +311,6 @@ export interface ChatMessage {
   created_at?: string
 }
 
-export interface Scene {
-  id: number
-  title: string
-  location: string
-  time: string
-  tone: string
-  context: string
-  world_id: number
-  position?: number
-}
-
 // --- Characters ---
 
 export function createCharacter(character: Omit<Character, 'id'>) {
@@ -467,110 +449,6 @@ export function characterChat(characterId: number, message: string) {
 
 export function getCharacterChatHistory(characterId: number) {
   return request<ChatMessage[]>(`/character/chat/history?character_id=${characterId}`)
-}
-
-// --- Scenes ---
-
-export function createScene(scene: Omit<Scene, 'id'>) {
-  return request<{ id: number }>('/scene', {
-    method: 'POST',
-    body: JSON.stringify(scene),
-  })
-}
-
-export function generateScene(worldId: number, description: string) {
-  return request<Scene>('/scene/generate', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, description }),
-  })
-}
-
-export function getSceneById(id: number) {
-  return request<Scene>(`/scene/get?id=${id}`)
-}
-
-export function updateScene(id: number, input: Partial<Omit<Scene, 'id' | 'world_id'>>) {
-  return request<Scene>(`/scene/update?id=${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(input),
-  })
-}
-
-export function deleteScene(id: number) {
-  return request<{ status: string }>(`/scene/delete?id=${id}`, {
-    method: 'DELETE',
-  })
-}
-
-export function addCharacterToScene(sceneId: number, characterId: number) {
-  return request<{ message: string }>('/scene-add-character', {
-    method: 'POST',
-    body: JSON.stringify({ scene_id: sceneId, character_id: characterId }),
-  })
-}
-
-export function getSceneCharacters(sceneId: number) {
-  return request<Character[]>(`/scene/character/get?id=${sceneId}`)
-}
-
-// --- Scene Detail ---
-
-export interface Event {
-  id: number
-  scene_id: number
-  character_ids: number[]
-  action: string
-  spot: string
-  position: number
-}
-
-export interface SceneDetail {
-  scene: Scene
-  characters: Character[]
-  events: Event[]
-}
-
-export function getSceneDetail(id: number) {
-  return request<SceneDetail>(`/scene-detail/get?id=${id}`)
-}
-
-// --- Events ---
-
-export function createEvent(event: Omit<Event, 'id'>) {
-  return request<{ id: number }>('/event', {
-    method: 'POST',
-    body: JSON.stringify(event),
-  })
-}
-
-export function generateEvents(sceneId: number, characterIds: number[], description: string, numEvents: number) {
-  return request<{ events: Event[] }>('/event/generate', {
-    method: 'POST',
-    body: JSON.stringify({ scene_id: sceneId, character_ids: characterIds, description, num_events: numEvents }),
-  })
-}
-
-export function deleteEvent(id: number) {
-  return request<{ status: string }>(`/event/delete?id=${id}`, {
-    method: 'DELETE',
-  })
-}
-
-// --- Narrative ---
-
-export interface SceneNarrative {
-  text: string
-}
-
-export function getSceneNarrative(sceneId: number) {
-  return request<SceneNarrative>(`/scene/narrative/get?id=${sceneId}`)
-}
-
-export function regenerateNarrative(sceneId: number, feedback: string, existingNarrative: string) {
-  return request<SceneNarrative>('/scene/narrative/regenerate', {
-    method: 'POST',
-    body: JSON.stringify({ scene_id: sceneId, feedback, existing_narrative: existingNarrative }),
-  })
 }
 
 // --- Installation ---
