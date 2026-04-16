@@ -16,8 +16,7 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { FloatingEdge } from './edges/FloatingEdge'
-import { LiteraryFlowEdge } from './edges/LiteraryFlowEdge'
+import { FloatingEdge, LiteraryFlowEdge } from './edges'
 import { useReducedMotion } from 'framer-motion'
 import { BookOpen, RefreshCw } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, DomainSynthesis } from '@/services/api'
