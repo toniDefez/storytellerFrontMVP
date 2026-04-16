@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import type { LocationNodeType, NarrativeFunction } from '@/services/api'
+import { useZoomLevel } from '@/hooks/useZoomLevel'
 
 const NODE_ICONS: Record<LocationNodeType, string> = {
   settlement: '🏘',
@@ -16,6 +17,15 @@ const NARRATIVE_FN_COLORS: Record<NarrativeFunction, { bg: string; text: string;
   origin:     { bg: 'bg-amber-500/10',  text: 'text-amber-700',  dot: 'bg-amber-500' },
   threshold:  { bg: 'bg-violet-500/10', text: 'text-violet-700', dot: 'bg-violet-500' },
   atmosphere: { bg: 'bg-sky-500/10',    text: 'text-sky-700',    dot: 'bg-sky-500' },
+}
+
+// Hex colors used as inline style for the left border of compact nodes.
+// Inline (not Tailwind classes) because we interpolate into style={{ borderLeft: ... }}.
+const NARRATIVE_FN_BORDER: Record<NarrativeFunction, string> = {
+  conflict:   '#ef4444',
+  origin:     '#f59e0b',
+  threshold:  '#8b5cf6',
+  atmosphere: '#0ea5e9',
 }
 
 export interface LocationNodeData {
@@ -50,6 +60,42 @@ export const LocationNode = memo(function LocationNode({ data }: NodeProps) {
 
   const fn = d.narrative_function ? NARRATIVE_FN_COLORS[d.narrative_function] : null
   const handleStyle = isChild ? CHILD_HANDLE_STYLE : HANDLE_STYLE
+
+  const zoomLevel = useZoomLevel()
+
+  if (zoomLevel === 'compact') {
+    const borderColor = d.narrative_function
+      ? NARRATIVE_FN_BORDER[d.narrative_function]
+      : '#94a3b8' // slate-400 fallback
+
+    return (
+      <div
+        className={`
+          relative rounded-md border bg-background shadow-sm
+          w-[130px] transition-all duration-150
+          ${d.isSelected
+            ? 'border-[#14b8a6] shadow-[0_0_0_2px_#14b8a620]'
+            : 'border-border/60 hover:border-[#14b8a6]/50'}
+        `}
+        style={{ borderLeft: `3px solid ${borderColor}` }}
+        title={d.source_hint || d.name}
+      >
+        <Handle type="source" position={Position.Top}    id="t"  style={handleStyle} />
+        <Handle type="source" position={Position.Right}  id="r"  style={handleStyle} />
+        <Handle type="source" position={Position.Bottom} id="b"  style={handleStyle} />
+        <Handle type="source" position={Position.Left}   id="l"  style={handleStyle} />
+        <Handle type="target" position={Position.Top}    id="tt" style={handleStyle} />
+        <Handle type="target" position={Position.Right}  id="tr" style={handleStyle} />
+        <Handle type="target" position={Position.Bottom} id="tb" style={handleStyle} />
+        <Handle type="target" position={Position.Left}   id="tl" style={handleStyle} />
+
+        <div className="px-2 py-1 flex items-center gap-1.5">
+          <span className="text-xs leading-none">{NODE_ICONS[d.node_type]}</span>
+          <span className="text-[11px] font-medium text-foreground truncate">{d.name}</span>
+        </div>
+      </div>
+    )
+  }
 
   if (isChild) {
     // ── Child node: compact, left amber accent, warm tinted bg ──────────────
