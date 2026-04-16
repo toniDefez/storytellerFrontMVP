@@ -4,6 +4,7 @@ import {
   ReactFlowProvider,
   useReactFlow,
   Background,
+  BackgroundVariant,
   MiniMap,
   Panel,
   useNodesState,
@@ -772,7 +773,7 @@ function CharacterGraphCanvasInner({
       fitViewOptions={{ padding: 0.12 }}
       minZoom={0.5}
       maxZoom={1.5}
-      className="bg-[hsl(40_20%_97%)]"
+      className="bg-[hsl(40_30%_96%)]"
       proOptions={{ hideAttribution: true }}
     >
       <MiniMap
@@ -786,7 +787,20 @@ function CharacterGraphCanvasInner({
         style={{ border: '1px solid #e7e0d8', borderRadius: 8 }}
       />
 
-      <Background color="#e8e0d4" gap={20} size={1} />
+      <Background
+        id="paper"
+        variant={BackgroundVariant.Lines}
+        color="#efe6d7"
+        lineWidth={0.4}
+        gap={32}
+      />
+      <Background
+        id="dots"
+        variant={BackgroundVariant.Dots}
+        color="#d6cdbe"
+        gap={20}
+        size={1}
+      />
 
       <Panel position="top-right">
         <div style={{
