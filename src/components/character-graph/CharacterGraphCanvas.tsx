@@ -468,13 +468,19 @@ function buildElements(
 
     for (let i = 0; i < domainNodes.length; i++) {
       const cn = domainNodes[i]
-      const oPos = orbitalPos[i]
       const size = getSalienceSize(cn.salience)
+
+      // Persisted position wins; fallback to computed layout if never dragged.
+      const hasPersisted = cn.canvas_x !== 0 || cn.canvas_y !== 0
+      const layoutPos = orbitalPos[i]
+      const position = hasPersisted
+        ? { x: cn.canvas_x, y: cn.canvas_y }
+        : { x: layoutPos.x - size / 2, y: layoutPos.y - size / 2 }
 
       nodes.push({
         id: `node-${cn.id}`,
         type: 'child',
-        position: { x: oPos.x - size / 2, y: oPos.y - size / 2 },
+        position,
         draggable: true,
         selectable: true,
         data: {
@@ -487,7 +493,6 @@ function buildElements(
         },
       })
 
-      // Edge from orbital (left) to container (right side)
       edges.push({
         id: `orbital-edge-${cn.id}`,
         source: `node-${cn.id}`,
@@ -587,6 +592,8 @@ interface Props {
   onSelectNode: (id: number | null) => void
   onContainerClick: (domain: CharacterNodeDomain) => void
   onContextMenu?: (event: ContextMenuEvent) => void
+  /** Persists orbital drag-stop position. Pass `moveNode` from useCharacterGraph. */
+  onPersistPosition?: (id: number, x: number, y: number) => void
 }
 
 export function CharacterGraphCanvas({
@@ -597,6 +604,7 @@ export function CharacterGraphCanvas({
   onSelectNode,
   onContainerClick,
   onContextMenu,
+  onPersistPosition,
 }: Props) {
   const handleSelectNode = useCallback(
     (id: number) => onSelectNode(id === selectedNodeId ? null : id),
@@ -630,9 +638,19 @@ export function CharacterGraphCanvas({
 
   const handlePaneClick = useCallback(() => onSelectNode(null), [onSelectNode])
 
-  const handleNodeDragStop = useCallback(() => {
-    setNodes(nds => resolveCollisions(nds))
-  }, [setNodes])
+  const handleNodeDragStop = useCallback(
+    (_: React.MouseEvent, draggedNode: Node) => {
+      setNodes(nds => resolveCollisions(nds))
+      // Only persist orbital positions. Containers/pills are not user-positioned yet (Fase 2).
+      if (draggedNode.type === 'child' && draggedNode.id.startsWith('node-') && onPersistPosition) {
+        const nodeId = parseInt(draggedNode.id.slice(5), 10)
+        if (!Number.isNaN(nodeId)) {
+          onPersistPosition(nodeId, draggedNode.position.x, draggedNode.position.y)
+        }
+      }
+    },
+    [setNodes, onPersistPosition],
+  )
 
   // ReactFlow-level click — works reliably unlike onClick inside custom nodes
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {

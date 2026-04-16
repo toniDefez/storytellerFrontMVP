@@ -24,7 +24,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     synthesis, synthesisLoading,
     soul, soulLoading,
     voiceExamples, premise, speechPattern, generatingExamples,
-    loadGraph, removeNode, editNode,
+    loadGraph, removeNode, editNode, moveNode,
     updateVoice, saveExamples, generateExamples, sendMessage, generateNodes, clearChat,
     toggleMode, setSelectedNodeId,
     addFromCatalog, addFromContextual, regenerateSynthesis,
@@ -216,6 +216,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                 onSelectNode={handleSelectNode}
                 onContainerClick={handleContainerClick}
                 onContextMenu={handleContextMenu}
+                onPersistPosition={moveNode}
               />
             </div>
 
