@@ -13,8 +13,8 @@ interface LiteraryFlowEdgeData extends Record<string, unknown> {
 /**
  * Custom edge for the 4 domain-chain edges (CREENCIAS → MIEDOS → … → MASCARAS).
  * - Path: smoothstep (preserves the existing vertical cascade).
- * - Label: rendered in the HTML layer via EdgeLabelRenderer so real Lora italic
- *   can be used (SVG <text> rendered the serif poorly).
+ * - Label: rendered in the HTML layer via EdgeLabelRenderer so the project's
+ *   serif display font can be used in italic (SVG <text> rendered it poorly).
  * - Ink-pool: small SVG circle at 20% of the path in the domain color.
  * - Particle: an animated circle gliding from source to target, reinforcing
  *   the "causation flows downward" metaphor. Respects prefers-reduced-motion.
@@ -88,7 +88,7 @@ export function LiteraryFlowEdge({
       {label && (
         <EdgeLabelRenderer>
           <div
-            className="absolute pointer-events-auto font-display italic text-[11px] leading-snug text-stone-500 bg-[hsl(40_20%_97%)]/90 px-2 py-0.5 rounded-sm"
+            className="absolute pointer-events-auto nodrag nopan font-display italic text-[11px] leading-snug text-stone-500 bg-[hsl(40_20%_97%)]/90 px-2 py-0.5 rounded-sm"
             style={{
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             }}
