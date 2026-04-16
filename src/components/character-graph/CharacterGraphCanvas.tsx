@@ -327,7 +327,11 @@ const MARGIN = 12
 function resolveCollisions(nodes: Node[]): Node[] {
   type Box = { id: string; x: number; y: number; w: number; h: number }
 
-  const boxes: Box[] = nodes.map(n => ({
+  // Only orbital child nodes participate in collision resolution.
+  // Containers (type 'container') and entry/exit pills stay anchored.
+  const movable = nodes.filter(n => n.type === 'child')
+
+  const boxes: Box[] = movable.map(n => ({
     id: n.id,
     x: n.position.x,
     y: n.position.y,
@@ -348,12 +352,11 @@ function resolveCollisions(nodes: Node[]): Node[] {
         const overlapY = (a.h + b.h) / 2 - Math.abs(dy)
         if (overlapX > 0 && overlapY > 0) {
           moved = true
-          const push = overlapX < overlapY
-            ? overlapX / 2 * (dx > 0 ? 1 : -1)
-            : overlapY / 2 * (dy > 0 ? 1 : -1)
           if (overlapX < overlapY) {
+            const push = overlapX / 2 * (dx > 0 ? 1 : -1)
             a.x -= push; b.x += push
           } else {
+            const push = overlapY / 2 * (dy > 0 ? 1 : -1)
             a.y -= push; b.y += push
           }
         }
@@ -362,8 +365,10 @@ function resolveCollisions(nodes: Node[]): Node[] {
     if (!moved) break
   }
 
+  const boxById = new Map(boxes.map(b => [b.id, b]))
   return nodes.map(n => {
-    const box = boxes.find(b => b.id === n.id)!
+    const box = boxById.get(n.id)
+    if (!box) return n   // containers + pills pass through untouched
     return { ...n, position: { x: box.x, y: box.y } }
   })
 }
