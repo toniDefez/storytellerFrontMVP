@@ -640,14 +640,20 @@ export function CharacterGraphCanvas({
 
   const handleNodeDragStop = useCallback(
     (_: React.MouseEvent, draggedNode: Node) => {
-      setNodes(nds => resolveCollisions(nds))
-      // Only persist orbital positions. Containers/pills are not user-positioned yet (Fase 2).
-      if (draggedNode.type === 'child' && draggedNode.id.startsWith('node-') && onPersistPosition) {
-        const nodeId = parseInt(draggedNode.id.slice(5), 10)
-        if (!Number.isNaN(nodeId)) {
-          onPersistPosition(nodeId, draggedNode.position.x, draggedNode.position.y)
+      setNodes(nds => {
+        const resolved = resolveCollisions(nds)
+        // Only persist orbital positions. Containers/pills are not user-positioned yet (Fase 2).
+        if (draggedNode.type === 'child' && draggedNode.id.startsWith('node-') && onPersistPosition) {
+          const nodeId = parseInt(draggedNode.id.slice(5), 10)
+          if (!Number.isNaN(nodeId)) {
+            const resolvedNode = resolved.find(n => n.id === draggedNode.id)
+            const pos = resolvedNode?.position ?? draggedNode.position
+            // Defer so the side effect runs after React commits this state update.
+            Promise.resolve().then(() => onPersistPosition(nodeId, pos.x, pos.y))
+          }
         }
-      }
+        return resolved
+      })
     },
     [setNodes, onPersistPosition],
   )
