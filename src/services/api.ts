@@ -75,6 +75,7 @@ export interface WorldDetail {
   premise: string
   characters: CharacterBrief[]
   scenes: SceneBrief[]
+  stories: StoryBrief[]
 }
 
 export function getWorldDetail(id: number) {
@@ -925,5 +926,160 @@ export function generateBrainstormCards(premise: string, topic: string, question
   return request<{ cards: BrainstormCard[] }>('/brainstorm/generate-cards', {
     method: 'POST',
     body: JSON.stringify({ premise, topic, question }),
+  })
+}
+
+// --- Story ---
+
+export interface NarratorConfig {
+  pov: string
+  style: string
+  distance: string
+  reliability: string
+  focus?: number
+}
+
+export interface Story {
+  id: number
+  world_id: number
+  title: string
+  premise?: string
+  narrator_default?: NarratorConfig
+  status: string
+}
+
+export interface StoryBrief {
+  id: number
+  title: string
+  status: string
+}
+
+export interface StoryCharacter {
+  character_id: number
+  name: string
+}
+
+export interface StoryRelationship {
+  id: number
+  story_id: number
+  character_a_id: number
+  character_b_id: number
+  character_a_name?: string
+  character_b_name?: string
+  rel_type: string
+  subtype: string
+  description?: string
+  directional: boolean
+}
+
+export interface StoryFact {
+  id: number
+  story_id: number
+  content: string
+  known_by: number[]
+}
+
+export interface StoryDetail {
+  story: Story
+  characters: StoryCharacter[]
+  relationships: StoryRelationship[]
+  facts: StoryFact[]
+}
+
+export function createStory(worldId: number, title: string, premise?: string) {
+  return request<Story>('/story', {
+    method: 'POST',
+    body: JSON.stringify({ world_id: worldId, title, premise }),
+  })
+}
+
+export function getStoriesByWorld(worldId: number) {
+  return request<StoryBrief[]>(`/story/list?world_id=${worldId}`)
+}
+
+export function getStoryDetail(storyId: number) {
+  return request<StoryDetail>(`/story/${storyId}`)
+}
+
+export function updateStory(storyId: number, data: {
+  title?: string
+  premise?: string
+  status?: string
+  narrator_default?: NarratorConfig
+}) {
+  return request<void>(`/story/${storyId}/update`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteStory(storyId: number) {
+  return request<void>(`/story/${storyId}/delete`, {
+    method: 'DELETE',
+  })
+}
+
+export function addStoryCharacter(storyId: number, characterId: number) {
+  return request<void>(`/story/${storyId}/character`, {
+    method: 'POST',
+    body: JSON.stringify({ character_id: characterId }),
+  })
+}
+
+export function removeStoryCharacter(storyId: number, characterId: number) {
+  return request<void>(`/story/${storyId}/character/${characterId}`, {
+    method: 'DELETE',
+  })
+}
+
+export function createRelationship(storyId: number, rel: {
+  character_a_id: number
+  character_b_id: number
+  rel_type: string
+  subtype: string
+  description?: string
+  directional: boolean
+}) {
+  return request<StoryRelationship>(`/story/${storyId}/relationship`, {
+    method: 'POST',
+    body: JSON.stringify(rel),
+  })
+}
+
+export function updateRelationship(relId: number, rel: {
+  rel_type: string
+  subtype: string
+  description?: string
+  directional: boolean
+}) {
+  return request<void>(`/story/relationship/${relId}`, {
+    method: 'PUT',
+    body: JSON.stringify(rel),
+  })
+}
+
+export function deleteRelationship(relId: number) {
+  return request<void>(`/story/relationship/${relId}/delete`, {
+    method: 'DELETE',
+  })
+}
+
+export function createFact(storyId: number, content: string, knownBy: number[]) {
+  return request<StoryFact>(`/story/${storyId}/fact`, {
+    method: 'POST',
+    body: JSON.stringify({ content, known_by: knownBy }),
+  })
+}
+
+export function updateFact(factId: number, content: string, knownBy: number[]) {
+  return request<void>(`/story/fact/${factId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ content, known_by: knownBy }),
+  })
+}
+
+export function deleteFact(factId: number) {
+  return request<void>(`/story/fact/${factId}/delete`, {
+    method: 'DELETE',
   })
 }
