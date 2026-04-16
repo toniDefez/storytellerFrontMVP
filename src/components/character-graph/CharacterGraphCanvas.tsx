@@ -4,6 +4,7 @@ import {
   ReactFlowProvider,
   useReactFlow,
   Background,
+  MiniMap,
   Panel,
   useNodesState,
   useEdgesState,
@@ -767,6 +768,17 @@ function CharacterGraphCanvasInner({
       className="bg-[hsl(40_20%_97%)]"
       proOptions={{ hideAttribution: true }}
     >
+      <MiniMap
+        position="bottom-right"
+        nodeColor={(n) => (n.data?.color as string | undefined) ?? '#c4b9ae'}
+        nodeStrokeWidth={0}
+        maskColor="rgba(120, 113, 108, 0.12)"
+        bgColor="hsl(40 20% 97%)"
+        pannable
+        zoomable
+        style={{ border: '1px solid #e7e0d8', borderRadius: 8 }}
+      />
+
       <Background color="#e8e0d4" gap={20} size={1} />
 
       <Panel position="top-right">
