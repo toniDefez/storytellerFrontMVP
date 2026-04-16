@@ -16,6 +16,7 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { FloatingEdge } from './edges/FloatingEdge'
 import { useReducedMotion } from 'framer-motion'
 import { BookOpen, RefreshCw } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, DomainSynthesis } from '@/services/api'
@@ -318,6 +319,10 @@ const nodeTypes = {
   exit: ExitNode,
 }
 
+const edgeTypes = {
+  floating: FloatingEdge,
+}
+
 /* ── Calculate orbital positions ─────────────────────────────────── */
 
 function getOrbitalPositions(
@@ -521,13 +526,11 @@ function buildElements(
         id: `orbital-edge-${cn.id}`,
         source: `node-${cn.id}`,
         target: `container-${meta.domain}`,
-        targetHandle: 'right',
-        type: 'straight',
-        animated: false,
+        type: 'floating',
         style: {
           stroke: meta.color,
           strokeWidth: 1,
-          opacity: 0.3,
+          opacity: 0.35,
         },
       })
     }
@@ -758,6 +761,7 @@ function CharacterGraphCanvasInner({
       edges={edges}
       onNodesChange={onNodesChange}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       onPaneClick={handlePaneClick}
       onNodeClick={handleNodeClick}
       onNodeDragStop={handleNodeDragStop}
