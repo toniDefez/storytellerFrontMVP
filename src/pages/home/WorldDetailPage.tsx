@@ -16,7 +16,7 @@ import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
-import { WorldStoriesList } from '@/components/world-detail/WorldStoriesList'
+import { StoryPanel } from '@/components/story-setup/StoryPanel'
 import { exportWorld } from '../../services/worldExport'
 import {
   DropdownMenu,
@@ -416,14 +416,19 @@ export default function WorldDetailPage() {
           </div>
 
           {/* Stories view */}
-          {graphView === 'stories' && (
-            <div style={{ position: 'absolute', inset: 0 }}>
-              <WorldStoriesList
-                worldId={Number(id)}
-                stories={worldDetail?.stories ?? []}
-              />
-            </div>
-          )}
+          <div
+            style={{
+              position: 'absolute', inset: 0,
+              display: graphView === 'stories' ? 'block' : 'none',
+            }}
+          >
+            <StoryPanel
+              worldId={Number(id)}
+              stories={worldDetail?.stories ?? []}
+              characters={worldDetail?.characters ?? []}
+              onStoryListChanged={refreshWorldDetail}
+            />
+          </div>
         </div>
       </div>
 
