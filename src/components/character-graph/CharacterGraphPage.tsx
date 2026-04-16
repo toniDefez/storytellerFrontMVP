@@ -217,6 +217,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                 onContainerClick={handleContainerClick}
                 onContextMenu={handleContextMenu}
                 onPersistPosition={moveNode}
+                drawerOpen={selectedContainer !== null}
               />
             </div>
 

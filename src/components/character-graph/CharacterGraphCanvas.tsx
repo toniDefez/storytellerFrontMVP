@@ -1,6 +1,8 @@
 import { useMemo, useCallback, useEffect } from 'react'
 import {
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
   Background,
   Panel,
   useNodesState,
@@ -14,6 +16,7 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { useReducedMotion } from 'framer-motion'
 import { BookOpen, RefreshCw } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, DomainSynthesis } from '@/services/api'
 
@@ -594,9 +597,11 @@ interface Props {
   onContextMenu?: (event: ContextMenuEvent) => void
   /** Persists orbital drag-stop position. Pass `moveNode` from useCharacterGraph. */
   onPersistPosition?: (id: number, x: number, y: number) => void
+  /** When the right-side drawer opens/closes, canvas refits to compensate. */
+  drawerOpen: boolean
 }
 
-export function CharacterGraphCanvas({
+function CharacterGraphCanvasInner({
   nodes: charNodes,
   selectedNodeId,
   synthesis,
@@ -605,6 +610,7 @@ export function CharacterGraphCanvas({
   onContainerClick,
   onContextMenu,
   onPersistPosition,
+  drawerOpen,
 }: Props) {
   const handleSelectNode = useCallback(
     (id: number) => onSelectNode(id === selectedNodeId ? null : id),
@@ -635,6 +641,20 @@ export function CharacterGraphCanvas({
     })
   }, [flowNodes, setNodes])
   useEffect(() => { setEdges(flowEdges) }, [flowEdges, setEdges])
+
+  const reactFlow = useReactFlow()
+  const prefersReducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    // Debounced slightly so it runs AFTER the drawer's transition starts occupying space.
+    const t = window.setTimeout(() => {
+      reactFlow.fitView({
+        padding: 0.12,
+        duration: prefersReducedMotion ? 0 : 250,
+      })
+    }, 120)
+    return () => window.clearTimeout(t)
+  }, [drawerOpen, reactFlow, prefersReducedMotion])
 
   const handlePaneClick = useCallback(() => onSelectNode(null), [onSelectNode])
 
@@ -769,5 +789,13 @@ export function CharacterGraphCanvas({
         </div>
       </Panel>
     </ReactFlow>
+  )
+}
+
+export function CharacterGraphCanvas(props: Props) {
+  return (
+    <ReactFlowProvider>
+      <CharacterGraphCanvasInner {...props} />
+    </ReactFlowProvider>
   )
 }
