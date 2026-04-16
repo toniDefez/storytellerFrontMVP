@@ -16,7 +16,7 @@ import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
-import { WorldScenesList } from '@/components/world-detail/WorldScenesList'
+import { WorldStoriesList } from '@/components/world-detail/WorldStoriesList'
 import { exportWorld } from '../../services/worldExport'
 import {
   DropdownMenu,
@@ -48,7 +48,7 @@ export default function WorldDetailPage() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
-  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'scenes'>('causal')
+  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'scenes' | 'stories'>('causal')
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
   const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
   const [confirmRegen, setConfirmRegen] = useState(false)
@@ -255,14 +255,14 @@ export default function WorldDetailPage() {
               Personajes
             </button>
             <button
-              onClick={() => setGraphView('scenes')}
+              onClick={() => setGraphView('stories')}
               className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'scenes'
+                graphView === 'stories'
                   ? 'bg-[#06b6d4]/10 text-[#0e7490]'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
-              Escenas
+              Historias
             </button>
           </div>
         </div>
@@ -415,13 +415,12 @@ export default function WorldDetailPage() {
             />
           </div>
 
-          {/* Scenes view */}
-          {graphView === 'scenes' && (
+          {/* Stories view */}
+          {graphView === 'stories' && (
             <div style={{ position: 'absolute', inset: 0 }}>
-              <WorldScenesList
+              <WorldStoriesList
                 worldId={Number(id)}
-                scenes={worldDetail?.scenes ?? []}
-                worldSummary={worldDetail?.summary || world?.premise || ''}
+                stories={worldDetail?.stories ?? []}
               />
             </div>
           )}
