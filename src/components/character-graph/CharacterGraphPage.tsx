@@ -5,7 +5,7 @@ import { VoiceBadge } from './VoiceBadge'
 import { useCharacterGraph } from './useCharacterGraph'
 import { CharacterGraphCanvas, type ContextMenuEvent } from './CharacterGraphCanvas'
 import { CharacterChatPanel } from './CharacterChatPanel'
-import { GraphMinimap } from './GraphMinimap'
+import { DecisionFlowOutline } from './DecisionFlowOutline'
 import { CatalogDrawer } from './CatalogDrawer'
 import { ContainerContextMenu, OrbitalContextMenu } from './CharacterContextMenu'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
@@ -344,7 +344,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                 )}
               </div>
               <div className="flex-1 overflow-hidden min-h-0">
-                <GraphMinimap
+                <DecisionFlowOutline
                   nodes={nodes}
                   selectedNodeId={selectedNodeId}
                   onSelectNode={(id) => setSelectedNodeId(id)}
