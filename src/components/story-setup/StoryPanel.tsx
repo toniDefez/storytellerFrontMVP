@@ -1,26 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Plus, BookOpen, Trash2, Check, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, BookOpen, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import {
   createStory,
-  getStoryDetail,
-  updateStory,
   deleteStory,
-  addStoryCharacter,
-  removeStoryCharacter,
-  createRelationship,
-  updateRelationship,
-  deleteRelationship,
-  createFact,
-  updateFact,
-  deleteFact,
 } from '@/services/api'
 import type {
   StoryBrief,
   CharacterBrief,
-  StoryDetail,
-  StoryCharacter,
-  NarratorConfig,
 } from '@/services/api'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -28,13 +15,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { StoryRoster } from './StoryRoster'
-import { RelationshipBoard } from './RelationshipBoard'
-import { StoryFactsPanel } from './StoryFactsPanel'
-import { NarratorDefaultPanel } from './NarratorDefaultPanel'
+import { StoryGraphCanvas } from '@/components/story-graph/StoryGraphCanvas'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -59,106 +41,6 @@ function statusBadge(status: string) {
         </Badge>
       )
   }
-}
-
-// ── InlineEdit ────────────────────────────────────────────────────────────────
-
-interface InlineEditProps {
-  value: string
-  onSave: (val: string) => Promise<void>
-  placeholder?: string
-  multiline?: boolean
-  className?: string
-}
-
-function InlineEdit({ value, onSave, placeholder, multiline, className }: InlineEditProps) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value)
-  const [saving, setSaving] = useState(false)
-  const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (editing && ref.current) ref.current.focus()
-  }, [editing])
-
-  // Keep draft in sync when value changes externally (e.g. after story switch)
-  useEffect(() => {
-    if (!editing) setDraft(value)
-  }, [value, editing])
-
-  async function handleSave() {
-    if (draft.trim() === value) { setEditing(false); return }
-    setSaving(true)
-    try {
-      await onSave(draft.trim())
-      setEditing(false)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') { setDraft(value); setEditing(false) }
-    if (e.key === 'Enter' && !multiline) { e.preventDefault(); handleSave() }
-    if (e.key === 'Enter' && multiline && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSave() }
-  }
-
-  if (!editing) {
-    return (
-      <span
-        onClick={() => { setDraft(value); setEditing(true) }}
-        role="button"
-        tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter') { setDraft(value); setEditing(true) } }}
-        className={`cursor-pointer hover:opacity-70 transition-opacity focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm ${className ?? ''}`}
-        title="Clic para editar"
-      >
-        {value || <span className="opacity-40">{placeholder}</span>}
-      </span>
-    )
-  }
-
-  return (
-    <span className="flex items-center gap-1 w-full">
-      {multiline ? (
-        <Textarea
-          ref={ref as React.Ref<HTMLTextAreaElement>}
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          rows={2}
-          className={`resize-none text-sm ${className ?? ''}`}
-          disabled={saving}
-        />
-      ) : (
-        <Input
-          ref={ref as React.Ref<HTMLInputElement>}
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className={`h-auto py-0.5 text-inherit font-inherit bg-transparent ${className ?? ''}`}
-          disabled={saving}
-        />
-      )}
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="shrink-0 text-primary hover:text-primary/70 transition-colors"
-        aria-label="Confirmar"
-      >
-        <Check className="w-4 h-4" />
-      </button>
-      <button
-        onClick={() => { setDraft(value); setEditing(false) }}
-        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-        aria-label="Cancelar"
-      >
-        <X className="w-4 h-4" />
-      </button>
-    </span>
-  )
 }
 
 // ── StorySidebarItem ──────────────────────────────────────────────────────────
@@ -222,225 +104,6 @@ function StorySidebarItem({ story, index, selected, onClick, onDelete }: StorySi
         <Trash2 className="w-3.5 h-3.5" />
       </span>
     </motion.button>
-  )
-}
-
-// ── StoryDetailPane ───────────────────────────────────────────────────────────
-
-interface StoryDetailPaneProps {
-  storyId: number
-  worldCharacters: CharacterBrief[]
-  onStoryUpdated: (title: string) => void
-}
-
-function StoryDetailPane({ storyId, worldCharacters, onStoryUpdated }: StoryDetailPaneProps) {
-  const [detail, setDetail] = useState<StoryDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const sd = await getStoryDetail(storyId)
-      setDetail(sd)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar la historia.')
-    } finally {
-      setLoading(false)
-    }
-  }, [storyId])
-
-  useEffect(() => { load() }, [load])
-
-  const handleUpdateTitle = async (title: string) => {
-    await updateStory(storyId, { title })
-    setDetail(prev => prev ? { ...prev, story: { ...prev.story, title } } : prev)
-    onStoryUpdated(title)
-    toast.success('Título actualizado.')
-  }
-
-  const handleUpdatePremise = async (premise: string) => {
-    await updateStory(storyId, { premise })
-    setDetail(prev => prev ? { ...prev, story: { ...prev.story, premise } } : prev)
-    toast.success('Premisa actualizada.')
-  }
-
-  const handleAddCharacter = async (characterId: number) => {
-    await addStoryCharacter(storyId, characterId)
-    await load()
-    toast.success('Personaje añadido al reparto.')
-  }
-
-  const handleRemoveCharacter = async (characterId: number) => {
-    await removeStoryCharacter(storyId, characterId)
-    await load()
-    toast.success('Personaje eliminado del reparto.')
-  }
-
-  const handleCreateRelationship = async (data: {
-    character_a_id: number
-    character_b_id: number
-    rel_type: string
-    subtype: string
-    description?: string
-    directional: boolean
-  }) => {
-    await createRelationship(storyId, data)
-    await load()
-    toast.success('Relación creada.')
-  }
-
-  const handleUpdateRelationship = async (
-    relId: number,
-    data: { rel_type: string; subtype: string; description?: string; directional: boolean },
-  ) => {
-    await updateRelationship(relId, data)
-    await load()
-    toast.success('Relación actualizada.')
-  }
-
-  const handleDeleteRelationship = async (relId: number) => {
-    await deleteRelationship(relId)
-    await load()
-    toast.success('Relación eliminada.')
-  }
-
-  const handleAddFact = async (content: string, knownBy: number[]) => {
-    await createFact(storyId, content, knownBy)
-    await load()
-    toast.success('Hecho añadido.')
-  }
-
-  const handleUpdateFact = async (factId: number, content: string, knownBy: number[]) => {
-    await updateFact(factId, content, knownBy)
-    await load()
-  }
-
-  const handleDeleteFact = async (factId: number) => {
-    await deleteFact(factId)
-    await load()
-    toast.success('Hecho eliminado.')
-  }
-
-  const handleNarratorChange = async (config: NarratorConfig) => {
-    if (!detail) return
-    setDetail(prev => prev ? { ...prev, story: { ...prev.story, narrator_default: config } } : prev)
-    try {
-      await updateStory(storyId, { narrator_default: config })
-    } catch {
-      toast.error('Error al guardar la configuración del narrador.')
-      await load()
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#06b6d4]/30 border-t-[#06b6d4] rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Cargando historia...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full px-8">
-        <p className="text-sm text-destructive text-center">{error}</p>
-      </div>
-    )
-  }
-
-  if (!detail) return null
-
-  const { story, characters, relationships, facts } = detail
-  const rosteredIds = new Set((characters ?? []).map((c: StoryCharacter) => c.character_id))
-  const availableCharacters = worldCharacters.filter(c => !rosteredIds.has(c.id))
-  const narratorConfig: NarratorConfig = story.narrator_default ?? {
-    pov: '',
-    style: '',
-    distance: '',
-    reliability: '',
-  }
-
-  return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Story identity bar */}
-      <div className="px-6 pt-5 pb-0 shrink-0">
-        {/* Inline-editable title */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-2 h-2 rounded-full bg-[#06b6d4] shrink-0" />
-          <span className="text-base font-semibold text-foreground min-w-0 flex-1">
-            <InlineEdit
-              value={story.title}
-              onSave={handleUpdateTitle}
-              placeholder="Título de la historia"
-              className="font-semibold text-base"
-            />
-          </span>
-          <span className="shrink-0">{statusBadge(story.status)}</span>
-        </div>
-
-        {/* Inline-editable premise */}
-        <div className="mb-4">
-          <p className="text-xs text-muted-foreground font-medium mb-1">Premisa</p>
-          <InlineEdit
-            value={story.premise ?? ''}
-            onSave={handleUpdatePremise}
-            placeholder="¿De qué trata esta historia?"
-            multiline
-            className="text-sm text-foreground"
-          />
-        </div>
-
-        <Separator className="mb-4" />
-
-        <TabsList className="mb-0">
-          <TabsTrigger value="roster">Reparto y relaciones</TabsTrigger>
-          <TabsTrigger value="facts">Hechos y narrador</TabsTrigger>
-        </TabsList>
-      </div>
-
-      {/* Tab: Roster + Relationships */}
-      <TabsContent value="roster" className="flex-1 overflow-y-auto px-6 py-5">
-        <div className="flex flex-col gap-8 max-w-3xl">
-          <StoryRoster
-            storyCharacters={characters}
-            availableCharacters={availableCharacters}
-            onAdd={handleAddCharacter}
-            onRemove={handleRemoveCharacter}
-          />
-          <Separator />
-          <RelationshipBoard
-            relationships={relationships}
-            storyCharacters={characters}
-            onCreateRelationship={handleCreateRelationship}
-            onUpdateRelationship={handleUpdateRelationship}
-            onDeleteRelationship={handleDeleteRelationship}
-          />
-        </div>
-      </TabsContent>
-
-      {/* Tab: Facts + Narrator */}
-      <TabsContent value="facts" className="flex-1 overflow-y-auto px-6 py-5">
-        <div className="flex flex-col gap-8 max-w-3xl">
-          <StoryFactsPanel
-            facts={facts}
-            storyCharacters={characters}
-            onAdd={handleAddFact}
-            onUpdate={handleUpdateFact}
-            onDelete={handleDeleteFact}
-          />
-          <Separator />
-          <NarratorDefaultPanel
-            narratorConfig={narratorConfig}
-            onChange={handleNarratorChange}
-          />
-        </div>
-      </TabsContent>
-    </div>
   )
 }
 
@@ -516,11 +179,6 @@ export function StoryPanel({ worldId, stories: initialStories, characters, onSto
     setDialogOpen(open)
   }
 
-  // When a story's title is updated inline, sync local brief list
-  const handleStoryTitleUpdated = (id: number, newTitle: string) => {
-    setStories(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s))
-  }
-
   return (
     <div className="grid grid-cols-[320px_1fr] h-full min-h-0">
       {/* ── Left sidebar: story list ────────────────────────────────────── */}
@@ -562,7 +220,7 @@ export function StoryPanel({ worldId, stories: initialStories, characters, onSto
         </div>
       </div>
 
-      {/* ── Right pane: story detail ────────────────────────────────────── */}
+      {/* ── Right pane: story graph canvas ─────────────────────────────── */}
       <div className="h-full overflow-hidden">
         {selectedId == null ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
@@ -572,13 +230,11 @@ export function StoryPanel({ worldId, stories: initialStories, characters, onSto
             </p>
           </div>
         ) : (
-          <Tabs defaultValue="roster" className="flex-1 flex flex-col overflow-hidden h-full" key={selectedId}>
-            <StoryDetailPane
-              storyId={selectedId}
-              worldCharacters={characters}
-              onStoryUpdated={(newTitle) => handleStoryTitleUpdated(selectedId, newTitle)}
-            />
-          </Tabs>
+          <StoryGraphCanvas
+            key={selectedId}
+            storyBrief={stories.find(s => s.id === selectedId)!}
+            worldCharacters={characters}
+          />
         )}
       </div>
 
