@@ -19,7 +19,8 @@ import {
 import '@xyflow/react/dist/style.css'
 import { FloatingEdge, LiteraryFlowEdge } from './edges'
 import { useReducedMotion } from 'framer-motion'
-import { BookOpen, RefreshCw } from 'lucide-react'
+import { RefreshCw, Sprout, Flame, Compass, Zap, VenetianMask } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, DomainSynthesis } from '@/services/api'
 
 /* ── Container metadata ────────────────────────────────────────── */
@@ -30,14 +31,15 @@ interface ContainerMeta {
   subtitle: string
   color: string
   bg: string
+  icon: LucideIcon
 }
 
 const ALL_CONTAINERS: ContainerMeta[] = [
-  { domain: 'origin', label: 'CREENCIAS', subtitle: '¿Que da por hecho?', color: '#6366F1', bg: '#eef2ff' },
-  { domain: 'fear',   label: 'MIEDOS',    subtitle: '¿Que evita?',        color: '#EF4444', bg: '#fef2f2' },
-  { domain: 'drive',  label: 'DESEOS',    subtitle: '¿Que persigue?',     color: '#F59E0B', bg: '#fffbeb' },
-  { domain: 'bond',   label: 'GRIETAS',   subtitle: '¿Donde se rompe?',   color: '#8B5CF6', bg: '#f5f3ff' },
-  { domain: 'mask',   label: 'MASCARAS',  subtitle: '¿Que muestra?',      color: '#10B981', bg: '#ecfdf5' },
+  { domain: 'origin', label: 'CREENCIAS', subtitle: '¿Que da por hecho?', color: '#6366F1', bg: '#eef2ff', icon: Sprout },
+  { domain: 'fear',   label: 'MIEDOS',    subtitle: '¿Que evita?',        color: '#EF4444', bg: '#fef2f2', icon: Flame },
+  { domain: 'drive',  label: 'DESEOS',    subtitle: '¿Que persigue?',     color: '#F59E0B', bg: '#fffbeb', icon: Compass },
+  { domain: 'bond',   label: 'GRIETAS',   subtitle: '¿Donde se rompe?',   color: '#8B5CF6', bg: '#f5f3ff', icon: Zap },
+  { domain: 'mask',   label: 'MASCARAS',  subtitle: '¿Que muestra?',      color: '#10B981', bg: '#ecfdf5', icon: VenetianMask },
 ]
 
 // Vertical flow — top to bottom, orbitals to the right
@@ -119,6 +121,7 @@ interface ContainerData extends Record<string, unknown> {
   synthesis: string
   isStale: boolean
   isSynthesisLoading: boolean
+  icon: LucideIcon
 }
 
 function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
@@ -165,7 +168,10 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
             {data.subtitle as string}
           </span>
         </div>
-        <BookOpen className="w-4 h-4 shrink-0 opacity-40" style={{ color: data.color as string }} />
+        {(() => {
+          const Icon = data.icon as LucideIcon
+          return <Icon className="w-4 h-4 shrink-0 opacity-40" style={{ color: data.color as string }} />
+        })()}
       </div>
 
       {/* Stale banner */}
@@ -490,6 +496,7 @@ function buildElements(
         synthesis: domainSynth?.synthesis || '',
         isStale: domainSynth?.is_stale ?? false,
         isSynthesisLoading: synthesisLoading === meta.domain,
+        icon: meta.icon,
       },
     })
 
