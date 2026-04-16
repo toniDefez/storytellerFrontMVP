@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect } from 'react'
+import { useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -642,19 +642,27 @@ function CharacterGraphCanvasInner({
   }, [flowNodes, setNodes])
   useEffect(() => { setEdges(flowEdges) }, [flowEdges, setEdges])
 
-  const reactFlow = useReactFlow()
+  const { fitView } = useReactFlow()
   const prefersReducedMotion = useReducedMotion()
+  const didMountRef = useRef(false)
 
   useEffect(() => {
-    // Debounced slightly so it runs AFTER the drawer's transition starts occupying space.
+    // Skip the first run: <ReactFlow fitView /> already handles initial layout.
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      return
+    }
+    // The drawer is a fixed-position Sheet portal — the canvas container does
+    // not reflow. This fitView re-centers so graph content is not occluded by
+    // the drawer overlay. 120ms matches the Sheet enter/exit cadence.
     const t = window.setTimeout(() => {
-      reactFlow.fitView({
+      fitView({
         padding: 0.12,
         duration: prefersReducedMotion ? 0 : 250,
       })
     }, 120)
     return () => window.clearTimeout(t)
-  }, [drawerOpen, reactFlow, prefersReducedMotion])
+  }, [drawerOpen, fitView, prefersReducedMotion])
 
   const handlePaneClick = useCallback(() => onSelectNode(null), [onSelectNode])
 
