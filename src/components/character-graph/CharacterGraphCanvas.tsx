@@ -1,7 +1,11 @@
-import { useMemo, useCallback, useEffect } from 'react'
+import { useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
   Background,
+  BackgroundVariant,
+  MiniMap,
   Panel,
   useNodesState,
   useEdgesState,
@@ -14,7 +18,10 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { BookOpen, RefreshCw } from 'lucide-react'
+import { FloatingEdge, LiteraryFlowEdge } from './edges'
+import { useReducedMotion } from 'framer-motion'
+import { RefreshCw, Sprout, Flame, Compass, Zap, VenetianMask } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, DomainSynthesis } from '@/services/api'
 
 /* ── Container metadata ────────────────────────────────────────── */
@@ -25,14 +32,15 @@ interface ContainerMeta {
   subtitle: string
   color: string
   bg: string
+  icon: LucideIcon
 }
 
 const ALL_CONTAINERS: ContainerMeta[] = [
-  { domain: 'origin', label: 'CREENCIAS', subtitle: '¿Que da por hecho?', color: '#6366F1', bg: '#eef2ff' },
-  { domain: 'fear',   label: 'MIEDOS',    subtitle: '¿Que evita?',        color: '#EF4444', bg: '#fef2f2' },
-  { domain: 'drive',  label: 'DESEOS',    subtitle: '¿Que persigue?',     color: '#F59E0B', bg: '#fffbeb' },
-  { domain: 'bond',   label: 'GRIETAS',   subtitle: '¿Donde se rompe?',   color: '#8B5CF6', bg: '#f5f3ff' },
-  { domain: 'mask',   label: 'MASCARAS',  subtitle: '¿Que muestra?',      color: '#10B981', bg: '#ecfdf5' },
+  { domain: 'origin', label: 'CREENCIAS', subtitle: '¿Que da por hecho?', color: '#6366F1', bg: '#eef2ff', icon: Sprout },
+  { domain: 'fear',   label: 'MIEDOS',    subtitle: '¿Que evita?',        color: '#EF4444', bg: '#fef2f2', icon: Flame },
+  { domain: 'drive',  label: 'DESEOS',    subtitle: '¿Que persigue?',     color: '#F59E0B', bg: '#fffbeb', icon: Compass },
+  { domain: 'bond',   label: 'GRIETAS',   subtitle: '¿Donde se rompe?',   color: '#8B5CF6', bg: '#f5f3ff', icon: Zap },
+  { domain: 'mask',   label: 'MASCARAS',  subtitle: '¿Que muestra?',      color: '#10B981', bg: '#ecfdf5', icon: VenetianMask },
 ]
 
 // Vertical flow — top to bottom, orbitals to the right
@@ -114,6 +122,7 @@ interface ContainerData extends Record<string, unknown> {
   synthesis: string
   isStale: boolean
   isSynthesisLoading: boolean
+  icon: LucideIcon
 }
 
 function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
@@ -124,7 +133,17 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
 
   return (
     <div
-      className="rounded-xl overflow-hidden transition-all duration-300 cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={`Dominio ${data.label as string}, ${data.childCount as number} nodos`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          e.stopPropagation()
+          ;(e.currentTarget as HTMLElement).click()
+        }
+      }}
+      className="rounded-xl overflow-hidden transition-all duration-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 focus-visible:outline-offset-2"
       style={{
         width: CONTAINER_WIDTH,
         height: CONTAINER_HEIGHT,
@@ -150,7 +169,10 @@ function ContainerNode({ data }: NodeProps<Node<ContainerData>>) {
             {data.subtitle as string}
           </span>
         </div>
-        <BookOpen className="w-4 h-4 shrink-0 opacity-40" style={{ color: data.color as string }} />
+        {(() => {
+          const Icon = data.icon as LucideIcon
+          return <Icon className="w-4 h-4 shrink-0 opacity-40" style={{ color: data.color as string }} />
+        })()}
       </div>
 
       {/* Stale banner */}
@@ -250,7 +272,11 @@ function OrbitalNode({ data }: NodeProps<Node<OrbitalData>>) {
       </NodeToolbar>
 
       <div
-        className="cursor-pointer rounded-full transition-all duration-150 hover:scale-110 flex items-center justify-center"
+        role="button"
+        tabIndex={0}
+        aria-label={`${data.label as string}, intensidad ${data.salience as number}/10`}
+        aria-pressed={isSelected}
+        className="cursor-pointer rounded-full transition-all duration-150 hover:scale-110 flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 focus-visible:outline-offset-2"
         style={{
           width: size,
           height: size,
@@ -260,6 +286,13 @@ function OrbitalNode({ data }: NodeProps<Node<OrbitalData>>) {
             : `0 2px 8px ${color}40`,
         }}
         onClick={(e) => { e.stopPropagation(); data.onSelect(data.nodeId as number) }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            e.stopPropagation()
+            data.onSelect(data.nodeId as number)
+          }
+        }}
       >
         <span
           style={{
@@ -292,6 +325,11 @@ const nodeTypes = {
   child: OrbitalNode,
   entry: EntryNode,
   exit: ExitNode,
+}
+
+const edgeTypes = {
+  floating: FloatingEdge,
+  literaryFlow: LiteraryFlowEdge,
 }
 
 /* ── Calculate orbital positions ─────────────────────────────────── */
@@ -327,7 +365,11 @@ const MARGIN = 12
 function resolveCollisions(nodes: Node[]): Node[] {
   type Box = { id: string; x: number; y: number; w: number; h: number }
 
-  const boxes: Box[] = nodes.map(n => ({
+  // Only orbital child nodes participate in collision resolution.
+  // Containers (type 'container') and entry/exit pills stay anchored.
+  const movable = nodes.filter(n => n.type === 'child')
+
+  const boxes: Box[] = movable.map(n => ({
     id: n.id,
     x: n.position.x,
     y: n.position.y,
@@ -348,12 +390,11 @@ function resolveCollisions(nodes: Node[]): Node[] {
         const overlapY = (a.h + b.h) / 2 - Math.abs(dy)
         if (overlapX > 0 && overlapY > 0) {
           moved = true
-          const push = overlapX < overlapY
-            ? overlapX / 2 * (dx > 0 ? 1 : -1)
-            : overlapY / 2 * (dy > 0 ? 1 : -1)
           if (overlapX < overlapY) {
+            const push = overlapX / 2 * (dx > 0 ? 1 : -1)
             a.x -= push; b.x += push
           } else {
+            const push = overlapY / 2 * (dy > 0 ? 1 : -1)
             a.y -= push; b.y += push
           }
         }
@@ -362,8 +403,10 @@ function resolveCollisions(nodes: Node[]): Node[] {
     if (!moved) break
   }
 
+  const boxById = new Map(boxes.map(b => [b.id, b]))
   return nodes.map(n => {
-    const box = boxes.find(b => b.id === n.id)!
+    const box = boxById.get(n.id)
+    if (!box) return n   // containers + pills pass through untouched
     return { ...n, position: { x: box.x, y: box.y } }
   })
 }
@@ -454,6 +497,7 @@ function buildElements(
         synthesis: domainSynth?.synthesis || '',
         isStale: domainSynth?.is_stale ?? false,
         isSynthesisLoading: synthesisLoading === meta.domain,
+        icon: meta.icon,
       },
     })
 
@@ -463,13 +507,19 @@ function buildElements(
 
     for (let i = 0; i < domainNodes.length; i++) {
       const cn = domainNodes[i]
-      const oPos = orbitalPos[i]
       const size = getSalienceSize(cn.salience)
+
+      // Persisted position wins; fallback to computed layout if never dragged.
+      const hasPersisted = cn.canvas_x !== 0 || cn.canvas_y !== 0
+      const layoutPos = orbitalPos[i]
+      const position = hasPersisted
+        ? { x: cn.canvas_x, y: cn.canvas_y }
+        : { x: layoutPos.x - size / 2, y: layoutPos.y - size / 2 }
 
       nodes.push({
         id: `node-${cn.id}`,
         type: 'child',
-        position: { x: oPos.x - size / 2, y: oPos.y - size / 2 },
+        position,
         draggable: true,
         selectable: true,
         data: {
@@ -482,18 +532,15 @@ function buildElements(
         },
       })
 
-      // Edge from orbital (left) to container (right side)
       edges.push({
         id: `orbital-edge-${cn.id}`,
         source: `node-${cn.id}`,
         target: `container-${meta.domain}`,
-        targetHandle: 'right',
-        type: 'straight',
-        animated: false,
+        type: 'floating',
         style: {
           stroke: meta.color,
           strokeWidth: 1,
-          opacity: 0.3,
+          opacity: 0.35,
         },
       })
     }
@@ -519,37 +566,30 @@ function buildElements(
     },
   ]
 
-  for (const { from, to, label } of flowPath) {
+  for (let idx = 0; idx < flowPath.length; idx++) {
+    const { from, to, label } = flowPath[idx]
     const fromMeta = ALL_CONTAINERS.find(c => c.domain === from)
+    const color = fromMeta?.color ?? '#a8a29e'
     edges.push({
       id: `flow-${from}-${to}`,
       source: `container-${from}`,
       target: `container-${to}`,
       sourceHandle: 'bottom',
       targetHandle: 'top',
-      type: 'smoothstep',
-      animated: false,
-      label,
-      labelStyle: {
-        fontSize: 10,
-        fontStyle: 'italic',
-        fill: '#a8a29e',
-        fontFamily: 'Lora, Georgia, serif',
+      type: 'literaryFlow',
+      data: {
+        label,
+        domainColor: color,
+        chainIndex: idx,
       },
-      labelBgStyle: {
-        fill: 'hsl(40 20% 97%)',
-        fillOpacity: 0.9,
-      },
-      labelBgPadding: [6, 4] as [number, number],
-      labelBgBorderRadius: 4,
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: `${fromMeta?.color}90`,
+        color: `${color}90`,
         width: 16,
         height: 16,
       },
       style: {
-        stroke: `${fromMeta?.color}70`,
+        stroke: `${color}70`,
         strokeWidth: 2,
       },
     })
@@ -582,9 +622,13 @@ interface Props {
   onSelectNode: (id: number | null) => void
   onContainerClick: (domain: CharacterNodeDomain) => void
   onContextMenu?: (event: ContextMenuEvent) => void
+  /** Persists orbital drag-stop position. Pass `moveNode` from useCharacterGraph. */
+  onPersistPosition?: (id: number, x: number, y: number) => void
+  /** When the right-side drawer opens/closes, canvas refits to compensate. */
+  drawerOpen: boolean
 }
 
-export function CharacterGraphCanvas({
+function CharacterGraphCanvasInner({
   nodes: charNodes,
   selectedNodeId,
   synthesis,
@@ -592,6 +636,8 @@ export function CharacterGraphCanvas({
   onSelectNode,
   onContainerClick,
   onContextMenu,
+  onPersistPosition,
+  drawerOpen,
 }: Props) {
   const handleSelectNode = useCallback(
     (id: number) => onSelectNode(id === selectedNodeId ? null : id),
@@ -623,11 +669,49 @@ export function CharacterGraphCanvas({
   }, [flowNodes, setNodes])
   useEffect(() => { setEdges(flowEdges) }, [flowEdges, setEdges])
 
+  const { fitView } = useReactFlow()
+  const prefersReducedMotion = useReducedMotion()
+  const didMountRef = useRef(false)
+
+  useEffect(() => {
+    // Skip the first run: <ReactFlow fitView /> already handles initial layout.
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      return
+    }
+    // The drawer is a fixed-position Sheet portal — the canvas container does
+    // not reflow. This fitView re-centers so graph content is not occluded by
+    // the drawer overlay. 120ms matches the Sheet enter/exit cadence.
+    const t = window.setTimeout(() => {
+      fitView({
+        padding: 0.12,
+        duration: prefersReducedMotion ? 0 : 250,
+      })
+    }, 120)
+    return () => window.clearTimeout(t)
+  }, [drawerOpen, fitView, prefersReducedMotion])
+
   const handlePaneClick = useCallback(() => onSelectNode(null), [onSelectNode])
 
-  const handleNodeDragStop = useCallback(() => {
-    setNodes(nds => resolveCollisions(nds))
-  }, [setNodes])
+  const handleNodeDragStop = useCallback(
+    (_: React.MouseEvent, draggedNode: Node) => {
+      setNodes(nds => {
+        const resolved = resolveCollisions(nds)
+        // Only persist orbital positions. Containers/pills are not user-positioned yet (Fase 2).
+        if (draggedNode.type === 'child' && draggedNode.id.startsWith('node-') && onPersistPosition) {
+          const nodeId = parseInt(draggedNode.id.slice(5), 10)
+          if (!Number.isNaN(nodeId)) {
+            const resolvedNode = resolved.find(n => n.id === draggedNode.id)
+            const pos = resolvedNode?.position ?? draggedNode.position
+            // Defer so the side effect runs after React commits this state update.
+            Promise.resolve().then(() => onPersistPosition(nodeId, pos.x, pos.y))
+          }
+        }
+        return resolved
+      })
+    },
+    [setNodes, onPersistPosition],
+  )
 
   // ReactFlow-level click — works reliably unlike onClick inside custom nodes
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -680,6 +764,7 @@ export function CharacterGraphCanvas({
       edges={edges}
       onNodesChange={onNodesChange}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       onPaneClick={handlePaneClick}
       onNodeClick={handleNodeClick}
       onNodeDragStop={handleNodeDragStop}
@@ -688,10 +773,34 @@ export function CharacterGraphCanvas({
       fitViewOptions={{ padding: 0.12 }}
       minZoom={0.5}
       maxZoom={1.5}
-      className="bg-[hsl(40_20%_97%)]"
+      className="bg-[hsl(40_30%_96%)]"
       proOptions={{ hideAttribution: true }}
     >
-      <Background color="#e8e0d4" gap={20} size={1} />
+      <MiniMap
+        position="bottom-right"
+        nodeColor={(n) => (n.data?.color as string | undefined) ?? '#c4b9ae'}
+        nodeStrokeWidth={0}
+        maskColor="rgba(120, 113, 108, 0.12)"
+        bgColor="hsl(40 20% 97%)"
+        pannable
+        zoomable
+        style={{ border: '1px solid #e7e0d8', borderRadius: 8 }}
+      />
+
+      <Background
+        id="paper"
+        variant={BackgroundVariant.Lines}
+        color="#efe6d7"
+        lineWidth={0.4}
+        gap={32}
+      />
+      <Background
+        id="dots"
+        variant={BackgroundVariant.Dots}
+        color="#d6cdbe"
+        gap={20}
+        size={1}
+      />
 
       <Panel position="top-right">
         <div style={{
@@ -740,5 +849,13 @@ export function CharacterGraphCanvas({
         </div>
       </Panel>
     </ReactFlow>
+  )
+}
+
+export function CharacterGraphCanvas(props: Props) {
+  return (
+    <ReactFlowProvider>
+      <CharacterGraphCanvasInner {...props} />
+    </ReactFlowProvider>
   )
 }
