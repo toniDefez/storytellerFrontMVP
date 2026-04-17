@@ -210,9 +210,10 @@ function LocationGraphInner({
       duration: reducedMotion ? 0 : 300,
       zoom,
     })
-    // Deps: disparar solo cuando cambia el id del nodo seleccionado.
+    // Dep: solo el id del nodo seleccionado. Ignoramos cambios en el objeto
+    // `selected` (ej. cuando enrich actualiza item con mismo id) para no re-panear.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.type === 'node' ? selected.item.id : null])
+  }, [selectedNodeId])
 
   const dragTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
@@ -368,10 +369,10 @@ function LocationGraphInner({
           {selected && (
             <motion.div
               key="locs-side-panel"
-              initial={{ x: reducedMotion ? 0 : '100%', opacity: reducedMotion ? 1 : 0 }}
+              initial={{ x: '100%', opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: reducedMotion ? 0 : '100%', opacity: reducedMotion ? 1 : 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 34 }}
+              exit={{ x: '100%', opacity: 0 }}
+              transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 34 }}
               className="absolute right-0 top-0 bottom-0 w-72 z-20 bg-background border-l border-border/50"
             >
               <LocationSidePanel
@@ -398,6 +399,7 @@ function LocationGraphInner({
           <LocationNodeFormDialog
             mode={formState.mode}
             editingNode={formState.mode === 'edit' ? formState.node : undefined}
+            parentName={formState.mode === 'create' ? formState.parentName : undefined}
             onConfirm={handleFormConfirm}
             onClose={() => setFormState(null)}
           />
