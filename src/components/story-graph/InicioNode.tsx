@@ -61,9 +61,35 @@ export function InicioNode({ data }: NodeProps<Node<InicioNodeData>>) {
         </div>
       </div>
 
-      {/* Handles — invisible, future-proofing for scene node edges */}
-      <Handle type="source" position={Position.Bottom} className="!w-0 !h-0 !opacity-0" />
-      <Handle type="target" position={Position.Top} className="!w-0 !h-0 !opacity-0" />
+      {/* Handles — all 4 sides, visible */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-cyan-500 !shadow-sm"
+        style={{ bottom: -5 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-cyan-500 !shadow-sm"
+        style={{ top: -5 }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-cyan-500 !shadow-sm"
+        style={{ right: -5 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-cyan-500 !shadow-sm"
+        style={{ left: -5 }}
+      />
     </>
   )
 }

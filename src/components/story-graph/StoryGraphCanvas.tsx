@@ -14,7 +14,16 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, ArrowLeft } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   getStoryDetail,
   updateStory,
@@ -120,6 +129,14 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
   const [detail, setDetail] = useState<StoryDetail | null>(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [graphLoading, setGraphLoading] = useState(false)
+
+  // Create scene dialog
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [newSceneTitle, setNewSceneTitle] = useState('')
+  const [creatingScene, setCreatingScene] = useState(false)
+
+  // Entered scene workspace
+  const [enteredSceneId, setEnteredSceneId] = useState<number | null>(null)
 
   // Track last created node position to offset next one
   const lastPositionRef = useRef({ x: 400, y: 300 })
@@ -229,30 +246,60 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
     }
   }, [openInicioPanel])
 
+  /* ── Node double-click → enter scene workspace ─── */
+  const handleNodeDoubleClick: NodeMouseHandler = useCallback((_event, node) => {
+    if (!node.id.startsWith('scene-')) return
+    const sceneId = parseInt(node.id.replace('scene-', ''), 10)
+    setEnteredSceneId(sceneId)
+    setPanelOpen(false)
+  }, [])
+
   /* ── Create scene ─── */
+  const handleOpenCreateDialog = () => {
+    setNewSceneTitle('')
+    setCreateDialogOpen(true)
+  }
+
   const handleCreateScene = async () => {
-    const title = window.prompt('Título de la nueva escena:')
-    if (!title?.trim()) return
+    if (!newSceneTitle.trim()) return
+    setCreatingScene(true)
     try {
       const pos = lastPositionRef.current
-      await createScene(storyBrief.id, title.trim(), pos.x, pos.y)
+      await createScene(storyBrief.id, newSceneTitle.trim(), pos.x, pos.y)
       lastPositionRef.current = { x: pos.x, y: pos.y + 160 }
       await loadGraph()
       toast.success('Escena creada.')
+      setCreateDialogOpen(false)
+      setNewSceneTitle('')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al crear la escena.')
+    } finally {
+      setCreatingScene(false)
     }
   }
 
   /* ── Connect scenes ─── */
   const handleConnect = useCallback(async (connection: Connection) => {
-    // Only create backend edges between scene nodes (not involving INICIO directly)
     const { source, target } = connection
     if (!source || !target) return
+
+    // Visual-only edge from INICIO — no backend call
+    if (source === 'inicio') {
+      setEdges(eds => addEdge({
+        ...connection,
+        id: `inicio-${target}-${Date.now()}`,
+        animated: true,
+        style: { stroke: '#06b6d4', strokeDasharray: '5 5' },
+      }, eds))
+      return
+    }
+
+    // Real edge between scene nodes
     if (!source.startsWith('scene-') || !target.startsWith('scene-')) return
 
     const fromId = parseInt(source.replace('scene-', ''), 10)
     const toId = parseInt(target.replace('scene-', ''), 10)
+    if (isNaN(fromId) || isNaN(toId)) return
 
     try {
       const edge = await createSceneEdge(fromId, toId)
@@ -366,6 +413,42 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
     }
   }
 
+  /* ── Derive entered scene title from nodes ─── */
+  const enteredSceneNode = enteredSceneId != null
+    ? nodes.find(n => n.id === `scene-${enteredSceneId}`)
+    : null
+  const enteredSceneTitle = enteredSceneNode
+    ? (enteredSceneNode.data as SceneNodeData).title
+    : `Escena ${enteredSceneId}`
+
+  /* ── Scene workspace view ─── */
+  if (enteredSceneId != null) {
+    return (
+      <div className="flex flex-col h-full w-full bg-[hsl(40_20%_97%)]">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-stone-200 bg-white shadow-sm">
+          <button
+            onClick={() => setEnteredSceneId(null)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-stone-800 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al grafo
+          </button>
+          <span className="text-stone-300">|</span>
+          <h1 className="text-base font-semibold text-stone-800">{enteredSceneTitle}</h1>
+        </div>
+
+        {/* Placeholder workspace */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <p className="text-muted-foreground text-sm">La composición de escenas llegará pronto</p>
+            <p className="text-xs text-stone-400">(Plan 3)</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full w-full overflow-hidden">
       {/* ── Canvas ─────────────────────────────────────────────── */}
@@ -384,6 +467,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
           onNodeClick={handleNodeClick}
+          onNodeDoubleClick={handleNodeDoubleClick}
           onConnect={handleConnect}
           onNodeDragStop={handleNodeDragStop}
           onPaneClick={closePanel}
@@ -403,7 +487,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
 
         {/* ── Create scene FAB ─── */}
         <button
-          onClick={handleCreateScene}
+          onClick={handleOpenCreateDialog}
           className="
             absolute bottom-14 right-4 z-10
             bg-cyan-500 text-white rounded-full w-10 h-10 shadow-lg
@@ -442,6 +526,40 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
         onSceneDelete={handleSceneDelete}
         onSceneTitleChange={handleSceneTitleChange}
       />
+
+      {/* ── Create scene dialog ──────────────────────────────────── */}
+      <Dialog open={createDialogOpen} onOpenChange={open => { if (!open) setCreateDialogOpen(false) }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nueva escena</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              placeholder="Título de la escena…"
+              value={newSceneTitle}
+              onChange={e => setNewSceneTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleCreateScene() }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCreateDialogOpen(false)}
+              disabled={creatingScene}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateScene}
+              disabled={!newSceneTitle.trim() || creatingScene}
+              className="bg-cyan-500 hover:bg-cyan-600 text-white"
+            >
+              {creatingScene ? 'Creando…' : 'Crear'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

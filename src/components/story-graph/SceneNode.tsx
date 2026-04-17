@@ -30,8 +30,17 @@ export function SceneNode({ data }: NodeProps<Node<SceneNodeData>>) {
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-white !shadow-sm"
+        id="top"
+        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-cyan-500 !shadow-sm"
         style={{ top: -5 }}
+      />
+      {/* Target handle — left */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-cyan-500 !shadow-sm"
+        style={{ left: -5 }}
       />
 
       <div
@@ -89,11 +98,20 @@ export function SceneNode({ data }: NodeProps<Node<SceneNodeData>>) {
         )}
       </div>
 
+      {/* Source handle — right */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-cyan-500 !shadow-sm"
+        style={{ right: -5 }}
+      />
       {/* Source handle — bottom */}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-white !shadow-sm"
+        id="bottom"
+        className="!w-2 !h-2 !rounded-full !bg-cyan-400 !border-2 !border-cyan-500 !shadow-sm"
         style={{ bottom: -5 }}
       />
     </>
