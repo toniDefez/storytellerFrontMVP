@@ -119,11 +119,12 @@ function buildFlowEdge(edge: SceneEdge): Edge {
 interface Props {
   storyBrief: StoryBrief
   worldCharacters: CharacterBrief[]
+  onSceneEntered?: (entered: boolean) => void
 }
 
 /* ── Main component ─────────────────────────────────────────────── */
 
-export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
+export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }: Props) {
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelMode, setPanelMode] = useState<PanelMode>('inicio')
   const [selectedSceneId, setSelectedSceneId] = useState<number | undefined>()
@@ -253,7 +254,8 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
     const sceneId = parseInt(node.id.replace('scene-', ''), 10)
     setEnteredSceneId(sceneId)
     setPanelOpen(false)
-  }, [])
+    onSceneEntered?.(true)
+  }, [onSceneEntered])
 
   /* ── Create scene ─── */
   const handleOpenCreateDialog = () => {
@@ -420,7 +422,10 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
       <SceneWorkspace
         sceneId={enteredSceneId}
         storyId={storyBrief.id}
-        onBack={() => setEnteredSceneId(null)}
+        onBack={() => {
+          setEnteredSceneId(null)
+          onSceneEntered?.(false)
+        }}
       />
     )
   }

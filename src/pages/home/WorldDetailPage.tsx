@@ -193,21 +193,11 @@ export default function WorldDetailPage() {
         className="flex items-center gap-0 px-4 border-b border-border/60 bg-background"
         style={{ height: 44 }}
       >
-        {/* Left: back + world identity + tab switcher */}
+        {/* Left: world identity + tab switcher */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* Back link */}
-          <Link
-            to="/worlds"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 flex items-center gap-1 mr-1"
-          >
-            ← {t('nav.worlds')}
-          </Link>
-
-          <span className="text-border/60 text-xs shrink-0">/</span>
-
           {/* World dot */}
           <div
-            className="w-2 h-2 rounded-full shrink-0 ml-1"
+            className="w-2 h-2 rounded-full shrink-0"
             style={{ backgroundColor: dotColor }}
           />
 

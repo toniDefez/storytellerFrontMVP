@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { StoryBrief, CharacterBrief } from '@/services/api'
 import { StoryGraphCanvas } from '@/components/story-graph/StoryGraphCanvas'
@@ -19,6 +18,7 @@ interface Props {
 export function StoryPanel({ worldId, stories: initialStories, characters, onStoryListChanged }: Props) {
   const [stories, setStories] = useState<StoryBrief[]>(initialStories)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [sceneEntered, setSceneEntered] = useState(false)
 
   // Keep local list in sync when parent refreshes world detail
   useEffect(() => {
@@ -31,6 +31,7 @@ export function StoryPanel({ worldId, stories: initialStories, characters, onSto
 
   const handleBack = () => {
     setSelectedId(null)
+    setSceneEntered(false)
   }
 
   const handleStoryCreated = (story: StoryBrief) => {
@@ -70,25 +71,27 @@ export function StoryPanel({ worldId, stories: initialStories, characters, onSto
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            {/* Floating back button */}
-            <button
-              onClick={handleBack}
-              className="absolute top-3 left-3 z-10 flex items-center gap-1.5
-                         bg-white/90 border border-stone-200 rounded-lg shadow-sm
-                         px-3 py-1.5 text-sm text-muted-foreground
-                         hover:text-foreground hover:bg-white
-                         transition-colors duration-150"
-              aria-label="Volver al catálogo"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Volver
-            </button>
+            {/* Floating back button — hidden while inside scene workspace */}
+            {!sceneEntered && (
+              <button
+                onClick={handleBack}
+                className="absolute top-3 left-3 z-10
+                           bg-white/90 border border-stone-200 rounded-lg shadow-sm
+                           px-3 py-1.5 text-sm text-muted-foreground
+                           hover:text-foreground
+                           transition-colors"
+                aria-label="Volver al catálogo"
+              >
+                ← Historias
+              </button>
+            )}
 
             {selectedStory && (
               <StoryGraphCanvas
                 key={selectedId}
                 storyBrief={selectedStory}
                 worldCharacters={characters}
+                onSceneEntered={setSceneEntered}
               />
             )}
           </motion.div>

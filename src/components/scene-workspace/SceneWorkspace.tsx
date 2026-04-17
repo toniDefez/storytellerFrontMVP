@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getFlowNodes,
@@ -93,31 +92,31 @@ export function SceneWorkspace({ sceneId, onBack }: Props) {
 
   return (
     <div className="flex flex-col h-full w-full bg-[hsl(40_20%_97%)]">
-      {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 bg-white shadow-sm">
-        <button
-          onClick={onBack}
-          className="bg-white/90 border border-stone-200 rounded-lg shadow-sm px-3 py-1.5 text-sm flex items-center gap-1.5 text-stone-600 hover:text-stone-900 hover:border-stone-300 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Volver al grafo
-        </button>
+      {/* ── Floating top controls ────────────────────────────────── */}
+      {/* Back button */}
+      <button
+        onClick={onBack}
+        className="absolute top-3 left-3 z-10 bg-white/90 border border-stone-200 rounded-lg shadow-sm px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        ← Grafo
+      </button>
 
-        <h1 className="font-display text-lg font-semibold text-stone-800">
-          {sceneTitle}
-        </h1>
+      {/* Scene title */}
+      <h1 className="absolute top-3 left-1/2 -translate-x-1/2 z-10 font-display text-base font-semibold text-stone-800 bg-white/90 border border-stone-200 rounded-lg shadow-sm px-3 py-1.5 pointer-events-none">
+        {sceneTitle}
+      </h1>
 
-        <button
-          disabled
-          title="Próximamente"
-          className="bg-cyan-500 text-white opacity-50 cursor-not-allowed px-4 py-1.5 rounded-lg text-sm font-medium"
-        >
-          Generar
-        </button>
-      </div>
+      {/* Generar button */}
+      <button
+        disabled
+        title="Próximamente"
+        className="absolute top-3 right-3 z-10 bg-cyan-500 text-white opacity-50 cursor-not-allowed px-3 py-1.5 rounded-lg text-sm font-medium"
+      >
+        Generar
+      </button>
 
       {/* ── Arc Bar ─────────────────────────────────────────────── */}
-      <div className="px-4 py-2 border-b border-stone-100 bg-white/60">
+      <div className="px-4 pt-14 pb-2 border-b border-stone-100 bg-white/60">
         <ArcBar nodeCount={nodes.length} />
       </div>
 
