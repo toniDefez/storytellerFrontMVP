@@ -961,3 +961,114 @@ export function deleteFact(factId: number) {
     method: 'DELETE',
   })
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Scene graph
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface StoryScene {
+  id: number
+  story_id: number
+  title: string
+  location_node_id?: number
+  location_name?: string
+  narrator_config?: NarratorConfig
+  vehicle: string
+  status: string
+  canvas_x: number
+  canvas_y: number
+}
+
+export interface SceneEdge {
+  id: number
+  from_scene_id: number
+  to_scene_id: number
+  edge_type: string
+  time_gap?: string
+}
+
+export interface SceneCharacter {
+  scene_id: number
+  character_id: number
+  name?: string
+}
+
+export interface SceneBrief {
+  id: number
+  title: string
+  status: string
+  location_name?: string
+  character_count: number
+  canvas_x: number
+  canvas_y: number
+}
+
+export interface StoryGraph {
+  scenes: SceneBrief[]
+  edges: SceneEdge[]
+}
+
+export function createScene(storyId: number, title: string, canvasX: number, canvasY: number) {
+  return request<StoryScene>('/scene/create', {
+    method: 'POST',
+    body: JSON.stringify({ story_id: storyId, title, canvas_x: canvasX, canvas_y: canvasY }),
+  })
+}
+
+export function getSceneDetail(id: number) {
+  return request<StoryScene>(`/scene/detail/${id}`)
+}
+
+export function updateScene(id: number, data: { title?: string; status?: string; location_node_id?: number; vehicle?: string }) {
+  return request<void>(`/scene/update/${id}`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateScenePosition(id: number, canvasX: number, canvasY: number) {
+  return request<void>(`/scene/position/${id}`, {
+    method: 'POST',
+    body: JSON.stringify({ canvas_x: canvasX, canvas_y: canvasY }),
+  })
+}
+
+export function deleteScene(id: number) {
+  return request<void>(`/scene/delete/${id}`, {
+    method: 'POST',
+  })
+}
+
+export function getStoryGraph(storyId: number) {
+  return request<StoryGraph>(`/scene/graph/${storyId}`)
+}
+
+export function createSceneEdge(fromSceneId: number, toSceneId: number, edgeType = 'sequential') {
+  return request<SceneEdge>('/scene/edge/create', {
+    method: 'POST',
+    body: JSON.stringify({ from_scene_id: fromSceneId, to_scene_id: toSceneId, edge_type: edgeType }),
+  })
+}
+
+export function deleteSceneEdge(id: number) {
+  return request<void>(`/scene/edge/delete/${id}`, {
+    method: 'POST',
+  })
+}
+
+export function addSceneCharacter(sceneId: number, characterId: number) {
+  return request<void>(`/scene/character/add/${sceneId}`, {
+    method: 'POST',
+    body: JSON.stringify({ character_id: characterId }),
+  })
+}
+
+export function removeSceneCharacter(sceneId: number, characterId: number) {
+  return request<void>(`/scene/character/remove/${sceneId}/${characterId}`, {
+    method: 'POST',
+  })
+}
+
+export function getSceneCharacters(sceneId: number) {
+  return request<SceneCharacter[]>(`/scene/characters/${sceneId}`)
+}

@@ -4,6 +4,7 @@ import { StoryRoster } from '@/components/story-setup/StoryRoster'
 import { RelationshipBoard } from '@/components/story-setup/RelationshipBoard'
 import { StoryFactsPanel } from '@/components/story-setup/StoryFactsPanel'
 import { NarratorDefaultPanel } from '@/components/story-setup/NarratorDefaultPanel'
+import { SceneDetailPanel } from './SceneDetailPanel'
 import type {
   StoryCharacter,
   CharacterBrief,
@@ -12,9 +13,15 @@ import type {
   NarratorConfig,
 } from '@/services/api'
 
+export type PanelMode = 'inicio' | 'scene'
+
 interface Props {
   open: boolean
   onClose: () => void
+
+  // Mode
+  selectedMode: PanelMode
+  selectedSceneId?: number
 
   // Data
   storyTitle: string
@@ -50,11 +57,17 @@ interface Props {
 
   // Callbacks – narrator
   onNarratorChange: (config: NarratorConfig) => void
+
+  // Callbacks – scene
+  onSceneDelete: () => void
+  onSceneTitleChange: () => void
 }
 
 export function StoryGraphPanel({
   open,
   onClose,
+  selectedMode,
+  selectedSceneId,
   storyTitle,
   storyCharacters,
   availableCharacters,
@@ -70,7 +83,13 @@ export function StoryGraphPanel({
   onUpdateFact,
   onDeleteFact,
   onNarratorChange,
+  onSceneDelete,
+  onSceneTitleChange,
 }: Props) {
+  const isScene = selectedMode === 'scene' && selectedSceneId != null
+
+  const panelSubtitle = isScene ? 'Detalle de escena' : 'Configuración inicial de la historia'
+
   return (
     <div
       className="relative flex shrink-0 bg-white border-l border-stone-200 overflow-hidden"
@@ -103,47 +122,59 @@ export function StoryGraphPanel({
             <h2 className="text-sm font-semibold text-foreground truncate" title={storyTitle}>
               {storyTitle}
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Configuración inicial de la historia</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{panelSubtitle}</p>
           </div>
 
           {/* Scrollable content */}
           <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 flex flex-col gap-6">
-            <StoryRoster
-              storyCharacters={storyCharacters}
-              availableCharacters={availableCharacters}
-              onAdd={onAddCharacter}
-              onRemove={onRemoveCharacter}
-            />
+            {isScene ? (
+              <SceneDetailPanel
+                key={selectedSceneId}
+                sceneId={selectedSceneId!}
+                storyCharacters={storyCharacters}
+                onDelete={onSceneDelete}
+                onTitleChange={onSceneTitleChange}
+              />
+            ) : (
+              <>
+                <StoryRoster
+                  storyCharacters={storyCharacters}
+                  availableCharacters={availableCharacters}
+                  onAdd={onAddCharacter}
+                  onRemove={onRemoveCharacter}
+                />
 
-            <Separator />
+                <Separator />
 
-            <RelationshipBoard
-              relationships={relationships}
-              storyCharacters={storyCharacters}
-              onCreateRelationship={onCreateRelationship}
-              onUpdateRelationship={onUpdateRelationship}
-              onDeleteRelationship={onDeleteRelationship}
-            />
+                <RelationshipBoard
+                  relationships={relationships}
+                  storyCharacters={storyCharacters}
+                  onCreateRelationship={onCreateRelationship}
+                  onUpdateRelationship={onUpdateRelationship}
+                  onDeleteRelationship={onDeleteRelationship}
+                />
 
-            <Separator />
+                <Separator />
 
-            <StoryFactsPanel
-              facts={facts}
-              storyCharacters={storyCharacters}
-              onAdd={onAddFact}
-              onUpdate={onUpdateFact}
-              onDelete={onDeleteFact}
-            />
+                <StoryFactsPanel
+                  facts={facts}
+                  storyCharacters={storyCharacters}
+                  onAdd={onAddFact}
+                  onUpdate={onUpdateFact}
+                  onDelete={onDeleteFact}
+                />
 
-            <Separator />
+                <Separator />
 
-            <NarratorDefaultPanel
-              narratorConfig={narratorConfig}
-              onChange={onNarratorChange}
-            />
+                <NarratorDefaultPanel
+                  narratorConfig={narratorConfig}
+                  onChange={onNarratorChange}
+                />
 
-            {/* Bottom breathing room */}
-            <div className="h-4 shrink-0" />
+                {/* Bottom breathing room */}
+                <div className="h-4 shrink-0" />
+              </>
+            )}
           </div>
         </div>
       )}
