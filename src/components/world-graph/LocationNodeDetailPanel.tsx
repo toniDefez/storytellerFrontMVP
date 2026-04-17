@@ -143,7 +143,7 @@ export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onAd
       <div className="p-4 border-t border-border/50 space-y-2">
         <Button
           size="sm"
-          className="w-full gap-1.5 bg-[#0f766e] text-white hover:bg-[#0d6b62]"
+          className="w-full gap-1.5 bg-[#14b8a6] text-white hover:bg-[#0f766e]"
           onClick={() => onAddChild(node)}
         >
           <Plus className="w-3.5 h-3.5" /> Añadir lugar dentro
