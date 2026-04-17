@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Trash2, Pencil, Plus, Sparkles, Wand2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Sparkles, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { LocationNode, LocationNodeType, NarrativeFunction } from '@/services/api'
 
@@ -30,8 +30,6 @@ interface Props {
   node: LocationNode
   connectedNodes: LocationNode[]
   childNodes: LocationNode[]
-  onEdit: (node: LocationNode) => void
-  onDelete: (id: number) => void
   onAddChild: (parentNode: LocationNode) => void
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
@@ -41,7 +39,7 @@ interface Props {
   onClose: () => void
 }
 
-export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEdit, onDelete, onAddChild, onExpandWithAI, expandingNodeId, onEnrichWithAI, enrichingNodeId, onSelectChild, onClose }: Props) {
+export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onAddChild, onExpandWithAI, expandingNodeId, onEnrichWithAI, enrichingNodeId, onSelectChild, onClose }: Props) {
   const isExpanding = expandingNodeId === node.id
   const isEnriching = enrichingNodeId === node.id
   const [storyLayerOpen, setStoryLayerOpen] = useState(false)
@@ -144,14 +142,11 @@ export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEd
 
       <div className="p-4 border-t border-border/50 space-y-2">
         <Button
-          variant="outline"
           size="sm"
-          className="w-full gap-1.5 text-[#14b8a6] border-[#14b8a6]/30 hover:bg-[#14b8a6]/10 hover:border-[#14b8a6]/50 disabled:opacity-50"
-          onClick={() => onEnrichWithAI(node)}
-          disabled={isEnriching}
+          className="w-full gap-1.5 bg-[#0f766e] text-white hover:bg-[#0d6b62]"
+          onClick={() => onAddChild(node)}
         >
-          <Wand2 className="w-3.5 h-3.5" />
-          {isEnriching ? 'Completando…' : 'Completar con IA'}
+          <Plus className="w-3.5 h-3.5" /> Añadir lugar dentro
         </Button>
         <Button
           variant="outline"
@@ -161,24 +156,18 @@ export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onEd
           disabled={isExpanding}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          {isExpanding ? 'Generando lugares…' : 'Generar lugares con IA'}
+          {isExpanding ? 'Generando lugares…' : 'Generar varios lugares con IA'}
         </Button>
         <Button
           variant="outline"
           size="sm"
-          className="w-full gap-1.5 text-[#14b8a6] border-[#14b8a6]/30 hover:bg-[#14b8a6]/10 hover:border-[#14b8a6]/50"
-          onClick={() => onAddChild(node)}
+          className="w-full gap-1.5 text-[#14b8a6] border-[#14b8a6]/30 hover:bg-[#14b8a6]/10 hover:border-[#14b8a6]/50 disabled:opacity-50"
+          onClick={() => onEnrichWithAI(node)}
+          disabled={isEnriching}
         >
-          <Plus className="w-3.5 h-3.5" /> Añadir lugar manualmente
+          <Wand2 className="w-3.5 h-3.5" />
+          {isEnriching ? 'Completando…' : 'Completar este lugar con IA'}
         </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => onEdit(node)}>
-            <Pencil className="w-3.5 h-3.5" /> Editar
-          </Button>
-          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(node.id)}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
       </div>
     </div>
   )
