@@ -17,10 +17,12 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Plus, Sparkles } from 'lucide-react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { LocationNode as LocationNodeComponent } from './LocationNode'
 import { WaterwayEdge, WildernessEdge, RoadEdge, HierarchyEdge } from './LocationEdges'
 import { LocationSidePanel } from './LocationSidePanel'
 import { LocationNodeFormDialog, type LocationNodeFormInput } from './LocationNodeFormDialog'
+import { LocationGraphProvider, type LocationGraphContextValue } from './LocationGraphContext'
 import type { LocationNode, LocationEdge } from '@/services/api'
 import type { SelectedLocation } from '@/hooks/useLocationGraph'
 
@@ -147,11 +149,24 @@ function LocationGraphInner({
   onExpandWithAI, expandingNodeId,
   onEnrichWithAI, enrichingNodeId,
 }: Props) {
-  const { fitView } = useReactFlow()
+  const { fitView, setCenter, getZoom } = useReactFlow()
+  const reducedMotion = useReducedMotion()
   const [formState, setFormState] = useState<FormState>(null)
 
   const selectedNodeId = selected?.type === 'node' ? selected.item.id : undefined
   const selectedEdgeId = selected?.type === 'edge' ? selected.item.id : undefined
+
+  const contextValue = useMemo<LocationGraphContextValue>(() => ({
+    onEditNode: (nodeId: number) => {
+      const node = locationNodes.find(n => n.id === nodeId)
+      if (node) setFormState({ mode: 'edit', node })
+    },
+    onDeleteNode: (nodeId: number) => {
+      if (window.confirm('¿Eliminar esta localización? Se perderán sus conexiones.')) {
+        onDeleteNode(nodeId)
+      }
+    },
+  }), [locationNodes, onDeleteNode])
 
   const flowNodes = useMemo(() => buildFlowNodes(locationNodes, selectedNodeId), [locationNodes, selectedNodeId])
   const flowEdges = useMemo(() => buildFlowEdges(locationEdges, locationNodes, selectedEdgeId), [locationEdges, locationNodes, selectedEdgeId])
@@ -181,6 +196,23 @@ function LocationGraphInner({
       return () => clearTimeout(t)
     }
   }, [visible, fitView])
+
+  // Auto-pan: al seleccionar un nodo, centrar el viewport para que el nodo
+  // quede a la izquierda del panel (que cubre los 288px derechos cuando se abre).
+  // Solo para nodos; los edges no tienen "centro" obvio.
+  // En el mount inicial `selected` es null, así que el early-return filtra ese caso.
+  useEffect(() => {
+    if (selected?.type !== 'node') return
+    const n = selected.item
+    const zoom = getZoom()
+    // 144 = panelWidth/2 (288/2). Convertido a coords del mundo via zoom.
+    setCenter(n.canvas_x + 144 / zoom, n.canvas_y, {
+      duration: reducedMotion ? 0 : 300,
+      zoom,
+    })
+    // Deps: disparar solo cuando cambia el id del nodo seleccionado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.type === 'node' ? selected.item.id : null])
 
   const dragTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
@@ -233,127 +265,145 @@ function LocationGraphInner({
 
   if (locationNodes.length === 0) {
     return (
-      <div className="flex h-full">
-        <div className="flex-1 flex items-center justify-center bg-[hsl(180_8%_97%)] text-center p-8">
-          <div className="space-y-3 max-w-xs">
-            <p className="text-sm text-muted-foreground font-[var(--font-display)] italic">
-              El mapa está vacío
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Genera las localizaciones a partir del grafo causal o crea una manualmente
-            </p>
-            <div className="flex flex-col items-center gap-2">
-              {worldId != null && (
+      <LocationGraphProvider value={contextValue}>
+        <div className="flex h-full">
+          <div className="flex-1 flex items-center justify-center bg-[hsl(180_8%_97%)] text-center p-8">
+            <div className="space-y-3 max-w-xs">
+              <p className="text-sm text-muted-foreground font-[var(--font-display)] italic">
+                El mapa está vacío
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Genera las localizaciones a partir del grafo causal o crea una manualmente
+              </p>
+              <div className="flex flex-col items-center gap-2">
+                {worldId != null && (
+                  <button
+                    onClick={onGenerate}
+                    disabled={generating}
+                    className="text-xs text-[#14b8a6] underline underline-offset-2 hover:text-[#0f766e] transition-colors disabled:opacity-50"
+                  >
+                    {generating ? 'Generando...' : 'Generar desde el grafo causal →'}
+                  </button>
+                )}
                 <button
-                  onClick={onGenerate}
-                  disabled={generating}
-                  className="text-xs text-[#14b8a6] underline underline-offset-2 hover:text-[#0f766e] transition-colors disabled:opacity-50"
+                  onClick={() => setFormState({ mode: 'create' })}
+                  className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
                 >
-                  {generating ? 'Generando...' : 'Generar desde el grafo causal →'}
+                  Crear localización manualmente →
                 </button>
-              )}
-              <button
-                onClick={() => setFormState({ mode: 'create' })}
-                className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
-              >
-                Crear localización manualmente →
-              </button>
+              </div>
             </div>
           </div>
+
+          {formState && (
+            <LocationNodeFormDialog
+              mode={formState.mode}
+              editingNode={formState.mode === 'edit' ? formState.node : undefined}
+              parentName={formState.mode === 'create' ? formState.parentName : undefined}
+              onConfirm={handleFormConfirm}
+              onClose={() => setFormState(null)}
+            />
+          )}
         </div>
+      </LocationGraphProvider>
+    )
+  }
+
+  return (
+    <LocationGraphProvider value={contextValue}>
+      <div className="relative h-full">
+        <div className="absolute inset-0 min-w-0">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={handleNodeClick}
+            onEdgeClick={handleEdgeClick}
+            onNodeDragStop={handleNodeDragStop}
+            onConnect={handleConnect}
+            onPaneClick={handlePaneClick}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            connectionMode={ConnectionMode.Loose}
+            nodesDraggable={true}
+            fitView
+            fitViewOptions={{ padding: 0.3 }}
+            className="bg-[hsl(180_8%_97%)]"
+          >
+            <Background color="#c8d5d5" gap={24} size={1} />
+            <Controls />
+            <MiniMap
+              position="bottom-left"
+              nodeColor="#14b8a6"
+              className="!bg-background/90 !border-border/50"
+            />
+            <div className="absolute top-2 left-2 z-10 flex gap-1.5">
+              <button
+                onClick={() => setFormState({ mode: 'create' })}
+                className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-[#14b8a6] text-muted-foreground hover:text-[#14b8a6] transition-colors flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" /> Añadir
+              </button>
+              <button
+                onClick={onAddRegions}
+                disabled={generating}
+                className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {generating ? 'Generando...' : 'Añadir regiones'}
+              </button>
+              <button
+                onClick={onGenerate}
+                disabled={generating}
+                className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 hover:border-[#14b8a6] text-muted-foreground hover:text-[#14b8a6] transition-colors disabled:opacity-50"
+              >
+                {generating ? 'Generando...' : '↺ Regenerar'}
+              </button>
+            </div>
+          </ReactFlow>
+        </div>
+
+        <AnimatePresence>
+          {selected && (
+            <motion.div
+              key="locs-side-panel"
+              initial={{ x: reducedMotion ? 0 : '100%', opacity: reducedMotion ? 1 : 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: reducedMotion ? 0 : '100%', opacity: reducedMotion ? 1 : 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 34 }}
+              className="absolute right-0 top-0 bottom-0 w-72 z-20 bg-background border-l border-border/50"
+            >
+              <LocationSidePanel
+                selected={selected}
+                nodes={locationNodes}
+                edges={locationEdges}
+                onEditNode={node => setFormState({ mode: 'edit', node })}
+                onDeleteNode={onDeleteNode}
+                onAddChildNode={node => setFormState({ mode: 'create', parentId: node.id, parentName: node.name })}
+                onExpandWithAI={onExpandWithAI}
+                expandingNodeId={expandingNodeId}
+                onEnrichWithAI={onEnrichWithAI}
+                enrichingNodeId={enrichingNodeId}
+                onSelectNode={node => onSelectNode(node)}
+                onUpdateEdge={onUpdateEdge}
+                onDeleteEdge={onDeleteEdge}
+                onClose={() => { onSelectNode(null) }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {formState && (
           <LocationNodeFormDialog
             mode={formState.mode}
             editingNode={formState.mode === 'edit' ? formState.node : undefined}
-            parentName={formState.mode === 'create' ? formState.parentName : undefined}
             onConfirm={handleFormConfirm}
             onClose={() => setFormState(null)}
           />
         )}
       </div>
-    )
-  }
-
-  return (
-    <div className="flex h-full">
-      <div className="flex-1 relative min-w-0">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeClick={handleNodeClick}
-          onEdgeClick={handleEdgeClick}
-          onNodeDragStop={handleNodeDragStop}
-          onConnect={handleConnect}
-          onPaneClick={handlePaneClick}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          connectionMode={ConnectionMode.Loose}
-          nodesDraggable={true}
-          fitView
-          fitViewOptions={{ padding: 0.3 }}
-          className="bg-[hsl(180_8%_97%)]"
-        >
-          <Background color="#c8d5d5" gap={24} size={1} />
-          <Controls />
-          <MiniMap
-            nodeColor="#14b8a6"
-            className="!bg-background/90 !border-border/50"
-          />
-          <div className="absolute top-2 right-2 z-10 flex gap-1.5">
-            <button
-              onClick={() => setFormState({ mode: 'create' })}
-              className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-[#14b8a6] text-muted-foreground hover:text-[#14b8a6] transition-colors flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" /> Añadir
-            </button>
-            <button
-              onClick={onAddRegions}
-              disabled={generating}
-              className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              {generating ? 'Generando...' : 'Añadir regiones'}
-            </button>
-            <button
-              onClick={onGenerate}
-              disabled={generating}
-              className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 hover:border-[#14b8a6] text-muted-foreground hover:text-[#14b8a6] transition-colors disabled:opacity-50"
-            >
-              {generating ? 'Generando...' : '↺ Regenerar'}
-            </button>
-          </div>
-        </ReactFlow>
-      </div>
-
-      <LocationSidePanel
-        selected={selected}
-        nodes={locationNodes}
-        edges={locationEdges}
-        onEditNode={node => setFormState({ mode: 'edit', node })}
-        onDeleteNode={onDeleteNode}
-        onAddChildNode={node => setFormState({ mode: 'create', parentId: node.id, parentName: node.name })}
-        onExpandWithAI={onExpandWithAI}
-        expandingNodeId={expandingNodeId}
-        onEnrichWithAI={onEnrichWithAI}
-        enrichingNodeId={enrichingNodeId}
-        onSelectNode={node => onSelectNode(node)}
-        onUpdateEdge={onUpdateEdge}
-        onDeleteEdge={onDeleteEdge}
-        onClose={() => { onSelectNode(null) }}
-      />
-
-      {formState && (
-        <LocationNodeFormDialog
-          mode={formState.mode}
-          editingNode={formState.mode === 'edit' ? formState.node : undefined}
-          onConfirm={handleFormConfirm}
-          onClose={() => setFormState(null)}
-        />
-      )}
-    </div>
+    </LocationGraphProvider>
   )
 }
 
