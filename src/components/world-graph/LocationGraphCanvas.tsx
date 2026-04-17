@@ -30,6 +30,11 @@ import type { SelectedLocation } from '@/hooks/useLocationGraph'
 const nodeTypes = { location: LocationNodeComponent }
 const edgeTypes = { waterway: WaterwayEdge, wilderness: WildernessEdge, road: RoadEdge, hierarchy: HierarchyEdge }
 
+// Side panel width in px. Must stay in sync with the `w-72` Tailwind class on
+// the panel motion.div. Used by auto-pan math so the selected node is centered
+// in the visible (non-panel) portion of the canvas.
+const PANEL_WIDTH_PX = 288
+
 type FormState =
   | { mode: 'create'; parentId?: number; parentName?: string }
   | { mode: 'edit'; node: LocationNode }
@@ -205,8 +210,10 @@ function LocationGraphInner({
     if (selected?.type !== 'node') return
     const n = selected.item
     const zoom = getZoom()
-    // 144 = panelWidth/2 (288/2). Convertido a coords del mundo via zoom.
-    setCenter(n.canvas_x + 144 / zoom, n.canvas_y, {
+    // Shift viewport target right by half the panel width (converted to world
+    // coords via zoom) so the node ends up centered in the visible area left
+    // of the panel instead of directly under it.
+    setCenter(n.canvas_x + PANEL_WIDTH_PX / 2 / zoom, n.canvas_y, {
       duration: reducedMotion ? 0 : 300,
       zoom,
     })
