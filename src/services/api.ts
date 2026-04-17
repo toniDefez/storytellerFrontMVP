@@ -1072,3 +1072,78 @@ export function removeSceneCharacter(sceneId: number, characterId: number) {
 export function getSceneCharacters(sceneId: number) {
   return request<SceneCharacter[]>(`/scene/characters/${sceneId}`)
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Flow nodes
+// ────────────────────────────────────────────────────────────────────────────
+
+export type FlowNodeType = 'action' | 'emotional' | 'conversation' | 'perception' | 'marking_event' | 'device'
+
+export interface FlowNode {
+  id: number
+  scene_id: number
+  position: number
+  node_type: FlowNodeType
+  config: Record<string, unknown>
+}
+
+export interface ActionConfig {
+  action_type: string  // confront, pursue, negotiate, discover, flee, sacrifice
+  intensity: string    // subtle, moderate, explosive
+  director_note?: string
+}
+
+export interface EmotionalConfig {
+  emotion: string
+  character_id?: number
+  intensity: string    // contained, open, explosive
+}
+
+export interface ConversationConfig {
+  conv_type: string    // dialogue, interrogation, confession, debate
+  tone: string
+  topic?: string
+}
+
+export interface PerceptionConfig {
+  character_id?: number
+  description: string
+}
+
+export interface MarkingEventConfig {
+  character_id?: number
+  description: string
+}
+
+export interface DeviceConfig {
+  device_type: string  // dramatic_irony, reversal, cliffhanger, reveal, ticking_clock, betrayal, recognition
+}
+
+export function createFlowNode(sceneId: number, nodeType: FlowNodeType, position: number, config: Record<string, unknown>) {
+  return request<FlowNode>(`/scene/flow/create/${sceneId}`, {
+    method: 'POST',
+    body: JSON.stringify({ node_type: nodeType, position, config }),
+  })
+}
+
+export function updateFlowNode(id: number, nodeType: FlowNodeType, config: Record<string, unknown>) {
+  return request<void>(`/scene/flow/update/${id}`, {
+    method: 'POST',
+    body: JSON.stringify({ node_type: nodeType, config }),
+  })
+}
+
+export function deleteFlowNode(id: number) {
+  return request<void>(`/scene/flow/delete/${id}`, { method: 'POST' })
+}
+
+export function getFlowNodes(sceneId: number) {
+  return request<FlowNode[]>(`/scene/flow/list/${sceneId}`)
+}
+
+export function reorderFlowNodes(sceneId: number, orderedIds: number[]) {
+  return request<void>(`/scene/flow/reorder/${sceneId}`, {
+    method: 'POST',
+    body: JSON.stringify({ ordered_ids: orderedIds }),
+  })
+}
