@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { toast } from 'sonner'
-import { Plus, ArrowLeft } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,7 @@ import type {
 import { InicioNode, type InicioNodeData } from './InicioNode'
 import { SceneNode, type SceneNodeData } from './SceneNode'
 import { StoryGraphPanel, type PanelMode } from './StoryGraphPanel'
+import { SceneWorkspace } from '@/components/scene-workspace/SceneWorkspace'
 
 /* ── Node types ─────────────────────────────────────────────────── */
 
@@ -413,39 +414,14 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters }: Props) {
     }
   }
 
-  /* ── Derive entered scene title from nodes ─── */
-  const enteredSceneNode = enteredSceneId != null
-    ? nodes.find(n => n.id === `scene-${enteredSceneId}`)
-    : null
-  const enteredSceneTitle = enteredSceneNode
-    ? (enteredSceneNode.data as SceneNodeData).title
-    : `Escena ${enteredSceneId}`
-
   /* ── Scene workspace view ─── */
   if (enteredSceneId != null) {
     return (
-      <div className="flex flex-col h-full w-full bg-[hsl(40_20%_97%)]">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-stone-200 bg-white shadow-sm">
-          <button
-            onClick={() => setEnteredSceneId(null)}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-stone-800 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver al grafo
-          </button>
-          <span className="text-stone-300">|</span>
-          <h1 className="text-base font-semibold text-stone-800">{enteredSceneTitle}</h1>
-        </div>
-
-        {/* Placeholder workspace */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-2">
-            <p className="text-muted-foreground text-sm">La composición de escenas llegará pronto</p>
-            <p className="text-xs text-stone-400">(Plan 3)</p>
-          </div>
-        </div>
-      </div>
+      <SceneWorkspace
+        sceneId={enteredSceneId}
+        storyId={storyBrief.id}
+        onBack={() => setEnteredSceneId(null)}
+      />
     )
   }
 
