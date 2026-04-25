@@ -1,147 +1,163 @@
-import { useState, useEffect, useCallback } from 'react'
-import { toast } from 'sonner'
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  getFlowNodes,
-  getSceneCharacters,
-  getSceneDetail,
-  createFlowNode,
-  deleteFlowNode,
-  reorderFlowNodes,
-} from '@/services/api'
-import type { FlowNode, FlowNodeType, SceneCharacter } from '@/services/api'
-import { ArcBar } from './ArcBar'
-import { FlowNodeList } from './FlowNodeList'
-import { FlowNodePalette } from './FlowNodePalette'
+  listSceneNodes, listSceneNodeEdges, createSceneNode, updateSceneNode,
+  updateSceneNodePosition, deleteSceneNodeEdge, createSceneNodeEdge,
+  generateScene, listSceneOutputs, revertSceneOutput,
+  type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput,
+} from '../../services/api';
+import { SceneCanvas } from './SceneCanvas';
+import { ScenePalette } from './ScenePalette';
+import { SceneProseView } from './SceneProseView';
+import { SceneVersionDropdown } from './SceneVersionDropdown';
+import { SplitView } from './SplitView';
 
-interface Props {
-  sceneId: number
-  storyId: number
-  onBack: () => void
+interface SceneWorkspaceProps {
+  sceneId: number;
+  onBack: () => void;
+  charNameByID?: Record<number, string>;
+  locationByID?: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
+  /** Accepted for backwards compatibility with StoryGraphCanvas; not used. */
+  storyId?: number;
 }
 
-export function SceneWorkspace({ sceneId, onBack }: Props) {
-  const [nodes, setNodes] = useState<FlowNode[]>([])
-  const [sceneCharacters, setSceneCharacters] = useState<SceneCharacter[]>([])
-  const [sceneTitle, setSceneTitle] = useState<string>(`Escena ${sceneId}`)
-  const [loading, setLoading] = useState(true)
+export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: SceneWorkspaceProps) {
+  const charMap = charNameByID ?? {};
+  const locMap = locationByID ?? {};
 
-  const loadAll = useCallback(async () => {
-    setLoading(true)
+  const [nodes, setNodes] = useState<SceneNode[]>([]);
+  const [edges, setEdges] = useState<SceneNodeEdge[]>([]);
+  const [outputs, setOutputs] = useState<SceneOutput[]>([]);
+  const [currentVersion, setCurrentVersion] = useState<number | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const refresh = useCallback(async () => {
+    const [n, e, o] = await Promise.all([
+      listSceneNodes(sceneId), listSceneNodeEdges(sceneId), listSceneOutputs(sceneId),
+    ]);
+    setNodes(n); setEdges(e); setOutputs(o);
+    if (o.length && currentVersion === null) setCurrentVersion(o[0].version);
+  }, [sceneId, currentVersion]);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const handleConnect = useCallback(async (fromId: number, toId: number, kind: SceneEdgeKind) => {
     try {
-      const [flowNodes, chars, sceneDetail] = await Promise.all([
-        getFlowNodes(sceneId),
-        getSceneCharacters(sceneId),
-        getSceneDetail(sceneId),
-      ])
-      setNodes(flowNodes)
-      setSceneCharacters(chars)
-      setSceneTitle(sceneDetail.title)
+      const e = await createSceneNodeEdge(sceneId, fromId, toId, kind);
+      setEdges((prev) => [...prev, e]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al cargar la escena.')
+      console.error('edge create failed', err);
+    }
+  }, [sceneId]);
+
+  const handleNodeMove = useCallback(async (id: number, x: number, y: number) => {
+    setNodes((prev) => prev.map((n) => n.id === id ? { ...n, canvas_x: x, canvas_y: y } : n));
+    try { await updateSceneNodePosition(id, x, y); } catch (err) { console.error(err); }
+  }, []);
+
+  const handleMomentEdit = useCallback(async (id: number, description: string) => {
+    setNodes((prev) => prev.map((n) => n.id === id ? { ...n, description } : n));
+    try { await updateSceneNode(id, { description }); } catch (err) { console.error(err); }
+  }, []);
+
+  const handleNarratorEdit = useCallback(async (id: number, patch: Partial<{ pov: string; style: string; distance: string; reliability: string }>) => {
+    const node = nodes.find((n) => n.id === id);
+    if (!node) return;
+    const cfg = { ...(node.narrator_config ?? { pov: '3rd-limited', style: 'sparse', distance: 'intimate', reliability: 'reliable' }), ...patch };
+    setNodes((prev) => prev.map((n) => n.id === id ? { ...n, narrator_config: cfg } : n));
+    try { await updateSceneNode(id, { narrator_config: cfg }); } catch (err) { console.error(err); }
+  }, [nodes]);
+
+  const handleEdgeDelete = useCallback(async (id: number) => {
+    setEdges((prev) => prev.filter((e) => e.id !== id));
+    try { await deleteSceneNodeEdge(id); } catch (err) { console.error(err); }
+  }, []);
+
+  const handleAddMoment = useCallback(async () => {
+    const created = await createSceneNode(sceneId, {
+      node_kind: 'moment',
+      description: '',
+      canvas_x: 200 + Math.random() * 100,
+      canvas_y: 200 + nodes.filter((n) => n.node_kind === 'moment').length * 120,
+    });
+    setNodes((prev) => [...prev, created]);
+  }, [sceneId, nodes]);
+
+  const handleAddNarrator = useCallback(async () => {
+    const created = await createSceneNode(sceneId, {
+      node_kind: 'narrator',
+      narrator_config: { pov: '3rd-limited', style: 'sparse', distance: 'intimate', reliability: 'reliable' },
+      canvas_x: 80,
+      canvas_y: 40 + nodes.filter((n) => n.node_kind === 'narrator').length * 120,
+    });
+    setNodes((prev) => [...prev, created]);
+  }, [sceneId, nodes]);
+
+  const handleGenerate = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const res = await generateScene(sceneId);
+      const fresh = await listSceneOutputs(sceneId);
+      setOutputs(fresh);
+      setCurrentVersion(res.version);
+    } catch (err) {
+      console.error(err);
+      alert(`Error generando: ${(err as Error).message}`);
     } finally {
-      setLoading(false)
+      setGenerating(false);
     }
-  }, [sceneId])
+  }, [sceneId]);
 
-  useEffect(() => {
-    loadAll()
-  }, [loadAll])
+  const handleVersionSelect = useCallback(async (version: number) => {
+    setCurrentVersion(version);
+    try { await revertSceneOutput(sceneId, version); } catch (err) { console.error(err); }
+  }, [sceneId]);
 
-  /* ── Add node from palette ─── */
-  const handleAddNode = useCallback(async (nodeType: FlowNodeType) => {
-    const nextPosition = nodes.length > 0
-      ? Math.max(...nodes.map(n => n.position)) + 1
-      : 0
-    try {
-      const node = await createFlowNode(sceneId, nodeType, nextPosition, {})
-      setNodes(prev => [...prev, node])
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al añadir nodo.')
-    }
-  }, [sceneId, nodes])
+  const currentProse = useMemo(() => outputs.find((o) => o.version === currentVersion)?.content ?? '', [outputs, currentVersion]);
 
-  /* ── Update node config (called after debounced auto-save) ─── */
-  const handleUpdate = useCallback((id: number, nodeType: FlowNodeType, config: Record<string, unknown>) => {
-    setNodes(prev => prev.map(n => n.id === id ? { ...n, node_type: nodeType, config } : n))
-  }, [])
+  const canvas = (
+    <>
+      <ScenePalette
+        onAddMoment={handleAddMoment}
+        onAddNarrator={handleAddNarrator}
+        onGenerate={handleGenerate}
+        generating={generating}
+      />
+      <SceneCanvas
+        nodes={nodes}
+        edges={edges}
+        onConnect={handleConnect}
+        onNodeMove={handleNodeMove}
+        onMomentEdit={handleMomentEdit}
+        onNarratorEdit={handleNarratorEdit}
+        onEdgeDelete={handleEdgeDelete}
+        charNameByID={charMap}
+        locationByID={locMap}
+      />
+    </>
+  );
 
-  /* ── Delete node ─── */
-  const handleDelete = useCallback(async (id: number) => {
-    try {
-      await deleteFlowNode(id)
-      setNodes(prev => prev.filter(n => n.id !== id))
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al eliminar nodo.')
-    }
-  }, [])
-
-  /* ── Reorder ─── */
-  const handleReorder = useCallback(async (orderedIds: number[]) => {
-    // optimistic update
-    setNodes(prev => {
-      const map = new Map(prev.map(n => [n.id, n]))
-      return orderedIds.map((id, idx) => ({ ...map.get(id)!, position: idx }))
-    })
-    try {
-      await reorderFlowNodes(sceneId, orderedIds)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al reordenar nodos.')
-      loadAll()
-    }
-  }, [sceneId, loadAll])
-
-  return (
-    <div className="flex flex-col h-full w-full bg-[hsl(40_20%_97%)]">
-      {/* ── Floating top controls ────────────────────────────────── */}
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="absolute top-3 left-3 z-10 bg-white/90 border border-stone-200 rounded-lg shadow-sm px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        ← Grafo
-      </button>
-
-      {/* Scene title */}
-      <h1 className="absolute top-3 left-1/2 -translate-x-1/2 z-10 font-display text-base font-semibold text-stone-800 bg-white/90 border border-stone-200 rounded-lg shadow-sm px-3 py-1.5 pointer-events-none">
-        {sceneTitle}
-      </h1>
-
-      {/* Generar button */}
-      <button
-        disabled
-        title="Próximamente"
-        className="absolute top-3 right-3 z-10 bg-cyan-500 text-white opacity-50 cursor-not-allowed px-3 py-1.5 rounded-lg text-sm font-medium"
-      >
-        Generar
-      </button>
-
-      {/* ── Arc Bar ─────────────────────────────────────────────── */}
-      <div className="px-4 pt-14 pb-2 border-b border-stone-100 bg-white/60">
-        <ArcBar nodeCount={nodes.length} />
+  const prose = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: 8, borderBottom: '1px solid #e5e7eb', alignItems: 'center' }}>
+        <SceneVersionDropdown outputs={outputs} current={currentVersion} onSelect={handleVersionSelect} />
+        <button onClick={handleGenerate} disabled={generating}>
+          {generating ? 'Generando…' : 'Regenerar'}
+        </button>
       </div>
-
-      {/* ── Main area ───────────────────────────────────────────── */}
-      <div className="flex flex-1 min-h-0">
-        {/* Node list */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {loading ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="w-4 h-4 border border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
-            </div>
-          ) : (
-            <FlowNodeList
-              nodes={nodes}
-              sceneCharacters={sceneCharacters}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onReorder={handleReorder}
-            />
-          )}
-        </div>
-
-        {/* Palette */}
-        <FlowNodePalette onAddNode={handleAddNode} />
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        {currentProse ? <SceneProseView content={currentProse} /> : <div style={{ padding: 24, color: '#9ca3af' }}>Aún no se ha generado prosa.</div>}
       </div>
     </div>
-  )
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <div style={{ padding: 8, borderBottom: '1px solid #e5e7eb' }}>
+        <button onClick={onBack}>← Volver al grafo</button>
+      </div>
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        <SplitView left={canvas} right={prose} />
+      </div>
+    </div>
+  );
 }
