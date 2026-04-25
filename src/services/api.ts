@@ -999,6 +999,8 @@ export interface SceneBrief {
   status: string
   location_name?: string
   character_count: number
+  character_ids: number[]
+  is_opening: boolean
   canvas_x: number
   canvas_y: number
 }
@@ -1039,11 +1041,18 @@ export function deleteScene(id: number) {
   })
 }
 
+export function setSceneOpening(id: number, isOpening: boolean) {
+  return request<void>(`/scene/opening/${id}`, {
+    method: 'POST',
+    body: JSON.stringify({ is_opening: isOpening }),
+  })
+}
+
 export function getStoryGraph(storyId: number) {
   return request<StoryGraph>(`/scene/graph/${storyId}`)
 }
 
-export function createSceneEdge(fromSceneId: number, toSceneId: number, edgeType = 'sequential') {
+export function createSceneEdge(fromSceneId: number, toSceneId: number, edgeType = 'causal') {
   return request<SceneEdge>('/scene/edge/create', {
     method: 'POST',
     body: JSON.stringify({ from_scene_id: fromSceneId, to_scene_id: toSceneId, edge_type: edgeType }),
@@ -1146,4 +1155,130 @@ export function reorderFlowNodes(sceneId: number, orderedIds: number[]) {
     method: 'POST',
     body: JSON.stringify({ ordered_ids: orderedIds }),
   })
+}
+
+// --- Scenes v2 (Plan 3B-lite) ---
+
+export type SceneNodeKind = 'character' | 'location' | 'moment' | 'narrator'
+export type SceneEdgeKind = 'flow' | 'attachment'
+
+export interface NarratorNodeConfig {
+  pov: string
+  style: string
+  distance: string
+  reliability: string
+  focus_character_id?: number | null
+}
+
+export interface SceneNode {
+  id: number
+  scene_id: number
+  node_kind: SceneNodeKind
+  character_id?: number | null
+  location_node_id?: number | null
+  description?: string
+  owner_kind?: string
+  owner_character_id?: number | null
+  hidden: boolean
+  narrator_config?: NarratorNodeConfig | null
+  canvas_x: number
+  canvas_y: number
+  created_at: string
+}
+
+export interface SceneNodeEdge {
+  id: number
+  scene_id: number
+  from_node_id: number
+  to_node_id: number
+  edge_kind: SceneEdgeKind
+  created_at: string
+}
+
+export interface SceneDeltaJSON {
+  facts?: string[]
+  reveals?: string[]
+  relationship_changes?: string[]
+  emotional_shifts?: string[]
+  marking_events?: string[]
+  location_effects?: string[]
+  unresolved?: string[]
+  summary?: string
+}
+
+export interface SceneOutput {
+  id: number
+  scene_id: number
+  version: number
+  vehicle: string
+  content: string
+  delta_json?: SceneDeltaJSON | null
+  correlation_id?: string
+  created_at: string
+}
+
+export function createSceneNode(sceneId: number, node: Partial<SceneNode>): Promise<SceneNode> {
+  return request<SceneNode>(`/scene/node/create/${sceneId}`, {
+    method: 'POST',
+    body: JSON.stringify(node),
+  })
+}
+
+export function updateSceneNode(id: number, patch: Partial<SceneNode>): Promise<void> {
+  return request<void>(`/scene/node/update/${id}`, {
+    method: 'POST',
+    body: JSON.stringify(patch),
+  })
+}
+
+export function updateSceneNodePosition(id: number, x: number, y: number): Promise<void> {
+  return request<void>(`/scene/node/position/${id}`, {
+    method: 'POST',
+    body: JSON.stringify({ canvas_x: x, canvas_y: y }),
+  })
+}
+
+export function deleteSceneNode(id: number): Promise<void> {
+  return request<void>(`/scene/node/delete/${id}`, { method: 'POST' })
+}
+
+export function listSceneNodes(sceneId: number): Promise<SceneNode[]> {
+  return request<SceneNode[]>(`/scene/node/list/${sceneId}`)
+}
+
+export function createSceneNodeEdge(
+  sceneId: number,
+  fromId: number,
+  toId: number,
+  edgeKind: SceneEdgeKind = 'flow',
+): Promise<SceneNodeEdge> {
+  return request<SceneNodeEdge>(`/scene/edge2/create/${sceneId}`, {
+    method: 'POST',
+    body: JSON.stringify({ from_node_id: fromId, to_node_id: toId, edge_kind: edgeKind }),
+  })
+}
+
+export function deleteSceneNodeEdge(id: number): Promise<void> {
+  return request<void>(`/scene/edge2/delete/${id}`, { method: 'POST' })
+}
+
+export function listSceneNodeEdges(sceneId: number): Promise<SceneNodeEdge[]> {
+  return request<SceneNodeEdge[]>(`/scene/edge2/list/${sceneId}`)
+}
+
+export function generateScene(
+  sceneId: number,
+): Promise<{ prose: string; delta: SceneDeltaJSON; version: number }> {
+  return request<{ prose: string; delta: SceneDeltaJSON; version: number }>(
+    `/scene/generate/${sceneId}`,
+    { method: 'POST' },
+  )
+}
+
+export function listSceneOutputs(sceneId: number): Promise<SceneOutput[]> {
+  return request<SceneOutput[]>(`/scene/output/list/${sceneId}`)
+}
+
+export function revertSceneOutput(sceneId: number, version: number): Promise<void> {
+  return request<void>(`/scene/output/revert/${sceneId}/${version}`, { method: 'POST' })
 }
