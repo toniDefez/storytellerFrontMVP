@@ -11,7 +11,7 @@ function authHeaders(): HeadersInit {
   }
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+export async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: { ...authHeaders(), ...options?.headers },
@@ -513,6 +513,7 @@ export interface LocationNode {
   source_hint?: string
   canvas_x: number
   canvas_y: number
+  faction_id?: number | null
 }
 
 export interface LocationEdge {

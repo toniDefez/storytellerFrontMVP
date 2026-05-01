@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import React, { memo } from 'react'
 import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react'
 import type { LocationNodeType, NarrativeFunction } from '@/services/api'
 import { useZoomLevel } from '@/hooks/useZoomLevel'
@@ -39,6 +39,12 @@ export interface LocationNodeData {
   isSelected?: boolean
   depth?: number
   childCount?: number
+  /**
+   * Hex color of the civic node's faction, if assigned. Overrides the
+   * narrative-function-derived border in compact zoom and the teal selection
+   * accent at full zoom.
+   */
+  factionColor?: string | null
 }
 
 const HANDLE_STYLE = {
@@ -193,6 +199,17 @@ export const LocationNode = memo(function LocationNode({ id, data }: NodeProps) 
           : 'border-border/60 hover:border-[#14b8a6]/50'}
       `}
         title={d.source_hint || undefined}
+        style={{
+          // Drive border + selection ring via CSS vars so we can tint by faction
+          // without spawning a Tailwind class per color.
+          ['--lg-faction-color' as string]: d.factionColor ?? '#14b8a6',
+          ['--lg-faction-tint' as string]: d.factionColor
+            ? `${d.factionColor}20`
+            : '#14b8a620',
+          borderColor: d.isSelected
+            ? (d.factionColor ?? '#14b8a6')
+            : undefined,
+        } as React.CSSProperties}
       >
         <Handle type="source" position={Position.Top}    id="t"  style={handleStyle} />
         <Handle type="source" position={Position.Right}  id="r"  style={handleStyle} />

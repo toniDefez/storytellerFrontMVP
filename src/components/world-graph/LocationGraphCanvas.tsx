@@ -25,9 +25,12 @@ import { LocationNodeFormDialog, type LocationNodeFormInput } from './LocationNo
 import { LocationGraphProvider, type LocationGraphContextValue } from './LocationGraphContext'
 import type { LocationNode, LocationEdge } from '@/services/api'
 import type { SelectedLocation } from '@/hooks/useLocationGraph'
+import { RegionNode, computeRegionBounds } from './RegionNode'
+import { zIndexForRegion, Z_INDEX } from './physicalMapPalette'
+import type { Faction, Region } from '@/services/factionApi'
 
 // Define outside component to avoid re-renders
-const nodeTypes = { location: LocationNodeComponent }
+const nodeTypes = { location: LocationNodeComponent, region: RegionNode }
 const edgeTypes = { waterway: WaterwayEdge, wilderness: WildernessEdge, road: RoadEdge, hierarchy: HierarchyEdge }
 
 // Side panel width in px. Must stay in sync with the `w-72` Tailwind class on
@@ -44,6 +47,8 @@ interface Props {
   worldId: number | null
   locationNodes: LocationNode[]
   locationEdges: LocationEdge[]
+  regions: Region[]
+  factions: Faction[]
   selected: SelectedLocation
   visible?: boolean
   onSelectNode: (node: LocationNode | null) => void
@@ -84,7 +89,11 @@ function buildDepthMap(locationNodes: LocationNode[]): Map<number, number> {
   return depthMap
 }
 
-function buildFlowNodes(locationNodes: LocationNode[], selectedId?: number): Node[] {
+function buildFlowNodes(
+  locationNodes: LocationNode[],
+  factionsById: Map<number, Faction>,
+  selectedId?: number
+): Node[] {
   const needsLayout = locationNodes.length > 1 &&
     locationNodes.every(n => n.canvas_x === 0 && n.canvas_y === 0)
   const depthMap = buildDepthMap(locationNodes)
@@ -101,10 +110,14 @@ function buildFlowNodes(locationNodes: LocationNode[], selectedId?: number): Nod
       const cols = Math.ceil(Math.sqrt(locationNodes.length))
       position = { x: (i % cols) * 420, y: Math.floor(i / cols) * 260 }
     }
+    const factionColor = n.faction_id != null
+      ? factionsById.get(n.faction_id)?.color ?? null
+      : null
     return {
       id: String(n.id),
       type: 'location',
       position,
+      zIndex: n.id === selectedId ? Z_INDEX.selected : Z_INDEX.civic,
       data: {
         name: n.name,
         node_type: n.node_type,
@@ -114,6 +127,33 @@ function buildFlowNodes(locationNodes: LocationNode[], selectedId?: number): Nod
         isSelected: n.id === selectedId,
         depth: depthMap.get(n.id) ?? 0,
         childCount: childCounts.get(n.id) ?? 0,
+        factionColor,
+      } as unknown as Record<string, unknown>,
+    }
+  })
+}
+
+function buildRegionFlowNodes(regions: Region[], selectedRegionId?: number): Node[] {
+  return regions.map(r => {
+    const bounds = computeRegionBounds(r.vertices)
+    return {
+      id: `region-${r.id}`,
+      type: 'region',
+      position: { x: bounds.x, y: bounds.y },
+      // Region nodes are decorative — block React Flow drag for now (Plan 4
+      // re-enables drag together with vertex editing).
+      draggable: false,
+      selectable: true,
+      selected: r.id === selectedRegionId,
+      // Manual z-index ordering; only takes effect with
+      // <ReactFlow elevateNodesOnSelect={false}>.
+      zIndex: r.id === selectedRegionId ? Z_INDEX.selected : zIndexForRegion(r),
+      data: {
+        region: r,
+        width: bounds.width,
+        height: bounds.height,
+        offsetX: bounds.x,
+        offsetY: bounds.y,
       } as unknown as Record<string, unknown>,
     }
   })
@@ -146,6 +186,7 @@ function buildFlowEdges(locationEdges: LocationEdge[], locationNodes: LocationNo
 
 function LocationGraphInner({
   worldId, locationNodes, locationEdges,
+  regions, factions,
   selected, visible,
   onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
@@ -173,7 +214,24 @@ function LocationGraphInner({
     },
   }), [locationNodes, onDeleteNode])
 
-  const flowNodes = useMemo(() => buildFlowNodes(locationNodes, selectedNodeId), [locationNodes, selectedNodeId])
+  const factionsById = useMemo(() => {
+    const m = new Map<number, Faction>()
+    for (const f of factions) m.set(f.id, f)
+    return m
+  }, [factions])
+
+  const civicFlowNodes = useMemo(
+    () => buildFlowNodes(locationNodes, factionsById, selectedNodeId),
+    [locationNodes, factionsById, selectedNodeId]
+  )
+  const regionFlowNodes = useMemo(
+    () => buildRegionFlowNodes(regions /* selectedRegionId — Plan 4 */),
+    [regions]
+  )
+  const flowNodes = useMemo(
+    () => [...regionFlowNodes, ...civicFlowNodes],
+    [regionFlowNodes, civicFlowNodes]
+  )
   const flowEdges = useMemo(() => buildFlowEdges(locationEdges, locationNodes, selectedEdgeId), [locationEdges, locationNodes, selectedEdgeId])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
@@ -232,6 +290,9 @@ function LocationGraphInner({
   }, [])
 
   const handleNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
+    // Only persist drag for civic nodes. Region/vertex node types don't
+    // own a numeric LocationNode id.
+    if (node.type !== 'location') return
     const id = node.id
     const prev = dragTimers.current.get(id)
     if (prev) clearTimeout(prev)
@@ -242,6 +303,9 @@ function LocationGraphInner({
   }, [onMoveNode])
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    // Region nodes use string IDs like `region-42`. Plan 4 handles their
+    // selection; for now, ignore clicks on non-civic nodes.
+    if (node.type !== 'location') return
     const loc = locationNodes.find(n => n.id === Number(node.id))
     if (!loc) return
     onSelectNode(selected?.type === 'node' && selected.item.id === loc.id ? null : loc)
