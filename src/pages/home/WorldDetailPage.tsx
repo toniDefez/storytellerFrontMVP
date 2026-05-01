@@ -14,6 +14,8 @@ import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
 import { LocationGraphCanvas } from '@/components/world-graph/LocationGraphCanvas'
 import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
+import { useFactions } from '@/hooks/useFactions'
+import { useRegions } from '@/hooks/useRegions'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
 import { WorldScenesList } from '@/components/world-detail/WorldScenesList'
@@ -71,6 +73,11 @@ export default function WorldDetailPage() {
     moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
     editEdge, removeEdge,
   } = useLocationGraph(Number(id))
+
+  const _wid = Number(id)
+  const worldIdNum = Number.isNaN(_wid) ? null : _wid
+  const { factions } = useFactions(worldIdNum)
+  const { regions } = useRegions(worldIdNum)
 
   const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
     const wid = Number(id)
@@ -360,6 +367,8 @@ export default function WorldDetailPage() {
             <LocationGraphCanvas
               worldId={Number(id)}
               locationNodes={locationNodes}
+              regions={regions}
+              factions={factions}
               locationEdges={locationEdges}
               selected={locationSelected}
               visible={graphView === 'locations'}
