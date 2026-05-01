@@ -634,6 +634,7 @@ export interface LocationNode {
   source_hint?: string
   canvas_x: number
   canvas_y: number
+  faction_id?: number | null
 }
 
 export interface LocationEdge {
