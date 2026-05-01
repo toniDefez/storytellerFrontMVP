@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import React, { memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import type { LocationNodeType, NarrativeFunction } from '@/services/api'
 
@@ -27,6 +27,12 @@ export interface LocationNodeData {
   isSelected?: boolean
   depth?: number
   childCount?: number
+  /**
+   * Hex color of the civic node's faction, if assigned. Overrides the
+   * narrative-function-derived border in compact zoom and the teal selection
+   * accent at full zoom.
+   */
+  factionColor?: string | null
 }
 
 const HANDLE_STYLE = {
@@ -63,7 +69,11 @@ export const LocationNode = memo(function LocationNode({ data }: NodeProps) {
             : 'border-amber-200/80 hover:border-amber-400/60'}
         `}
         title={d.source_hint || undefined}
-        style={{ borderLeft: '3px solid #d97706' }}
+        style={{
+          // Faction color takes priority when present; otherwise fall back to
+          // narrative function color, then to the neutral slate fallback.
+          borderLeft: `3px solid ${d.factionColor ? d.factionColor : '#d97706'}`,
+        }}
       >
         <Handle type="source" position={Position.Top}    id="t"  style={handleStyle} />
         <Handle type="source" position={Position.Right}  id="r"  style={handleStyle} />
@@ -102,9 +112,20 @@ export const LocationNode = memo(function LocationNode({ data }: NodeProps) {
         rounded-xl border bg-background shadow-sm min-w-[120px] max-w-[160px]
         transition-all duration-150
         ${d.isSelected
-          ? 'border-[#14b8a6] shadow-[0_0_0_2px_#14b8a620]'
-          : 'border-border/60 hover:border-[#14b8a6]/50'}
+          ? 'shadow-[0_0_0_2px_var(--lg-faction-tint,#14b8a620)]'
+          : 'hover:border-[var(--lg-faction-color,#14b8a6)]/50'}
       `}
+      style={{
+        // Drive border + selection ring via CSS vars so we can tint by faction
+        // without spawning a Tailwind class per color.
+        ['--lg-faction-color' as string]: d.factionColor ?? '#14b8a6',
+        ['--lg-faction-tint' as string]: d.factionColor
+          ? `${d.factionColor}20`
+          : '#14b8a620',
+        borderColor: d.isSelected
+          ? (d.factionColor ?? '#14b8a6')
+          : undefined,
+      } as React.CSSProperties}
       title={d.source_hint || undefined}
     >
       <Handle type="source" position={Position.Top}    id="t"  style={handleStyle} />
@@ -116,8 +137,11 @@ export const LocationNode = memo(function LocationNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Bottom} id="tb" style={handleStyle} />
       <Handle type="target" position={Position.Left}   id="tl" style={handleStyle} />
 
-      {/* Barra teal superior */}
-      <div className="h-[3px] rounded-t-xl bg-[#14b8a6]" />
+      {/* Top accent bar — faction color if present, else the default teal. */}
+      <div
+        className="h-[3px] rounded-t-xl"
+        style={{ backgroundColor: d.factionColor ?? '#14b8a6' }}
+      />
 
       <div className="px-2.5 py-2 space-y-1">
         <div className="flex items-center gap-1.5">
