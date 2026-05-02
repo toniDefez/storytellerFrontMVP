@@ -120,3 +120,19 @@ export function replaceRegionVertices(
     body: JSON.stringify(vertices),
   })
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Geography generation
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface GenerateGeographyResponse {
+  regions: Region[]
+  factions: Faction[]
+}
+
+export function generateGeography(worldId: number) {
+  return request<GenerateGeographyResponse>('/world/generate-geography', {
+    method: 'POST',
+    body: JSON.stringify({ world_id: worldId }),
+  })
+}

@@ -16,6 +16,7 @@ import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
 import { useFactions } from '@/hooks/useFactions'
 import { useRegions } from '@/hooks/useRegions'
+import { generateGeography } from '@/services/factionApi'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
 import { StoryPanel } from '@/components/story-setup/StoryPanel'
@@ -68,7 +69,7 @@ export default function WorldDetailPage() {
     generating: locationGenerating,
     expandingNodeId: locationExpandingNodeId,
     enrichingNodeId: locationEnrichingNodeId,
-    loadGraph: loadLocationGraph, generate: generateLocations, addRegions: addLocationRegions,
+    loadGraph: loadLocationGraph, generate: generateLocations,
     expandNode: expandLocationNode, enrichNode: enrichLocationNode,
     moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
     editEdge, removeEdge,
@@ -76,8 +77,18 @@ export default function WorldDetailPage() {
 
   const _wid = Number(id)
   const worldIdNum = Number.isNaN(_wid) ? null : _wid
-  const { factions } = useFactions(worldIdNum)
-  const { regions } = useRegions(worldIdNum)
+  const { factions, reload: reloadFactions } = useFactions(worldIdNum)
+  const { regions, reload: reloadRegions } = useRegions(worldIdNum)
+
+  const handleGenerateGeography = useCallback(async () => {
+    if (worldIdNum == null) return
+    try {
+      await generateGeography(worldIdNum)
+      await Promise.all([reloadRegions(), reloadFactions()])
+    } catch (e) {
+      console.error('generateGeography failed', e)
+    }
+  }, [worldIdNum, reloadRegions, reloadFactions])
 
   const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
     const wid = Number(id)
@@ -390,7 +401,7 @@ export default function WorldDetailPage() {
               onUpdateEdge={editEdge}
               onDeleteEdge={removeEdge}
               onGenerate={() => setConfirmRegen(true)}
-              onAddRegions={addLocationRegions}
+              onAddRegions={handleGenerateGeography}
               generating={locationGenerating}
               onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
               expandingNodeId={locationExpandingNodeId}
