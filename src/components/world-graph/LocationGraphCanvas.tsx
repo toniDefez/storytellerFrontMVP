@@ -423,7 +423,7 @@ function LocationGraphInner({
                 className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                {generating ? 'Generando...' : 'Añadir regiones'}
+                {generating ? 'Generando...' : 'Generar mapa'}
               </button>
               <button
                 onClick={onGenerate}
