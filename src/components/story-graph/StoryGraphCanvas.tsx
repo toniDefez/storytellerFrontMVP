@@ -39,6 +39,7 @@ import {
   createScene,
   createSceneEdge,
   updateScenePosition,
+  setSceneOpening,
 } from '@/services/api'
 import type {
   StoryBrief,
@@ -84,7 +85,11 @@ function buildInicioNode(
 
 /* ── Convert SceneBrief to ReactFlow Node ───────────────────────── */
 
-function buildSceneNode(scene: SceneBrief): Node<SceneNodeData> {
+function buildSceneNode(scene: SceneBrief, charactersById: Map<number, string>): Node<SceneNodeData> {
+  const ids = scene.character_ids ?? []
+  const characterNames = ids
+    .map(id => charactersById.get(id))
+    .filter((name): name is string => typeof name === 'string')
   return {
     id: `scene-${scene.id}`,
     type: 'scene',
@@ -96,7 +101,7 @@ function buildSceneNode(scene: SceneBrief): Node<SceneNodeData> {
       status: scene.status,
       locationName: scene.location_name,
       characterCount: scene.character_count,
-      characterNames: [], // Brief doesn't carry names; avatars show initials via count only
+      characterNames,
     },
   }
 }
@@ -111,6 +116,18 @@ function buildFlowEdge(edge: SceneEdge): Edge {
     animated: true,
     style: { stroke: '#06b6d4' },
     data: { backendId: edge.id },
+  }
+}
+
+/* ── Build INICIO→scene edge (persistence via scene.is_opening) ──── */
+
+function buildInicioEdge(sceneId: number): Edge {
+  return {
+    id: `inicio-scene-${sceneId}`,
+    source: 'inicio',
+    target: `scene-${sceneId}`,
+    animated: true,
+    style: { stroke: '#06b6d4', strokeDasharray: '5 5' },
   }
 }
 
@@ -174,8 +191,12 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
     setGraphLoading(true)
     try {
       const graph = await getStoryGraph(storyBrief.id)
-      const sceneNodes = graph.scenes.map(buildSceneNode)
-      const flowEdges = graph.edges.map(buildFlowEdge)
+      const charactersById = new Map(worldCharacters.map(c => [c.id, c.name]))
+      const sceneNodes = graph.scenes.map(s => buildSceneNode(s, charactersById))
+      const inicioEdges = graph.scenes
+        .filter(s => s.is_opening)
+        .map(s => buildInicioEdge(s.id))
+      const flowEdges = [...inicioEdges, ...graph.edges.map(buildFlowEdge)]
 
       // Track last position from scenes
       if (graph.scenes.length > 0) {
@@ -194,7 +215,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
     } finally {
       setGraphLoading(false)
     }
-  }, [storyBrief, detail?.characters?.length, openInicioPanel, setNodes, setEdges])
+  }, [storyBrief, worldCharacters, detail?.characters?.length, openInicioPanel, setNodes, setEdges])
 
   // Initial load + reload when story changes
   useEffect(() => {
@@ -286,14 +307,16 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
     const { source, target } = connection
     if (!source || !target) return
 
-    // Visual-only edge from INICIO — no backend call
-    if (source === 'inicio') {
-      setEdges(eds => addEdge({
-        ...connection,
-        id: `inicio-${target}-${Date.now()}`,
-        animated: true,
-        style: { stroke: '#06b6d4', strokeDasharray: '5 5' },
-      }, eds))
+    // INICIO → scene: mark scene as opening
+    if (source === 'inicio' && target.startsWith('scene-')) {
+      const sceneId = parseInt(target.replace('scene-', ''), 10)
+      if (isNaN(sceneId)) return
+      try {
+        await setSceneOpening(sceneId, true)
+        setEdges(eds => addEdge(buildInicioEdge(sceneId), eds))
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Error al marcar escena de apertura.')
+      }
       return
     }
 
@@ -312,6 +335,19 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
       toast.error(err instanceof Error ? err.message : 'Error al conectar escenas.')
     }
   }, [setEdges])
+
+  /* ── Edge delete → unset is_opening for INICIO edges ─── */
+  const handleEdgesDelete = useCallback((deleted: Edge[]) => {
+    for (const edge of deleted) {
+      if (edge.source !== 'inicio') continue
+      if (!edge.target.startsWith('scene-')) continue
+      const sceneId = parseInt(edge.target.replace('scene-', ''), 10)
+      if (isNaN(sceneId)) continue
+      setSceneOpening(sceneId, false).catch(err => {
+        toast.error(err instanceof Error ? err.message : 'Error al desmarcar escena de apertura.')
+      })
+    }
+  }, [])
 
   /* ── Drag stop → persist position ─── */
   const handleNodeDragStop: OnNodeDrag = useCallback((_event, node) => {
@@ -450,6 +486,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
           onNodeClick={handleNodeClick}
           onNodeDoubleClick={handleNodeDoubleClick}
           onConnect={handleConnect}
+          onEdgesDelete={handleEdgesDelete}
           onNodeDragStop={handleNodeDragStop}
           onPaneClick={closePanel}
           fitView
