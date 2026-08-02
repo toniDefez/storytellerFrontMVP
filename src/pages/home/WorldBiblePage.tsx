@@ -11,6 +11,17 @@ import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 
 const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
 
+// The bible used to print role / faction / personality / background / goals.
+// Those fields left the Character type when the psychological-graph redesign
+// landed, and the page kept referencing them — 13 TS errors that broke
+// `npm run build` for months. These are what a character actually carries now.
+const VOICE_REGISTER_FIELDS = [
+  { key: 'emotional_rhythm', label: 'Ritmo emocional' },
+  { key: 'social_posture', label: 'Postura social' },
+  { key: 'cognitive_tempo', label: 'Tempo cognitivo' },
+  { key: 'expressive_style', label: 'Estilo expresivo' },
+] as const
+
 function inferGradient(world: World): string {
   const text = (world.premise || world.description || '').toLowerCase()
   if (/ceniza|volcan|fuego/.test(text)) return 'from-red-500 to-orange-600'
@@ -211,36 +222,27 @@ export default function WorldBiblePage() {
                   <h3 className="text-xl font-bold text-foreground font-[var(--font-display)]">
                     {character.name}
                   </h3>
-                  {character.role && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-entity-character/10 text-entity-character border border-entity-character/20">
-                      {character.role}
-                    </span>
-                  )}
-                  {character.faction_affiliation && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-600 border border-rose-200">
-                      {character.faction_affiliation}
-                    </span>
-                  )}
                 </div>
 
-                {character.personality && (
-                  <p className="text-foreground/80 leading-relaxed mb-3 font-[var(--font-display)]">
-                    {character.personality}
-                  </p>
-                )}
-
-                {character.background && (
+                {character.speech_pattern && (
                   <p className="text-foreground/75 leading-relaxed mb-3 font-[var(--font-display)] text-sm">
-                    {character.background}
+                    {character.speech_pattern}
                   </p>
                 )}
 
-                {character.goals && character.goals.length > 0 && (
-                  <ol className="list-decimal list-inside space-y-1 text-sm text-foreground/70 font-[var(--font-display)]">
-                    {character.goals.map((goal, i) => (
-                      <li key={i}>{goal}</li>
-                    ))}
-                  </ol>
+                {character.voice_register && (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-foreground/70 font-[var(--font-display)]">
+                    {VOICE_REGISTER_FIELDS.map(({ key, label }) => {
+                      const value = character.voice_register?.[key]
+                      if (!value) return null
+                      return (
+                        <div key={key} className="flex gap-1.5">
+                          <dt className="text-muted-foreground shrink-0">{label}:</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      )
+                    })}
+                  </dl>
                 )}
               </motion.div>
             ))}
