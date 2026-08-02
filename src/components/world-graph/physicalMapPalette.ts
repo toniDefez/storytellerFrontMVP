@@ -61,10 +61,27 @@ export function getRegionVisual(regionType: RegionType): RegionVisual {
 export const Z_INDEX = {
   seaLake: 0,        // deepest
   closedTerrain: 2,  // forest, desert, plain, mountain, jungle, tundra
-  vertex: 5,         // (Plan 4 — reserved here for symmetry)
   openLine: 10,      // rivers, ridges, coasts
   civic: 20,         // settlement, ruin, structure, wilderness, landmark, passage
   selected: 25,      // any selected node
+  // Vertex handles sit above everything. This slot was reserved at 5 for
+  // symmetry with the terrain layers, but a handle must be grabbable: at 5 it
+  // would render beneath the very river (10) it edits, and beneath any civic
+  // node (20) that happens to overlap it.
+  vertex: 30,
+} as const
+
+// ────────────────────────────────────────────────────────────────────────────
+// Vertex handles (Slice A — manual geometry editing)
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Radius in canvas px. Node boxes are 2r; positions are offset by r to center. */
+export const VERTEX_HANDLE_RADIUS = 5
+
+export const VERTEX_HANDLE = {
+  fill: '#ffffff',
+  stroke: '#14b8a6',   // teal — same accent used for selection elsewhere
+  strokeWidth: 2,
 } as const
 
 export function zIndexForRegion(region: { region_type: RegionType; is_closed: boolean }): number {

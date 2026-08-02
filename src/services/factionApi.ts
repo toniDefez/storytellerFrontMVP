@@ -111,13 +111,23 @@ export function deleteRegion(id: number) {
   return request<void>(`/region/delete?id=${id}`, { method: 'DELETE' })
 }
 
+export type RegionVertexInput = Pick<RegionVertex, 'order_index' | 'canvas_x' | 'canvas_y'>
+
+/**
+ * Replace a region's full vertex list.
+ *
+ * The handler requires PUT (it 405s on anything else) and unmarshals into
+ * `dto.ReplaceVerticesRequest`, which wraps the list in a `vertices` key —
+ * a bare array is silently parsed as an empty request. Both details were
+ * wrong here until Slice A, harmlessly: nothing called this function.
+ */
 export function replaceRegionVertices(
   regionId: number,
-  vertices: Pick<RegionVertex, 'order_index' | 'canvas_x' | 'canvas_y'>[]
+  vertices: RegionVertexInput[]
 ) {
   return request<void>(`/region/vertices/replace?id=${regionId}`, {
-    method: 'POST',
-    body: JSON.stringify(vertices),
+    method: 'PUT',
+    body: JSON.stringify({ vertices }),
   })
 }
 

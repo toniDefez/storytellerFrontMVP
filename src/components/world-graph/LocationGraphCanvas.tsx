@@ -26,11 +26,20 @@ import { LocationGraphProvider, type LocationGraphContextValue } from './Locatio
 import type { LocationNode, LocationEdge } from '@/services/api'
 import type { SelectedLocation } from '@/hooks/useLocationGraph'
 import { RegionNode, computeRegionBounds } from './RegionNode'
+import { VertexNode } from './VertexNode'
+import {
+  buildVertexFlowNodes,
+  parseRegionNodeId,
+  parseVertexNodeId,
+  regionNodeId,
+  vertexCenterFromNodePosition,
+} from './regionCanvasNodes'
 import { zIndexForRegion, Z_INDEX } from './physicalMapPalette'
+import { useRegionVertexDraft } from '@/hooks/useRegionVertexDraft'
 import type { Faction, Region } from '@/services/factionApi'
 
 // Define outside component to avoid re-renders
-const nodeTypes = { location: LocationNodeComponent, region: RegionNode }
+const nodeTypes = { location: LocationNodeComponent, region: RegionNode, vertex: VertexNode }
 const edgeTypes = { waterway: WaterwayEdge, wilderness: WildernessEdge, road: RoadEdge, hierarchy: HierarchyEdge }
 
 // Side panel width in px. Must stay in sync with the `w-72` Tailwind class on
@@ -62,6 +71,8 @@ interface Props {
   onDeleteEdge: (id: number) => void
   onGenerate: () => void
   onAddRegions: () => void
+  /** Refetch regions after their geometry has been persisted. */
+  onRegionsChanged: () => Promise<void>
   generating: boolean
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
@@ -137,11 +148,11 @@ function buildRegionFlowNodes(regions: Region[], selectedRegionId?: number): Nod
   return regions.map(r => {
     const bounds = computeRegionBounds(r.vertices)
     return {
-      id: `region-${r.id}`,
+      id: regionNodeId(r.id),
       type: 'region',
       position: { x: bounds.x, y: bounds.y },
-      // Region nodes are decorative — block React Flow drag for now (Plan 4
-      // re-enables drag together with vertex editing).
+      // The region itself never moves as a unit: its position is derived from
+      // its vertices' bounding box. Shape is edited through the vertex handles.
       draggable: false,
       selectable: true,
       selected: r.id === selectedRegionId,
@@ -191,13 +202,23 @@ function LocationGraphInner({
   onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
   onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
-  onGenerate, onAddRegions, generating,
+  onGenerate, onAddRegions, onRegionsChanged, generating,
   onExpandWithAI, expandingNodeId,
   onEnrichWithAI, enrichingNodeId,
 }: Props) {
   const { fitView, setCenter, getZoom } = useReactFlow()
   const reducedMotion = useReducedMotion()
   const [formState, setFormState] = useState<FormState>(null)
+  const [selectedRegionId, setSelectedRegionId] = useState<number | null>(null)
+
+  const {
+    effectiveRegions,
+    error: vertexError,
+    saving: savingVertices,
+    dismissError: dismissVertexError,
+    moveVertex,
+    commitRegion,
+  } = useRegionVertexDraft(regions, onRegionsChanged)
 
   const selectedNodeId = selected?.type === 'node' ? selected.item.id : undefined
   const selectedEdgeId = selected?.type === 'edge' ? selected.item.id : undefined
@@ -224,27 +245,51 @@ function LocationGraphInner({
     () => buildFlowNodes(locationNodes, factionsById, selectedNodeId),
     [locationNodes, factionsById, selectedNodeId]
   )
+  // Resolved from `effectiveRegions` so a region deleted or replaced by a
+  // regeneration can't leave a dangling selection behind.
+  const selectedRegion = useMemo(
+    () => effectiveRegions.find(r => r.id === selectedRegionId) ?? null,
+    [effectiveRegions, selectedRegionId]
+  )
+
   const regionFlowNodes = useMemo(
-    () => buildRegionFlowNodes(regions /* selectedRegionId — Plan 4 */),
-    [regions]
+    () => buildRegionFlowNodes(effectiveRegions, selectedRegion?.id),
+    [effectiveRegions, selectedRegion]
+  )
+  const vertexFlowNodes = useMemo(
+    () => buildVertexFlowNodes(selectedRegion),
+    [selectedRegion]
   )
   const flowNodes = useMemo(
-    () => [...regionFlowNodes, ...civicFlowNodes],
-    [regionFlowNodes, civicFlowNodes]
+    () => [...regionFlowNodes, ...vertexFlowNodes, ...civicFlowNodes],
+    [regionFlowNodes, vertexFlowNodes, civicFlowNodes]
   )
   const flowEdges = useMemo(() => buildFlowEdges(locationEdges, locationNodes, selectedEdgeId), [locationEdges, locationNodes, selectedEdgeId])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
 
-  // Sync data changes (name, type, selection) without overwriting drag positions
+  // Id of the node React Flow is currently dragging, if any. A ref because it
+  // is only ever read inside callbacks and effects, never rendered.
+  const draggingNodeIdRef = useRef<string | null>(null)
+
+  // Sync data changes (name, type, selection) without overwriting drag positions.
+  //
+  // Region positions are *derived*: a region's origin is its vertices' bounding
+  // box, so it must be recomputed on every drag frame or the polygon slides out
+  // from under the handle being dragged. Vertex positions are likewise derived,
+  // except for the one currently under the cursor — React Flow owns that one
+  // mid-drag, and replacing it would fight its internal drag state.
   useEffect(() => {
     setNodes(prev => {
       const posMap = new Map(prev.map(n => [n.id, n.position]))
-      return flowNodes.map(fn => ({
-        ...fn,
-        position: posMap.get(fn.id) ?? fn.position,
-      }))
+      return flowNodes.map(fn => {
+        const keepPosition = fn.type === 'location' || fn.id === draggingNodeIdRef.current
+        return {
+          ...fn,
+          position: keepPosition ? posMap.get(fn.id) ?? fn.position : fn.position,
+        }
+      })
     })
   }, [flowNodes, setNodes])
   useEffect(() => { setEdges(flowEdges) }, [flowEdges, setEdges])
@@ -289,9 +334,30 @@ function LocationGraphInner({
     }
   }, [])
 
+  const handleNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
+    draggingNodeIdRef.current = node.id
+  }, [])
+
+  // Live geometry update: runs on every drag frame so the polygon follows the
+  // handle instead of jumping when the drag ends.
+  const handleNodeDrag = useCallback((_: React.MouseEvent, node: Node) => {
+    const v = parseVertexNodeId(node.id)
+    if (!v) return
+    const center = vertexCenterFromNodePosition(node.position)
+    moveVertex(v.regionId, v.orderIndex, center.x, center.y)
+  }, [moveVertex])
+
   const handleNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
-    // Only persist drag for civic nodes. Region/vertex node types don't
-    // own a numeric LocationNode id.
+    draggingNodeIdRef.current = null
+    const v = parseVertexNodeId(node.id)
+    if (v) {
+      const center = vertexCenterFromNodePosition(node.position)
+      moveVertex(v.regionId, v.orderIndex, center.x, center.y)
+      commitRegion(v.regionId)
+      return
+    }
+    // Only persist drag for civic nodes. Region node types don't own a
+    // numeric LocationNode id.
     if (node.type !== 'location') return
     const id = node.id
     const prev = dragTimers.current.get(id)
@@ -300,14 +366,27 @@ function LocationGraphInner({
       dragTimers.current.delete(id)
       onMoveNode(Number(id), node.position.x, node.position.y)
     }, 500))
-  }, [onMoveNode])
+  }, [onMoveNode, moveVertex, commitRegion])
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    // Region nodes use string IDs like `region-42`. Plan 4 handles their
-    // selection; for now, ignore clicks on non-civic nodes.
+    // Clicking a handle must not disturb the selection that produced it.
+    if (parseVertexNodeId(node.id)) return
+
+    // Region nodes use string IDs like `region-42`. Selecting one reveals its
+    // vertex handles; clicking it again hides them.
+    const regionId = parseRegionNodeId(node.id)
+    if (regionId != null) {
+      setSelectedRegionId(prev => (prev === regionId ? null : regionId))
+      onSelectNode(null)
+      return
+    }
+
     if (node.type !== 'location') return
     const loc = locationNodes.find(n => n.id === Number(node.id))
     if (!loc) return
+    // A civic selection and a region selection are mutually exclusive — two
+    // side panels' worth of context at once is noise.
+    setSelectedRegionId(null)
     onSelectNode(selected?.type === 'node' && selected.item.id === loc.id ? null : loc)
   }, [locationNodes, selected, onSelectNode])
 
@@ -325,6 +404,7 @@ function LocationGraphInner({
 
   const handlePaneClick = useCallback(() => {
     onSelectNode(null)
+    setSelectedRegionId(null)
   }, [onSelectNode])
 
   const handleFormConfirm = useCallback(async (input: LocationNodeFormInput) => {
@@ -392,6 +472,8 @@ function LocationGraphInner({
             onEdgesChange={onEdgesChange}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
+            onNodeDragStart={handleNodeDragStart}
+            onNodeDrag={handleNodeDrag}
             onNodeDragStop={handleNodeDragStop}
             onConnect={handleConnect}
             onPaneClick={handlePaneClick}
@@ -399,6 +481,10 @@ function LocationGraphInner({
             edgeTypes={edgeTypes}
             connectionMode={ConnectionMode.Loose}
             nodesDraggable={true}
+            // Required for the manual per-node zIndex in physicalMapPalette to
+            // hold: React Flow otherwise lifts the selected node to the top,
+            // which would drop a selected sea over the coastline it contains.
+            elevateNodesOnSelect={false}
             fitView
             fitViewOptions={{ padding: 0.3 }}
             className="bg-[hsl(180_8%_97%)]"
@@ -433,6 +519,32 @@ function LocationGraphInner({
                 {generating ? 'Generando...' : '↺ Regenerar'}
               </button>
             </div>
+
+            {selectedRegion && (
+              <div className="absolute top-12 left-2 z-10 flex items-center gap-2 rounded-lg border border-[#14b8a6]/40 bg-background/95 px-2.5 py-1.5 text-xs text-muted-foreground">
+                <span>
+                  Editando <strong className="text-foreground">{selectedRegion.name}</strong> —
+                  arrastra los puntos para corregir la forma
+                </span>
+                {savingVertices && <span className="text-[#14b8a6]">guardando…</span>}
+              </div>
+            )}
+
+            {vertexError && (
+              <div
+                role="alert"
+                className="absolute top-12 right-2 z-10 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-2.5 py-1.5 text-xs text-red-800 max-w-xs"
+              >
+                <span>{vertexError} La forma se ha revertido a la última guardada.</span>
+                <button
+                  onClick={dismissVertexError}
+                  aria-label="Cerrar aviso"
+                  className="text-red-500 hover:text-red-800 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </ReactFlow>
         </div>
 

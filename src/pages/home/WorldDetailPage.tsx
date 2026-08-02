@@ -402,6 +402,7 @@ export default function WorldDetailPage() {
               onDeleteEdge={removeEdge}
               onGenerate={() => setConfirmRegen(true)}
               onAddRegions={handleGenerateGeography}
+              onRegionsChanged={reloadRegions}
               generating={locationGenerating}
               onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
               expandingNodeId={locationExpandingNodeId}

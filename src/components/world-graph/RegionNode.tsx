@@ -20,11 +20,14 @@ export interface RegionNodeData {
  * inside has its own local coord space, so we subtract `offsetX/offsetY`
  * from every vertex to express points in node-local coordinates.
  *
- * pointerEvents: 'none' on the SVG itself + the polygon's hit-area set to
- * fill='visiblePainted' would conflict with React Flow's node click handler.
- * Instead we let the container div catch clicks (default React Flow node
- * behavior) and keep the SVG purely decorative.
+ * Hit area: the *shape* catches clicks, not the wrapper. The wrapper spans the
+ * whole bounding box, so letting it catch clicks would mean a diagonal river
+ * swallows every click in the large rectangle around it — including clicks
+ * meant for the empty canvas. Closed regions are hit on their painted area;
+ * open lines get an invisible fat stroke underneath so they stay grabbable
+ * without having to hit a 3px line exactly.
  */
+const OPEN_LINE_HIT_WIDTH = 14
 export const RegionNode = memo(function RegionNode({ data, selected }: NodeProps) {
   const d = data as unknown as RegionNodeData
   const { region, width, height, offsetX, offsetY } = d
@@ -46,7 +49,7 @@ export const RegionNode = memo(function RegionNode({ data, selected }: NodeProps
   return (
     <div
       className="region-node"
-      style={{ width, height, pointerEvents: 'auto' }}
+      style={{ width, height, pointerEvents: 'none' }}
       title={region.name}
     >
       <svg
@@ -63,17 +66,30 @@ export const RegionNode = memo(function RegionNode({ data, selected }: NodeProps
             stroke={selectionStroke}
             strokeWidth={strokeWidth}
             strokeDasharray={dashArray}
+            style={{ pointerEvents: 'visiblePainted', cursor: 'pointer' }}
           />
         ) : (
-          <polyline
-            points={points}
-            fill="none"
-            stroke={selectionStroke}
-            strokeWidth={selected ? 4 : 3}
-            strokeDasharray={dashArray}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <>
+            <polyline
+              points={points}
+              fill="none"
+              stroke="transparent"
+              strokeWidth={OPEN_LINE_HIT_WIDTH}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+            />
+            <polyline
+              points={points}
+              fill="none"
+              stroke={selectionStroke}
+              strokeWidth={selected ? 4 : 3}
+              strokeDasharray={dashArray}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ pointerEvents: 'none' }}
+            />
+          </>
         )}
       </svg>
     </div>
