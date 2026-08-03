@@ -38,6 +38,29 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
 
   useEffect(() => { loadGraph() }, [loadGraph])
 
+  // The backend only implements the soul-based chat, so a character without a
+  // fresh soul cannot answer. It used to accept the message and return silence;
+  // now the composer explains what is missing and offers the one action that
+  // fixes it. Needing synthesis first is a separate blocker with its own answer.
+  const chatBlockedReason = (() => {
+    if (soul && !soul.is_stale) return undefined
+    if (synthesis.length === 0) {
+      return {
+        message: `${characterName} aún no tiene síntesis. Añade nodos y sintetiza sus dominios antes de hablar.`,
+        actionLabel: 'Ir al grafo',
+        onAction: () => toggleMode('graph'),
+      }
+    }
+    return {
+      message: soul?.is_stale
+        ? `El alma de ${characterName} está desactualizada. Regenérala para que responda con su psicología actual.`
+        : `${characterName} todavía no tiene alma. Genérala para poder hablar.`,
+      actionLabel: soul?.is_stale ? 'Regenerar alma' : 'Generar alma',
+      onAction: regenerateSoul,
+      busy: soulLoading,
+    }
+  })()
+
   const handleSelectNode = (id: number | null) => {
     setSelectedNodeId(id)
     if (id) {
@@ -362,6 +385,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                 onSend={sendMessage}
                 onHarvest={handleHarvest}
                 onClearChat={clearChat}
+                blockedReason={chatBlockedReason}
                 voiceBadge={
                   <VoiceBadge
                     characterId={characterId}
