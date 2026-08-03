@@ -26,11 +26,14 @@ import { LocationGraphProvider, type LocationGraphContextValue } from './Locatio
 import type { LocationNode, LocationEdge } from '@/services/api'
 import type { SelectedLocation } from '@/hooks/useLocationGraph'
 import { RegionNode, computeRegionBounds } from './RegionNode'
+import { RegionLabelNode } from './RegionLabelNode'
+import { polygonArea, polygonCentroid } from './regionPath'
 import { VertexNode } from './VertexNode'
 import {
   buildVertexFlowNodes,
   parseRegionNodeId,
   parseVertexNodeId,
+  regionLabelNodeId,
   regionNodeId,
   vertexCenterFromNodePosition,
 } from './regionCanvasNodes'
@@ -39,7 +42,12 @@ import { useRegionVertexDraft } from '@/hooks/useRegionVertexDraft'
 import type { Faction, Region } from '@/services/factionApi'
 
 // Define outside component to avoid re-renders
-const nodeTypes = { location: LocationNodeComponent, region: RegionNode, vertex: VertexNode }
+const nodeTypes = {
+  location: LocationNodeComponent,
+  region: RegionNode,
+  regionLabel: RegionLabelNode,
+  vertex: VertexNode,
+}
 const edgeTypes = { waterway: WaterwayEdge, wilderness: WildernessEdge, road: RoadEdge, hierarchy: HierarchyEdge }
 
 // Side panel width in px. Must stay in sync with the `w-72` Tailwind class on
@@ -170,6 +178,76 @@ function buildRegionFlowNodes(regions: Region[], selectedRegionId?: number): Nod
   })
 }
 
+/**
+ * Área mínima, en unidades del lienzo, para que un nombre quepa en su región.
+ * Cada celda del motor mide unas 39 unidades², así que esto son ~350 celdas.
+ */
+const LABEL_MIN_AREA = 14_000
+const LABEL_AREA_FOR_MAX_SIZE = 160_000
+
+/**
+ * Tipos que se etiquetan. El mar queda fuera a propósito: su nombre caería en
+ * medio del océano, lejos de cualquier costa, y no informa de nada. Los ríos
+ * tampoco: un nombre recto sobre un cauce sinuoso se lee peor que ninguno, y
+ * harían falta `textPath` sobre la propia curva.
+ */
+const LABELLED_TYPES: ReadonlySet<string> = new Set([
+  'forest', 'jungle', 'desert', 'plain', 'tundra', 'mountain', 'lake',
+])
+
+/**
+ * Coloca los topónimos de mayor a menor evitando solapes.
+ *
+ * Se recorren por área descendente y se descarta el que choque con uno ya
+ * puesto: dos etiquetas encimadas son peores que ninguna de las dos, y la
+ * región más grande es la que más merece el nombre.
+ */
+function buildRegionLabelNodes(regions: Region[]): Node[] {
+  const candidates = regions
+    .filter(r => r.is_closed && LABELLED_TYPES.has(r.region_type) && r.vertices.length >= 3)
+    .map(r => {
+      const pts = r.vertices
+        .slice()
+        .sort((a, b) => a.order_index - b.order_index)
+        .map(v => ({ x: v.canvas_x, y: v.canvas_y }))
+      return { region: r, centroid: polygonCentroid(pts), area: polygonArea(pts) }
+    })
+    .filter(c => c.area >= LABEL_MIN_AREA)
+    .sort((a, b) => b.area - a.area)
+
+  const placed: { x0: number; y0: number; x1: number; y1: number }[] = []
+  const nodes: Node[] = []
+
+  for (const c of candidates) {
+    const fontSize = 12 + 12 * Math.min(1, c.area / LABEL_AREA_FOR_MAX_SIZE)
+    // Media eme por carácter basta para decidir colisiones sin medir la fuente.
+    const halfW = c.region.name.length * fontSize * 0.26
+    const halfH = fontSize * 0.62
+    const box = {
+      x0: c.centroid.x - halfW,
+      y0: c.centroid.y - halfH,
+      x1: c.centroid.x + halfW,
+      y1: c.centroid.y + halfH,
+    }
+    if (placed.some(p => box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0)) {
+      continue
+    }
+    placed.push(box)
+
+    nodes.push({
+      id: regionLabelNodeId(c.region.id),
+      type: 'regionLabel',
+      position: c.centroid,
+      draggable: false,
+      selectable: false,
+      zIndex: Z_INDEX.label,
+      data: { text: c.region.name, fontSize } as unknown as Record<string, unknown>,
+    })
+  }
+
+  return nodes
+}
+
 function buildFlowEdges(locationEdges: LocationEdge[], locationNodes: LocationNode[], selectedId?: number): Edge[] {
   const geographic: Edge[] = locationEdges.map(e => ({
     id: String(e.id),
@@ -256,13 +334,17 @@ function LocationGraphInner({
     () => buildRegionFlowNodes(effectiveRegions, selectedRegion?.id),
     [effectiveRegions, selectedRegion]
   )
+  const regionLabelNodes = useMemo(
+    () => buildRegionLabelNodes(effectiveRegions),
+    [effectiveRegions]
+  )
   const vertexFlowNodes = useMemo(
     () => buildVertexFlowNodes(selectedRegion),
     [selectedRegion]
   )
   const flowNodes = useMemo(
-    () => [...regionFlowNodes, ...vertexFlowNodes, ...civicFlowNodes],
-    [regionFlowNodes, vertexFlowNodes, civicFlowNodes]
+    () => [...regionFlowNodes, ...regionLabelNodes, ...vertexFlowNodes, ...civicFlowNodes],
+    [regionFlowNodes, regionLabelNodes, vertexFlowNodes, civicFlowNodes]
   )
   const flowEdges = useMemo(() => buildFlowEdges(locationEdges, locationNodes, selectedEdgeId), [locationEdges, locationNodes, selectedEdgeId])
 
@@ -367,6 +449,28 @@ function LocationGraphInner({
       onMoveNode(Number(id), node.position.x, node.position.y)
     }, 500))
   }, [onMoveNode, moveVertex, commitRegion])
+
+  /**
+   * Generar el mapa sustituye la geografía entera del mundo, incluidas las
+   * regiones que el usuario haya redibujado a mano vértice a vértice.
+   *
+   * El motor procedural es determinista y tarda milisegundos, así que este
+   * botón se va a pulsar mucho más que antes: sin confirmación, una sola
+   * pulsación distraída se lleva por delante todo el trabajo manual. La
+   * protección buena es que el backend distinga la geometría derivada de la
+   * editada y respete la segunda; mientras eso no exista, se pregunta.
+   */
+  const handleGenerateMap = useCallback(() => {
+    const editables = effectiveRegions.length
+    if (editables > 0) {
+      const ok = window.confirm(
+        `Se va a regenerar el mapa físico y eso sustituye las ${editables} regiones actuales, ` +
+          'incluidas las que hayas retocado a mano.\n\n¿Continuar?'
+      )
+      if (!ok) return
+    }
+    onAddRegions()
+  }, [effectiveRegions.length, onAddRegions])
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     // Clicking a handle must not disturb the selection that produced it.
@@ -487,9 +591,9 @@ function LocationGraphInner({
             elevateNodesOnSelect={false}
             fitView
             fitViewOptions={{ padding: 0.3 }}
-            className="bg-[hsl(180_8%_97%)]"
+            className="bg-[#efe9db]"
           >
-            <Background color="#c8d5d5" gap={24} size={1} />
+            <Background color="#ded7c6" gap={28} size={1} />
             <Controls />
             <MiniMap
               position="bottom-left"
@@ -504,7 +608,7 @@ function LocationGraphInner({
                 <Plus className="w-3.5 h-3.5" /> Añadir
               </button>
               <button
-                onClick={onAddRegions}
+                onClick={handleGenerateMap}
                 disabled={generating}
                 className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
               >

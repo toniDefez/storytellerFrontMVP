@@ -7,12 +7,17 @@ import { VERTEX_HANDLE_RADIUS, Z_INDEX } from './physicalMapPalette'
  *
  * React Flow keys everything by string id, but the map mixes three kinds of
  * node: civic locations (bare numeric ids, from `LocationNode.id`), regions
- * (`region-<id>`) and vertex handles (`vertex-<regionId>-<orderIndex>`).
+ * (`region-<id>`), their place-name labels (`region-label-<id>`) and vertex
+ * handles (`vertex-<regionId>-<orderIndex>`).
  * Parsing lives here so no handler has to open-code a prefix check.
  */
 
 export function regionNodeId(regionId: number): string {
   return `region-${regionId}`
+}
+
+export function regionLabelNodeId(regionId: number): string {
+  return `region-label-${regionId}`
 }
 
 export function vertexNodeId(regionId: number, orderIndex: number): string {

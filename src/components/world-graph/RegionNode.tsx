@@ -1,7 +1,8 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import type { Region, RegionVertex } from '@/services/factionApi'
 import { getRegionVisual } from './physicalMapPalette'
+import { buildSmoothPath } from './regionPath'
 
 export interface RegionNodeData {
   region: Region
@@ -34,17 +35,41 @@ export const RegionNode = memo(function RegionNode({ data, selected }: NodeProps
 
   const visual = getRegionVisual(region.region_type)
 
-  // Translate vertex canvas coords into node-local coords.
-  const points = region.vertices
-    .slice()
-    .sort((a, b) => a.order_index - b.order_index)
-    .map(v => `${v.canvas_x - offsetX},${v.canvas_y - offsetY}`)
-    .join(' ')
+  // Translate vertex canvas coords into node-local coords, then smooth.
+  //
+  // Smoothing happens here and not in the stored geometry: the database keeps
+  // the ~60 vertices a human can drag, and the canvas draws a continuous
+  // curve. Drawn as straight segments these rings look like a polygonal
+  // diagram rather than a coastline — the outlines come out of a raster grid
+  // and are faceted by construction.
+  const localPoints = useMemo(
+    () =>
+      region.vertices
+        .slice()
+        .sort((a, b) => a.order_index - b.order_index)
+        .map(v => ({ x: v.canvas_x - offsetX, y: v.canvas_y - offsetY })),
+    [region.vertices, offsetX, offsetY]
+  )
+  const path = useMemo(
+    () => buildSmoothPath(localPoints, region.is_closed),
+    [localPoints, region.is_closed]
+  )
 
-  // Selected outline overlay: a slightly thicker ring of the same shape.
-  const selectionStroke = selected ? '#14b8a6' : visual.stroke
-  const strokeWidth = selected ? 3 : 2
   const dashArray = visual.strokeDashed ? '4 4' : undefined
+  const filled = visual.fill !== 'none'
+
+  // Selection reads as a teal ring drawn on top, so it never has to fight the
+  // region's own stroke width — a river's stroke is 0 and a coast's is 3.5.
+  const selectionRing = selected ? (
+    <path
+      d={path}
+      fill="none"
+      stroke="#14b8a6"
+      strokeWidth={3}
+      strokeLinejoin="round"
+      style={{ pointerEvents: 'none' }}
+    />
+  ) : null
 
   return (
     <div
@@ -58,20 +83,24 @@ export const RegionNode = memo(function RegionNode({ data, selected }: NodeProps
         style={{ overflow: 'visible', display: 'block' }}
         aria-label={`${region.region_type} region: ${region.name}`}
       >
-        {region.is_closed ? (
-          <polygon
-            points={points}
-            fill={visual.fill}
-            fillOpacity={visual.fillOpacity}
-            stroke={selectionStroke}
-            strokeWidth={strokeWidth}
-            strokeDasharray={dashArray}
-            style={{ pointerEvents: 'visiblePainted', cursor: 'pointer' }}
-          />
+        {filled ? (
+          <>
+            <path
+              d={path}
+              fill={visual.fill}
+              fillOpacity={visual.fillOpacity}
+              stroke={visual.strokeWidth > 0 ? visual.stroke : 'none'}
+              strokeWidth={visual.strokeWidth}
+              strokeDasharray={dashArray}
+              strokeLinejoin="round"
+              style={{ pointerEvents: 'visiblePainted', cursor: 'pointer' }}
+            />
+            {selectionRing}
+          </>
         ) : (
           <>
-            <polyline
-              points={points}
+            <path
+              d={path}
               fill="none"
               stroke="transparent"
               strokeWidth={OPEN_LINE_HIT_WIDTH}
@@ -79,16 +108,17 @@ export const RegionNode = memo(function RegionNode({ data, selected }: NodeProps
               strokeLinejoin="round"
               style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
             />
-            <polyline
-              points={points}
+            <path
+              d={path}
               fill="none"
-              stroke={selectionStroke}
-              strokeWidth={selected ? 4 : 3}
+              stroke={visual.stroke}
+              strokeWidth={visual.strokeWidth}
               strokeDasharray={dashArray}
               strokeLinecap="round"
               strokeLinejoin="round"
               style={{ pointerEvents: 'none' }}
             />
+            {selectionRing}
           </>
         )}
       </svg>
