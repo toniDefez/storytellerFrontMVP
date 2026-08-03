@@ -190,7 +190,15 @@ function buildRegionFlowNodes(regions: Region[], selectedRegionId?: number): Nod
       selected: r.id === selectedRegionId,
       // Manual z-index ordering; only takes effect with
       // <ReactFlow elevateNodesOnSelect={false}>.
-      zIndex: r.id === selectedRegionId ? Z_INDEX.selected : zIndexForRegion(r),
+      //
+      // Selection does NOT raise the region, and that is the whole point of
+      // disabling `elevateNodesOnSelect`. Raising it here reintroduced by hand
+      // the exact bug that flag was turned off to avoid: `Z_INDEX.selected` is
+      // 25, above openLine (10), label (15) and civic (20), so selecting the
+      // sea painted it over its own coastline, over every place name and over
+      // every settlement on the map. `RegionNode` already draws a separate
+      // selection ring, so nothing needs to move in z to be visibly selected.
+      zIndex: zIndexForRegion(r),
       data: {
         region: r,
         width: bounds.width,
@@ -405,9 +413,19 @@ function LocationGraphInner({
     () => buildMapBackdropNode(effectiveRegions),
     [effectiveRegions]
   )
+  // Labels are laid out against the PERSISTED regions, not the drag draft.
+  //
+  // `effectiveRegions` changes on every pointermove while a vertex is being
+  // dragged, and this memo depended on it, so each frame rebuilt the centroid
+  // and area of all ~40 regions and re-ran the O(n²) collision pass — some
+  // thousands of vertex operations per frame — to reposition labels that had
+  // not moved. Dragging one vertex re-laid-out the labelling of the whole
+  // world. Committing a drag calls `onRegionsChanged`, which updates `regions`,
+  // so the labels still follow real geometry changes; they just stop chasing
+  // the cursor.
   const regionLabelNodes = useMemo(
-    () => buildRegionLabelNodes(effectiveRegions),
-    [effectiveRegions]
+    () => buildRegionLabelNodes(regions),
+    [regions]
   )
   const vertexFlowNodes = useMemo(
     () => buildVertexFlowNodes(selectedRegion),
