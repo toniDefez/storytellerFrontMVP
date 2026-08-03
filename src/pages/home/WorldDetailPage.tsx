@@ -16,7 +16,7 @@ import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
 import { useFactions } from '@/hooks/useFactions'
 import { useRegions } from '@/hooks/useRegions'
-import { generateGeography } from '@/services/factionApi'
+import { generateFactions, generateGeography } from '@/services/factionApi'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
 import { StoryPanel } from '@/components/story-setup/StoryPanel'
@@ -89,6 +89,16 @@ export default function WorldDetailPage() {
       console.error('generateGeography failed', e)
     }
   }, [worldIdNum, reloadRegions, reloadFactions])
+
+  const handleGenerateFactions = useCallback(async () => {
+    if (worldIdNum == null) return
+    try {
+      await generateFactions(worldIdNum)
+      await reloadFactions()
+    } catch (e) {
+      console.error('generateFactions failed', e)
+    }
+  }, [worldIdNum, reloadFactions])
 
   const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
     const wid = Number(id)
@@ -402,6 +412,7 @@ export default function WorldDetailPage() {
               onDeleteEdge={removeEdge}
               onGenerate={() => setConfirmRegen(true)}
               onAddRegions={handleGenerateGeography}
+              onGenerateFactions={handleGenerateFactions}
               onRegionsChanged={reloadRegions}
               generating={locationGenerating}
               onExpandWithAI={node => expandLocationNode(Number(id), node.id)}

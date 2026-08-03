@@ -16,7 +16,7 @@ import {
   type OnConnect,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Plus, Sparkles } from 'lucide-react'
+import { Plus, Sparkles, Users } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { LocationNode as LocationNodeComponent } from './LocationNode'
 import { WaterwayEdge, WildernessEdge, RoadEdge, HierarchyEdge } from './LocationEdges'
@@ -38,7 +38,7 @@ import {
   regionNodeId,
   vertexCenterFromNodePosition,
 } from './regionCanvasNodes'
-import { zIndexForRegion, Z_INDEX } from './physicalMapPalette'
+import { getRegionVisual, zIndexForRegion, Z_INDEX } from './physicalMapPalette'
 import { useRegionVertexDraft } from '@/hooks/useRegionVertexDraft'
 import type { Faction, Region } from '@/services/factionApi'
 
@@ -81,6 +81,8 @@ interface Props {
   onDeleteEdge: (id: number) => void
   onGenerate: () => void
   onAddRegions: () => void
+  /** Regenera la capa social. Llama al LLM, así que puede tardar. */
+  onGenerateFactions: () => void
   /** Refetch regions after their geometry has been persisted. */
   onRegionsChanged: () => Promise<void>
   generating: boolean
@@ -152,6 +154,26 @@ function buildFlowNodes(
       } as unknown as Record<string, unknown>,
     }
   })
+}
+
+/**
+ * Color de cada nodo en el minimapa.
+ *
+ * Con un color único para todo, el rectángulo del fondo del mapa —que cubre el
+ * lienzo entero— pintaba el minimapa de un bloque macizo y lo dejaba inútil.
+ * Dando a cada región su color de terreno, el minimapa pasa a ser lo que
+ * debería: una versión pequeña del mapa.
+ */
+function miniMapNodeColor(node: Node): string {
+  if (node.type === 'region') {
+    const data = node.data as unknown as { region?: Region }
+    return data.region ? getRegionVisual(data.region.region_type).fill : '#14b8a6'
+  }
+  if (node.type === 'mapBackdrop') return getRegionVisual('sea').fill
+  // Las etiquetas y los tiradores de vértice no aportan nada a un mapa de
+  // conjunto y, siendo diminutos, solo lo ensucian.
+  if (node.type === 'regionLabel' || node.type === 'vertex') return 'transparent'
+  return '#14b8a6'
 }
 
 function buildRegionFlowNodes(regions: Region[], selectedRegionId?: number): Node[] {
@@ -325,7 +347,7 @@ function LocationGraphInner({
   onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
   onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
-  onGenerate, onAddRegions, onRegionsChanged, generating,
+  onGenerate, onAddRegions, onGenerateFactions, onRegionsChanged, generating,
   onExpandWithAI, expandingNodeId,
   onEnrichWithAI, enrichingNodeId,
 }: Props) {
@@ -510,16 +532,27 @@ function LocationGraphInner({
    * editada y respete la segunda; mientras eso no exista, se pregunta.
    */
   const handleGenerateMap = useCallback(() => {
-    const editables = effectiveRegions.length
-    if (editables > 0) {
+    const propias = effectiveRegions.filter(r => r.origin === 'user').length
+
+    // Solo se pregunta si hay geometría del usuario, y el aviso dice lo que
+    // de verdad pasa: el backend conserva lo editado a mano, así que no se
+    // pierde nada. Lo que sí ocurre es que el terreno nuevo se genera por
+    // debajo, y esas regiones pueden acabar solapando terreno que ya no les
+    // corresponde.
+    //
+    // Si todo el mapa es derivado no se molesta al usuario: la generación es
+    // determinista, así que volver a pulsar da el mismo mapa.
+    if (propias > 0) {
       const ok = window.confirm(
-        `Se va a regenerar el mapa físico y eso sustituye las ${editables} regiones actuales, ` +
-          'incluidas las que hayas retocado a mano.\n\n¿Continuar?'
+        `Se va a regenerar el mapa físico. Tus ${propias} ` +
+          `${propias === 1 ? 'región editada' : 'regiones editadas'} a mano se conservan, ` +
+          'pero el terreno nuevo se genera por debajo y pueden quedar solapadas.' +
+          '\n\n¿Continuar?'
       )
       if (!ok) return
     }
     onAddRegions()
-  }, [effectiveRegions.length, onAddRegions])
+  }, [effectiveRegions, onAddRegions])
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     // Clicking a handle must not disturb the selection that produced it.
@@ -568,7 +601,16 @@ function LocationGraphInner({
     }
   }, [formState, onAddNode, onEditNode])
 
-  if (locationNodes.length === 0) {
+  // El estado vacío se decide por TODO lo que puede haber en el lienzo, no
+  // solo por las localizaciones.
+  //
+  // Antes bastaba con no tener nodos civiles para saltarse el canvas entero, y
+  // un mundo con su mapa físico completo —decenas de regiones, ríos y
+  // cordilleras en la base de datos— mostraba "el mapa está vacío" y no
+  // dibujaba nada. Y como la barra de herramientas vive dentro del canvas, ese
+  // mismo atajo dejaba sin forma de generar el mapa desde un mundo nuevo: el
+  // botón estaba detrás de la pantalla que decía que no había nada.
+  if (locationNodes.length === 0 && effectiveRegions.length === 0) {
     return (
       <LocationGraphProvider value={contextValue}>
         <div className="flex h-full">
@@ -578,16 +620,25 @@ function LocationGraphInner({
                 El mapa está vacío
               </p>
               <p className="text-xs text-muted-foreground">
-                Genera las localizaciones a partir del grafo causal o crea una manualmente
+                Empieza por el terreno, o genera las localizaciones a partir del grafo causal
               </p>
               <div className="flex flex-col items-center gap-2">
                 {worldId != null && (
                   <button
-                    onClick={onGenerate}
+                    onClick={handleGenerateMap}
                     disabled={generating}
                     className="text-xs text-[#14b8a6] underline underline-offset-2 hover:text-[#0f766e] transition-colors disabled:opacity-50"
                   >
-                    {generating ? 'Generando...' : 'Generar desde el grafo causal →'}
+                    {generating ? 'Generando...' : 'Generar el mapa físico →'}
+                  </button>
+                )}
+                {worldId != null && (
+                  <button
+                    onClick={onGenerate}
+                    disabled={generating}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    {generating ? 'Generando...' : 'Generar localizaciones desde el grafo causal →'}
                   </button>
                 )}
                 <button
@@ -646,7 +697,8 @@ function LocationGraphInner({
             <Controls />
             <MiniMap
               position="bottom-left"
-              nodeColor="#14b8a6"
+              nodeColor={miniMapNodeColor}
+              nodeStrokeWidth={0}
               className="!bg-background/90 !border-border/50"
             />
             <div className="absolute top-2 left-2 z-10 flex gap-1.5">
@@ -670,6 +722,15 @@ function LocationGraphInner({
                 className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 hover:border-[#14b8a6] text-muted-foreground hover:text-[#14b8a6] transition-colors disabled:opacity-50"
               >
                 {generating ? 'Generando...' : '↺ Regenerar'}
+              </button>
+              <button
+                onClick={onGenerateFactions}
+                disabled={generating}
+                title="Regenera la capa social. Usa el modelo de lenguaje, así que tarda."
+                className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                <Users className="w-3.5 h-3.5" />
+                Facciones
               </button>
             </div>
 

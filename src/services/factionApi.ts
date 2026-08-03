@@ -33,6 +33,15 @@ export interface RegionVertex {
   canvas_y: number
 }
 
+/**
+ * De dónde sale la geometría de una región.
+ *
+ * `procedural` la calculó el motor y una regeneración la sustituye.
+ * `user` la dibujó o la retocó una persona, y el motor no la toca: retocar
+ * los vértices de una región derivada la pasa a `user` en el servidor.
+ */
+export type RegionOrigin = 'procedural' | 'user'
+
 export interface Region {
   id: number
   world_id: number
@@ -41,6 +50,7 @@ export interface Region {
   color: string
   z_index: number
   is_closed: boolean
+  origin: RegionOrigin
   created_at: string
   vertices: RegionVertex[]
 }
@@ -142,6 +152,21 @@ export interface GenerateGeographyResponse {
 
 export function generateGeography(worldId: number) {
   return request<GenerateGeographyResponse>('/world/generate-geography', {
+    method: 'POST',
+    body: JSON.stringify({ world_id: worldId }),
+  })
+}
+
+/**
+ * Regenera la capa social.
+ *
+ * Va en su propia ruta porque no es parte del sustrato físico: esto llama a un
+ * modelo de lenguaje y puede tardar decenas de segundos, mientras el mapa es
+ * determinista y local. Estuvieron juntas, y generar el mapa esperaba el
+ * timeout de esta llamada.
+ */
+export function generateFactions(worldId: number) {
+  return request<{ factions: Faction[] }>('/world/generate-factions', {
     method: 'POST',
     body: JSON.stringify({ world_id: worldId }),
   })
