@@ -80,7 +80,10 @@ export function getRegionVisual(regionType: RegionType): RegionVisual {
 // ────────────────────────────────────────────────────────────────────────────
 
 export const Z_INDEX = {
-  sea: 0,            // the ocean is the floor of the map
+  // Rectángulo del color del mar por debajo de todo. Sin él, el redondeo del
+  // anillo del mar en las esquinas del lienzo deja un mordisco visible.
+  backdrop: 0,
+  sea: 1,            // the ocean's own polygon, over the backdrop
   closedTerrain: 2,  // forest, desert, plain, jungle, tundra
   relief: 4,         // mountain — a layer *over* the cover, not instead of it
   lake: 6,           // inland water sits above the land that encloses it

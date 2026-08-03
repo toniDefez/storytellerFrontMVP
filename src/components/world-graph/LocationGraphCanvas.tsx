@@ -26,6 +26,7 @@ import { LocationGraphProvider, type LocationGraphContextValue } from './Locatio
 import type { LocationNode, LocationEdge } from '@/services/api'
 import type { SelectedLocation } from '@/hooks/useLocationGraph'
 import { RegionNode, computeRegionBounds } from './RegionNode'
+import { MapBackdropNode } from './MapBackdropNode'
 import { RegionLabelNode } from './RegionLabelNode'
 import { polygonArea, polygonCentroid } from './regionPath'
 import { VertexNode } from './VertexNode'
@@ -43,6 +44,7 @@ import type { Faction, Region } from '@/services/factionApi'
 
 // Define outside component to avoid re-renders
 const nodeTypes = {
+  mapBackdrop: MapBackdropNode,
   location: LocationNodeComponent,
   region: RegionNode,
   regionLabel: RegionLabelNode,
@@ -202,6 +204,49 @@ const LABELLED_TYPES: ReadonlySet<string> = new Set([
  * puesto: dos etiquetas encimadas son peores que ninguna de las dos, y la
  * región más grande es la que más merece el nombre.
  */
+/**
+ * Rectángulo del color del mar que cubre la extensión del mapa, por debajo de
+ * todo lo demás. Se deriva de los propios vértices en vez de codificar el
+ * tamaño del lienzo, que es cosa del motor.
+ */
+function buildMapBackdropNode(regions: Region[]): Node[] {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const r of regions) {
+    for (const v of r.vertices) {
+      if (v.canvas_x < minX) minX = v.canvas_x
+      if (v.canvas_y < minY) minY = v.canvas_y
+      if (v.canvas_x > maxX) maxX = v.canvas_x
+      if (v.canvas_y > maxY) maxY = v.canvas_y
+    }
+  }
+  if (!Number.isFinite(minX) || maxX <= minX || maxY <= minY) return []
+
+  // Se sobresale un poco de los vértices observados. La simplificación puede
+  // eliminar el vértice exacto de una esquina del lienzo —en un ángulo recto
+  // de brazos cortos el área del triángulo es mínima—, y entonces ni el
+  // polígono de mar ni un fondo ajustado a los vértices llegan hasta ella.
+  // Sobresalir en un fondo decorativo no cuesta nada.
+  const MARGEN = 32
+  const width = maxX - minX + MARGEN * 2
+  const height = maxY - minY + MARGEN * 2
+
+  return [{
+    id: 'map-backdrop',
+    type: 'mapBackdrop',
+    position: { x: minX - MARGEN, y: minY - MARGEN },
+    draggable: false,
+    selectable: false,
+    zIndex: Z_INDEX.backdrop,
+    // El tamaño se declara además de pasarlo en `data`. React Flow mantiene un
+    // nodo con `visibility: hidden` hasta haberlo medido con un
+    // ResizeObserver, y un nodo de 1600x1600 puede no llegar a medirse antes
+    // del primer pintado: se queda invisible sin error ninguno.
+    width,
+    height,
+    data: { width, height } as unknown as Record<string, unknown>,
+  }]
+}
+
 function buildRegionLabelNodes(regions: Region[]): Node[] {
   const candidates = regions
     .filter(r => r.is_closed && LABELLED_TYPES.has(r.region_type) && r.vertices.length >= 3)
@@ -334,6 +379,10 @@ function LocationGraphInner({
     () => buildRegionFlowNodes(effectiveRegions, selectedRegion?.id),
     [effectiveRegions, selectedRegion]
   )
+  const mapBackdropNode = useMemo(
+    () => buildMapBackdropNode(effectiveRegions),
+    [effectiveRegions]
+  )
   const regionLabelNodes = useMemo(
     () => buildRegionLabelNodes(effectiveRegions),
     [effectiveRegions]
@@ -343,8 +392,8 @@ function LocationGraphInner({
     [selectedRegion]
   )
   const flowNodes = useMemo(
-    () => [...regionFlowNodes, ...regionLabelNodes, ...vertexFlowNodes, ...civicFlowNodes],
-    [regionFlowNodes, regionLabelNodes, vertexFlowNodes, civicFlowNodes]
+    () => [...mapBackdropNode, ...regionFlowNodes, ...regionLabelNodes, ...vertexFlowNodes, ...civicFlowNodes],
+    [mapBackdropNode, regionFlowNodes, regionLabelNodes, vertexFlowNodes, civicFlowNodes]
   )
   const flowEdges = useMemo(() => buildFlowEdges(locationEdges, locationNodes, selectedEdgeId), [locationEdges, locationNodes, selectedEdgeId])
 
