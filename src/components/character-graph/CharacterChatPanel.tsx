@@ -11,6 +11,14 @@ interface Props {
   onHarvest: (messageContent: string) => void
   onClearChat?: () => void
   voiceBadge?: React.ReactNode
+  /**
+   * Why the character cannot answer right now, if it cannot. When set, the
+   * composer is replaced by this explanation plus its call to action.
+   *
+   * The panel used to accept input regardless: with no soul the request was
+   * rejected upstream and the user just got silence back.
+   */
+  blockedReason?: { message: string; actionLabel: string; onAction: () => void; busy?: boolean }
 }
 
 export function CharacterChatPanel({
@@ -21,6 +29,7 @@ export function CharacterChatPanel({
   onHarvest,
   onClearChat,
   voiceBadge,
+  blockedReason,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState('')
@@ -123,28 +132,46 @@ export function CharacterChatPanel({
         )}
       </div>
 
-      {/* Input — always visible */}
-      <div className="shrink-0 border-t border-border/30 p-3 flex items-end gap-2">
-        <textarea
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={loading}
-          placeholder="Escribe un mensaje..."
-          rows={1}
-          className="flex-1 resize-none rounded-lg border border-border/40 bg-background px-3 py-2
-                     text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-400/60
-                     disabled:opacity-50 placeholder:text-foreground/30"
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading || !input.trim()}
-          className="p-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600
-                     disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      {/* Composer, or the reason there isn't one */}
+      {blockedReason ? (
+        <div
+          role="status"
+          className="shrink-0 border-t border-border/30 p-3 flex items-center justify-between gap-3"
         >
-          <Send className="w-4 h-4" />
-        </button>
-      </div>
+          <p className="text-xs text-muted-foreground">{blockedReason.message}</p>
+          <button
+            onClick={blockedReason.onAction}
+            disabled={blockedReason.busy}
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-medium
+                       hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed
+                       transition-colors"
+          >
+            {blockedReason.busy ? '...' : blockedReason.actionLabel}
+          </button>
+        </div>
+      ) : (
+        <div className="shrink-0 border-t border-border/30 p-3 flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
+            placeholder="Escribe un mensaje..."
+            rows={1}
+            className="flex-1 resize-none rounded-lg border border-border/40 bg-background px-3 py-2
+                       text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-400/60
+                       disabled:opacity-50 placeholder:text-foreground/30"
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+            className="p-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600
+                       disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
