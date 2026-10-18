@@ -16,7 +16,7 @@ import {
   type OnConnect,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Plus, Sparkles } from 'lucide-react'
+import { Plus, Sparkles, Users } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { LocationNode as LocationNodeComponent } from './LocationNode'
 import { WaterwayEdge, WildernessEdge, RoadEdge, HierarchyEdge } from './LocationEdges'
@@ -26,11 +26,30 @@ import { LocationGraphProvider, type LocationGraphContextValue } from './Locatio
 import type { LocationNode, LocationEdge } from '@/services/api'
 import type { SelectedLocation } from '@/hooks/useLocationGraph'
 import { RegionNode, computeRegionBounds } from './RegionNode'
-import { zIndexForRegion, Z_INDEX } from './physicalMapPalette'
+import { MapBackdropNode } from './MapBackdropNode'
+import { RegionLabelNode } from './RegionLabelNode'
+import { polygonArea, polygonCentroid } from './regionPath'
+import { VertexNode } from './VertexNode'
+import {
+  buildVertexFlowNodes,
+  parseRegionNodeId,
+  parseVertexNodeId,
+  regionLabelNodeId,
+  regionNodeId,
+  vertexCenterFromNodePosition,
+} from './regionCanvasNodes'
+import { getRegionVisual, zIndexForRegion, Z_INDEX } from './physicalMapPalette'
+import { useRegionVertexDraft } from '@/hooks/useRegionVertexDraft'
 import type { Faction, Region } from '@/services/factionApi'
 
 // Define outside component to avoid re-renders
-const nodeTypes = { location: LocationNodeComponent, region: RegionNode }
+const nodeTypes = {
+  mapBackdrop: MapBackdropNode,
+  location: LocationNodeComponent,
+  region: RegionNode,
+  regionLabel: RegionLabelNode,
+  vertex: VertexNode,
+}
 const edgeTypes = { waterway: WaterwayEdge, wilderness: WildernessEdge, road: RoadEdge, hierarchy: HierarchyEdge }
 
 // Side panel width in px. Must stay in sync with the `w-72` Tailwind class on
@@ -62,6 +81,10 @@ interface Props {
   onDeleteEdge: (id: number) => void
   onGenerate: () => void
   onAddRegions: () => void
+  /** Regenera la capa social. Llama al LLM, así que puede tardar. */
+  onGenerateFactions: () => void
+  /** Refetch regions after their geometry has been persisted. */
+  onRegionsChanged: () => Promise<void>
   generating: boolean
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
@@ -133,21 +156,49 @@ function buildFlowNodes(
   })
 }
 
+/**
+ * Color de cada nodo en el minimapa.
+ *
+ * Con un color único para todo, el rectángulo del fondo del mapa —que cubre el
+ * lienzo entero— pintaba el minimapa de un bloque macizo y lo dejaba inútil.
+ * Dando a cada región su color de terreno, el minimapa pasa a ser lo que
+ * debería: una versión pequeña del mapa.
+ */
+function miniMapNodeColor(node: Node): string {
+  if (node.type === 'region') {
+    const data = node.data as unknown as { region?: Region }
+    return data.region ? getRegionVisual(data.region.region_type).fill : '#14b8a6'
+  }
+  if (node.type === 'mapBackdrop') return getRegionVisual('sea').fill
+  // Las etiquetas y los tiradores de vértice no aportan nada a un mapa de
+  // conjunto y, siendo diminutos, solo lo ensucian.
+  if (node.type === 'regionLabel' || node.type === 'vertex') return 'transparent'
+  return '#14b8a6'
+}
+
 function buildRegionFlowNodes(regions: Region[], selectedRegionId?: number): Node[] {
   return regions.map(r => {
     const bounds = computeRegionBounds(r.vertices)
     return {
-      id: `region-${r.id}`,
+      id: regionNodeId(r.id),
       type: 'region',
       position: { x: bounds.x, y: bounds.y },
-      // Region nodes are decorative — block React Flow drag for now (Plan 4
-      // re-enables drag together with vertex editing).
+      // The region itself never moves as a unit: its position is derived from
+      // its vertices' bounding box. Shape is edited through the vertex handles.
       draggable: false,
       selectable: true,
       selected: r.id === selectedRegionId,
       // Manual z-index ordering; only takes effect with
       // <ReactFlow elevateNodesOnSelect={false}>.
-      zIndex: r.id === selectedRegionId ? Z_INDEX.selected : zIndexForRegion(r),
+      //
+      // Selection does NOT raise the region, and that is the whole point of
+      // disabling `elevateNodesOnSelect`. Raising it here reintroduced by hand
+      // the exact bug that flag was turned off to avoid: `Z_INDEX.selected` is
+      // 25, above openLine (10), label (15) and civic (20), so selecting the
+      // sea painted it over its own coastline, over every place name and over
+      // every settlement on the map. `RegionNode` already draws a separate
+      // selection ring, so nothing needs to move in z to be visibly selected.
+      zIndex: zIndexForRegion(r),
       data: {
         region: r,
         width: bounds.width,
@@ -157,6 +208,119 @@ function buildRegionFlowNodes(regions: Region[], selectedRegionId?: number): Nod
       } as unknown as Record<string, unknown>,
     }
   })
+}
+
+/**
+ * Área mínima, en unidades del lienzo, para que un nombre quepa en su región.
+ * Cada celda del motor mide unas 39 unidades², así que esto son ~350 celdas.
+ */
+const LABEL_MIN_AREA = 14_000
+const LABEL_AREA_FOR_MAX_SIZE = 160_000
+
+/**
+ * Tipos que se etiquetan. El mar queda fuera a propósito: su nombre caería en
+ * medio del océano, lejos de cualquier costa, y no informa de nada. Los ríos
+ * tampoco: un nombre recto sobre un cauce sinuoso se lee peor que ninguno, y
+ * harían falta `textPath` sobre la propia curva.
+ */
+const LABELLED_TYPES: ReadonlySet<string> = new Set([
+  'forest', 'jungle', 'desert', 'plain', 'tundra', 'mountain', 'lake',
+])
+
+/**
+ * Coloca los topónimos de mayor a menor evitando solapes.
+ *
+ * Se recorren por área descendente y se descarta el que choque con uno ya
+ * puesto: dos etiquetas encimadas son peores que ninguna de las dos, y la
+ * región más grande es la que más merece el nombre.
+ */
+/**
+ * Rectángulo del color del mar que cubre la extensión del mapa, por debajo de
+ * todo lo demás. Se deriva de los propios vértices en vez de codificar el
+ * tamaño del lienzo, que es cosa del motor.
+ */
+function buildMapBackdropNode(regions: Region[]): Node[] {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const r of regions) {
+    for (const v of r.vertices) {
+      if (v.canvas_x < minX) minX = v.canvas_x
+      if (v.canvas_y < minY) minY = v.canvas_y
+      if (v.canvas_x > maxX) maxX = v.canvas_x
+      if (v.canvas_y > maxY) maxY = v.canvas_y
+    }
+  }
+  if (!Number.isFinite(minX) || maxX <= minX || maxY <= minY) return []
+
+  // Se sobresale un poco de los vértices observados. La simplificación puede
+  // eliminar el vértice exacto de una esquina del lienzo —en un ángulo recto
+  // de brazos cortos el área del triángulo es mínima—, y entonces ni el
+  // polígono de mar ni un fondo ajustado a los vértices llegan hasta ella.
+  // Sobresalir en un fondo decorativo no cuesta nada.
+  const MARGEN = 32
+  const width = maxX - minX + MARGEN * 2
+  const height = maxY - minY + MARGEN * 2
+
+  return [{
+    id: 'map-backdrop',
+    type: 'mapBackdrop',
+    position: { x: minX - MARGEN, y: minY - MARGEN },
+    draggable: false,
+    selectable: false,
+    zIndex: Z_INDEX.backdrop,
+    // El tamaño se declara además de pasarlo en `data`. React Flow mantiene un
+    // nodo con `visibility: hidden` hasta haberlo medido con un
+    // ResizeObserver, y un nodo de 1600x1600 puede no llegar a medirse antes
+    // del primer pintado: se queda invisible sin error ninguno.
+    width,
+    height,
+    data: { width, height } as unknown as Record<string, unknown>,
+  }]
+}
+
+function buildRegionLabelNodes(regions: Region[]): Node[] {
+  const candidates = regions
+    .filter(r => r.is_closed && LABELLED_TYPES.has(r.region_type) && r.vertices.length >= 3)
+    .map(r => {
+      const pts = r.vertices
+        .slice()
+        .sort((a, b) => a.order_index - b.order_index)
+        .map(v => ({ x: v.canvas_x, y: v.canvas_y }))
+      return { region: r, centroid: polygonCentroid(pts), area: polygonArea(pts) }
+    })
+    .filter(c => c.area >= LABEL_MIN_AREA)
+    .sort((a, b) => b.area - a.area)
+
+  const placed: { x0: number; y0: number; x1: number; y1: number }[] = []
+  const nodes: Node[] = []
+
+  for (const c of candidates) {
+    const fontSize = 12 + 12 * Math.min(1, c.area / LABEL_AREA_FOR_MAX_SIZE)
+    // Media eme por carácter basta para decidir colisiones sin medir la fuente.
+    const halfW = c.region.name.length * fontSize * 0.26
+    const halfH = fontSize * 0.62
+    const box = {
+      x0: c.centroid.x - halfW,
+      y0: c.centroid.y - halfH,
+      x1: c.centroid.x + halfW,
+      y1: c.centroid.y + halfH,
+    }
+    if (placed.some(p => box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0)) {
+      continue
+    }
+    placed.push(box)
+
+    nodes.push({
+      id: regionLabelNodeId(c.region.id),
+      type: 'regionLabel',
+      position: c.centroid,
+      draggable: false,
+      selectable: false,
+      zIndex: Z_INDEX.label,
+      data: { text: c.region.name, fontSize } as unknown as Record<string, unknown>,
+    })
+  }
+
+  return nodes
 }
 
 function buildFlowEdges(locationEdges: LocationEdge[], locationNodes: LocationNode[], selectedId?: number): Edge[] {
@@ -191,13 +355,23 @@ function LocationGraphInner({
   onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
   onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
-  onGenerate, onAddRegions, generating,
+  onGenerate, onAddRegions, onGenerateFactions, onRegionsChanged, generating,
   onExpandWithAI, expandingNodeId,
   onEnrichWithAI, enrichingNodeId,
 }: Props) {
   const { fitView, setCenter, getZoom } = useReactFlow()
   const reducedMotion = useReducedMotion()
   const [formState, setFormState] = useState<FormState>(null)
+  const [selectedRegionId, setSelectedRegionId] = useState<number | null>(null)
+
+  const {
+    effectiveRegions,
+    error: vertexError,
+    saving: savingVertices,
+    dismissError: dismissVertexError,
+    moveVertex,
+    commitRegion,
+  } = useRegionVertexDraft(regions, onRegionsChanged)
 
   const selectedNodeId = selected?.type === 'node' ? selected.item.id : undefined
   const selectedEdgeId = selected?.type === 'edge' ? selected.item.id : undefined
@@ -224,27 +398,69 @@ function LocationGraphInner({
     () => buildFlowNodes(locationNodes, factionsById, selectedNodeId),
     [locationNodes, factionsById, selectedNodeId]
   )
+  // Resolved from `effectiveRegions` so a region deleted or replaced by a
+  // regeneration can't leave a dangling selection behind.
+  const selectedRegion = useMemo(
+    () => effectiveRegions.find(r => r.id === selectedRegionId) ?? null,
+    [effectiveRegions, selectedRegionId]
+  )
+
   const regionFlowNodes = useMemo(
-    () => buildRegionFlowNodes(regions /* selectedRegionId — Plan 4 */),
+    () => buildRegionFlowNodes(effectiveRegions, selectedRegion?.id),
+    [effectiveRegions, selectedRegion]
+  )
+  const mapBackdropNode = useMemo(
+    () => buildMapBackdropNode(effectiveRegions),
+    [effectiveRegions]
+  )
+  // Labels are laid out against the PERSISTED regions, not the drag draft.
+  //
+  // `effectiveRegions` changes on every pointermove while a vertex is being
+  // dragged, and this memo depended on it, so each frame rebuilt the centroid
+  // and area of all ~40 regions and re-ran the O(n²) collision pass — some
+  // thousands of vertex operations per frame — to reposition labels that had
+  // not moved. Dragging one vertex re-laid-out the labelling of the whole
+  // world. Committing a drag calls `onRegionsChanged`, which updates `regions`,
+  // so the labels still follow real geometry changes; they just stop chasing
+  // the cursor.
+  const regionLabelNodes = useMemo(
+    () => buildRegionLabelNodes(regions),
     [regions]
   )
+  const vertexFlowNodes = useMemo(
+    () => buildVertexFlowNodes(selectedRegion),
+    [selectedRegion]
+  )
   const flowNodes = useMemo(
-    () => [...regionFlowNodes, ...civicFlowNodes],
-    [regionFlowNodes, civicFlowNodes]
+    () => [...mapBackdropNode, ...regionFlowNodes, ...regionLabelNodes, ...vertexFlowNodes, ...civicFlowNodes],
+    [mapBackdropNode, regionFlowNodes, regionLabelNodes, vertexFlowNodes, civicFlowNodes]
   )
   const flowEdges = useMemo(() => buildFlowEdges(locationEdges, locationNodes, selectedEdgeId), [locationEdges, locationNodes, selectedEdgeId])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
 
-  // Sync data changes (name, type, selection) without overwriting drag positions
+  // Id of the node React Flow is currently dragging, if any. A ref because it
+  // is only ever read inside callbacks and effects, never rendered.
+  const draggingNodeIdRef = useRef<string | null>(null)
+
+  // Sync data changes (name, type, selection) without overwriting drag positions.
+  //
+  // Region positions are *derived*: a region's origin is its vertices' bounding
+  // box, so it must be recomputed on every drag frame or the polygon slides out
+  // from under the handle being dragged. Vertex positions are likewise derived,
+  // except for the one currently under the cursor — React Flow owns that one
+  // mid-drag, and replacing it would fight its internal drag state.
   useEffect(() => {
     setNodes(prev => {
       const posMap = new Map(prev.map(n => [n.id, n.position]))
-      return flowNodes.map(fn => ({
-        ...fn,
-        position: posMap.get(fn.id) ?? fn.position,
-      }))
+      return flowNodes.map(fn => {
+        const keepPosition = fn.type === 'location' || fn.id === draggingNodeIdRef.current
+        return {
+          ...fn,
+          position: keepPosition ? posMap.get(fn.id) ?? fn.position : fn.position,
+        }
+      })
     })
   }, [flowNodes, setNodes])
   useEffect(() => { setEdges(flowEdges) }, [flowEdges, setEdges])
@@ -289,9 +505,30 @@ function LocationGraphInner({
     }
   }, [])
 
+  const handleNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
+    draggingNodeIdRef.current = node.id
+  }, [])
+
+  // Live geometry update: runs on every drag frame so the polygon follows the
+  // handle instead of jumping when the drag ends.
+  const handleNodeDrag = useCallback((_: React.MouseEvent, node: Node) => {
+    const v = parseVertexNodeId(node.id)
+    if (!v) return
+    const center = vertexCenterFromNodePosition(node.position)
+    moveVertex(v.regionId, v.orderIndex, center.x, center.y)
+  }, [moveVertex])
+
   const handleNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
-    // Only persist drag for civic nodes. Region/vertex node types don't
-    // own a numeric LocationNode id.
+    draggingNodeIdRef.current = null
+    const v = parseVertexNodeId(node.id)
+    if (v) {
+      const center = vertexCenterFromNodePosition(node.position)
+      moveVertex(v.regionId, v.orderIndex, center.x, center.y)
+      commitRegion(v.regionId)
+      return
+    }
+    // Only persist drag for civic nodes. Region node types don't own a
+    // numeric LocationNode id.
     if (node.type !== 'location') return
     const id = node.id
     const prev = dragTimers.current.get(id)
@@ -300,14 +537,60 @@ function LocationGraphInner({
       dragTimers.current.delete(id)
       onMoveNode(Number(id), node.position.x, node.position.y)
     }, 500))
-  }, [onMoveNode])
+  }, [onMoveNode, moveVertex, commitRegion])
+
+  /**
+   * Generar el mapa sustituye la geografía entera del mundo, incluidas las
+   * regiones que el usuario haya redibujado a mano vértice a vértice.
+   *
+   * El motor procedural es determinista y tarda milisegundos, así que este
+   * botón se va a pulsar mucho más que antes: sin confirmación, una sola
+   * pulsación distraída se lleva por delante todo el trabajo manual. La
+   * protección buena es que el backend distinga la geometría derivada de la
+   * editada y respete la segunda; mientras eso no exista, se pregunta.
+   */
+  const handleGenerateMap = useCallback(() => {
+    const propias = effectiveRegions.filter(r => r.origin === 'user').length
+
+    // Solo se pregunta si hay geometría del usuario, y el aviso dice lo que
+    // de verdad pasa: el backend conserva lo editado a mano, así que no se
+    // pierde nada. Lo que sí ocurre es que el terreno nuevo se genera por
+    // debajo, y esas regiones pueden acabar solapando terreno que ya no les
+    // corresponde.
+    //
+    // Si todo el mapa es derivado no se molesta al usuario: la generación es
+    // determinista, así que volver a pulsar da el mismo mapa.
+    if (propias > 0) {
+      const ok = window.confirm(
+        `Se va a regenerar el mapa físico. Tus ${propias} ` +
+          `${propias === 1 ? 'región editada' : 'regiones editadas'} a mano se conservan, ` +
+          'pero el terreno nuevo se genera por debajo y pueden quedar solapadas.' +
+          '\n\n¿Continuar?'
+      )
+      if (!ok) return
+    }
+    onAddRegions()
+  }, [effectiveRegions, onAddRegions])
 
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    // Region nodes use string IDs like `region-42`. Plan 4 handles their
-    // selection; for now, ignore clicks on non-civic nodes.
+    // Clicking a handle must not disturb the selection that produced it.
+    if (parseVertexNodeId(node.id)) return
+
+    // Region nodes use string IDs like `region-42`. Selecting one reveals its
+    // vertex handles; clicking it again hides them.
+    const regionId = parseRegionNodeId(node.id)
+    if (regionId != null) {
+      setSelectedRegionId(prev => (prev === regionId ? null : regionId))
+      onSelectNode(null)
+      return
+    }
+
     if (node.type !== 'location') return
     const loc = locationNodes.find(n => n.id === Number(node.id))
     if (!loc) return
+    // A civic selection and a region selection are mutually exclusive — two
+    // side panels' worth of context at once is noise.
+    setSelectedRegionId(null)
     onSelectNode(selected?.type === 'node' && selected.item.id === loc.id ? null : loc)
   }, [locationNodes, selected, onSelectNode])
 
@@ -325,6 +608,7 @@ function LocationGraphInner({
 
   const handlePaneClick = useCallback(() => {
     onSelectNode(null)
+    setSelectedRegionId(null)
   }, [onSelectNode])
 
   const handleFormConfirm = useCallback(async (input: LocationNodeFormInput) => {
@@ -335,7 +619,16 @@ function LocationGraphInner({
     }
   }, [formState, onAddNode, onEditNode])
 
-  if (locationNodes.length === 0) {
+  // El estado vacío se decide por TODO lo que puede haber en el lienzo, no
+  // solo por las localizaciones.
+  //
+  // Antes bastaba con no tener nodos civiles para saltarse el canvas entero, y
+  // un mundo con su mapa físico completo —decenas de regiones, ríos y
+  // cordilleras en la base de datos— mostraba "el mapa está vacío" y no
+  // dibujaba nada. Y como la barra de herramientas vive dentro del canvas, ese
+  // mismo atajo dejaba sin forma de generar el mapa desde un mundo nuevo: el
+  // botón estaba detrás de la pantalla que decía que no había nada.
+  if (locationNodes.length === 0 && effectiveRegions.length === 0) {
     return (
       <LocationGraphProvider value={contextValue}>
         <div className="flex h-full">
@@ -345,16 +638,25 @@ function LocationGraphInner({
                 El mapa está vacío
               </p>
               <p className="text-xs text-muted-foreground">
-                Genera las localizaciones a partir del grafo causal o crea una manualmente
+                Empieza por el terreno, o genera las localizaciones a partir del grafo causal
               </p>
               <div className="flex flex-col items-center gap-2">
                 {worldId != null && (
                   <button
-                    onClick={onGenerate}
+                    onClick={handleGenerateMap}
                     disabled={generating}
                     className="text-xs text-[#14b8a6] underline underline-offset-2 hover:text-[#0f766e] transition-colors disabled:opacity-50"
                   >
-                    {generating ? 'Generando...' : 'Generar desde el grafo causal →'}
+                    {generating ? 'Generando...' : 'Generar el mapa físico →'}
+                  </button>
+                )}
+                {worldId != null && (
+                  <button
+                    onClick={onGenerate}
+                    disabled={generating}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    {generating ? 'Generando...' : 'Generar localizaciones desde el grafo causal →'}
                   </button>
                 )}
                 <button
@@ -392,6 +694,8 @@ function LocationGraphInner({
             onEdgesChange={onEdgesChange}
             onNodeClick={handleNodeClick}
             onEdgeClick={handleEdgeClick}
+            onNodeDragStart={handleNodeDragStart}
+            onNodeDrag={handleNodeDrag}
             onNodeDragStop={handleNodeDragStop}
             onConnect={handleConnect}
             onPaneClick={handlePaneClick}
@@ -399,15 +703,20 @@ function LocationGraphInner({
             edgeTypes={edgeTypes}
             connectionMode={ConnectionMode.Loose}
             nodesDraggable={true}
+            // Required for the manual per-node zIndex in physicalMapPalette to
+            // hold: React Flow otherwise lifts the selected node to the top,
+            // which would drop a selected sea over the coastline it contains.
+            elevateNodesOnSelect={false}
             fitView
             fitViewOptions={{ padding: 0.3 }}
-            className="bg-[hsl(180_8%_97%)]"
+            className="bg-[#efe9db]"
           >
-            <Background color="#c8d5d5" gap={24} size={1} />
+            <Background color="#ded7c6" gap={28} size={1} />
             <Controls />
             <MiniMap
               position="bottom-left"
-              nodeColor="#14b8a6"
+              nodeColor={miniMapNodeColor}
+              nodeStrokeWidth={0}
               className="!bg-background/90 !border-border/50"
             />
             <div className="absolute top-2 left-2 z-10 flex gap-1.5">
@@ -418,7 +727,7 @@ function LocationGraphInner({
                 <Plus className="w-3.5 h-3.5" /> Añadir
               </button>
               <button
-                onClick={onAddRegions}
+                onClick={handleGenerateMap}
                 disabled={generating}
                 className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
               >
@@ -432,7 +741,42 @@ function LocationGraphInner({
               >
                 {generating ? 'Generando...' : '↺ Regenerar'}
               </button>
+              <button
+                onClick={onGenerateFactions}
+                disabled={generating}
+                title="Regenera la capa social. Usa el modelo de lenguaje, así que tarda."
+                className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                <Users className="w-3.5 h-3.5" />
+                Facciones
+              </button>
             </div>
+
+            {selectedRegion && (
+              <div className="absolute top-12 left-2 z-10 flex items-center gap-2 rounded-lg border border-[#14b8a6]/40 bg-background/95 px-2.5 py-1.5 text-xs text-muted-foreground">
+                <span>
+                  Editando <strong className="text-foreground">{selectedRegion.name}</strong> —
+                  arrastra los puntos para corregir la forma
+                </span>
+                {savingVertices && <span className="text-[#14b8a6]">guardando…</span>}
+              </div>
+            )}
+
+            {vertexError && (
+              <div
+                role="alert"
+                className="absolute top-12 right-2 z-10 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-2.5 py-1.5 text-xs text-red-800 max-w-xs"
+              >
+                <span>{vertexError} La forma se ha revertido a la última guardada.</span>
+                <button
+                  onClick={dismissVertexError}
+                  aria-label="Cerrar aviso"
+                  className="text-red-500 hover:text-red-800 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </ReactFlow>
         </div>
 
