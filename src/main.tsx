@@ -8,6 +8,9 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import './index.css'
 import { router } from './App'
+import { installGlobalErrorReporting } from './services/telemetry'
+
+installGlobalErrorReporting()
 
 const queryClient = new QueryClient()
 

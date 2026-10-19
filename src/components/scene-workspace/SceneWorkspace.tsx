@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   listSceneNodes, listSceneNodeEdges, createSceneNode, updateSceneNode, deleteSceneNode,
   updateSceneNodePosition, deleteSceneNodeEdge, createSceneNodeEdge,
-  generateScene, listSceneOutputs, revertSceneOutput,
+  generateScene, listSceneOutputs, revertSceneOutput, getGenerationProgress,
   type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput,
 } from '../../services/api';
 import { SceneCanvas } from './SceneCanvas';
@@ -10,6 +10,14 @@ import { ScenePalette } from './ScenePalette';
 import { SceneProseView } from './SceneProseView';
 import { SceneVersionDropdown } from './SceneVersionDropdown';
 import { SplitView } from './SplitView';
+import { toast } from 'sonner';
+import { describeError, newRequestId } from '../../services/telemetry';
+
+// Qué hace el generador, dicho para quien espera.
+function progressLabel(kind: string, phase: string, seconds: number): string {
+  const what = kind === 'scene_delta_extract' ? 'resumiendo lo que ha pasado' : phase || 'preparando la escena';
+  return `${what} · ${seconds} s`;
+}
 
 interface SceneWorkspaceProps {
   sceneId: number;
@@ -38,6 +46,7 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
   const [currentVersion, setCurrentVersion] = useState<number | null>(null);
   const [generating, setGenerating] = useState(false);
   const [unmetOutcomes, setUnmetOutcomes] = useState<string[]>([]);
+  const [progress, setProgress] = useState('');
 
   const refresh = useCallback(async () => {
     const [n, e, o] = await Promise.all([
@@ -126,17 +135,33 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
 
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
+    setProgress('');
+    // Con el identificador de la petición se consulta la fase real mientras
+    // tanto: escribir, comprobar y reparar puede llevar minutos.
+    const requestId = newRequestId();
+    const started = Date.now();
+    const poll = setInterval(async () => {
+      try {
+        const { runs } = await getGenerationProgress(requestId);
+        const current = runs.find((r) => r.status === 'running') ?? runs[runs.length - 1];
+        const seconds = Math.round((Date.now() - started) / 1000);
+        setProgress(current ? progressLabel(current.kind, current.phase, seconds) : `esperando al generador · ${seconds} s`);
+      } catch {
+        // el progreso es informativo: si falla, la generación sigue
+      }
+    }, 2000);
     try {
-      const res = await generateScene(sceneId);
+      const res = await generateScene(sceneId, requestId);
       setUnmetOutcomes(res.unmet_outcomes ?? []);
       const fresh = await listSceneOutputs(sceneId);
       setOutputs(fresh);
       setCurrentVersion(res.version);
     } catch (err) {
-      console.error(err);
-      alert(`Error generando: ${(err as Error).message}`);
+      toast.error(`No se pudo generar la escena: ${describeError(err, 'error desconocido')}`);
     } finally {
+      clearInterval(poll);
       setGenerating(false);
+      setProgress('');
     }
   }, [sceneId]);
 
@@ -158,6 +183,7 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
         locationOptions={locationOptions}
         onGenerate={handleGenerate}
         generating={generating}
+        progress={progress}
       />
       <SceneCanvas
         nodes={nodes}

@@ -1,3 +1,5 @@
+import { ApiError, newRequestId, reportClientError } from './telemetry'
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 function getToken(): string {
@@ -11,17 +13,53 @@ function authHeaders(): HeadersInit {
   }
 }
 
-export async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: { ...authHeaders(), ...options?.headers },
-  })
+/**
+ * Todas las llamadas a la API pasan por aquí. Cada una lleva un X-Request-ID
+ * (el que se pase, para seguir su progreso, o uno nuevo) y los fallos salen
+ * como ApiError con ese identificador. Los 5xx y los fallos de red se
+ * informan al backend: son los que el usuario sufre sin poder arreglar.
+ */
+export async function request<T>(path: string, options?: RequestInit & { requestId?: string }): Promise<T> {
+  const requestId = options?.requestId ?? newRequestId()
+  let res: Response
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: { ...authHeaders(), 'X-Request-ID': requestId, ...options?.headers },
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'fallo de red'
+    reportClientError({ source: `fetch ${path}`, message, request_id: requestId })
+    throw new ApiError(`No se pudo conectar con el servidor (${message})`, 0, requestId)
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || body.message || `Error ${res.status}`)
+    const message = body.error || body.message || `Error ${res.status}`
+    if (res.status >= 500) {
+      reportClientError({ source: `api ${path}`, message, request_id: requestId, status: res.status })
+    }
+    throw new ApiError(message, res.status, requestId)
   }
   const text = await res.text()
   return text ? JSON.parse(text) : ({} as T)
+}
+
+// --- Telemetry ---
+
+export interface GenerationRun {
+  id: number
+  kind: string
+  status: 'running' | 'ok' | 'error'
+  phase: string
+  phases: { name: string; ms: number }[]
+  error?: string
+  started_at: string
+  duration_ms?: number
+}
+
+/** Las generaciones de una petición, con la fase en curso. */
+export function getGenerationProgress(requestId: string) {
+  return request<{ request_id: string; runs: GenerationRun[] }>(`/telemetry/progress/${requestId}`)
 }
 
 // --- Auth ---
@@ -1195,10 +1233,11 @@ export function listSceneNodeEdges(sceneId: number): Promise<SceneNodeEdge[]> {
 
 export function generateScene(
   sceneId: number,
+  requestId?: string,
 ): Promise<{ prose: string; delta: SceneDeltaJSON; version: number; unmet_outcomes?: string[] }> {
   return request<{ prose: string; delta: SceneDeltaJSON; version: number; unmet_outcomes?: string[] }>(
     `/scene/generate/${sceneId}`,
-    { method: 'POST' },
+    { method: 'POST', requestId },
   )
 }
 

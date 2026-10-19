@@ -28,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { notifyError } from '@/lib/notifyError'
 
 function inferDotColor(world: World): string {
   const text = (world.premise || world.description || '').toLowerCase()
@@ -60,7 +61,7 @@ export default function WorldDetailPage() {
   const refreshWorldDetail = useCallback(() => {
     const worldId = Number(id)
     if (!id || Number.isNaN(worldId)) return
-    getWorldDetail(worldId).then(setWorldDetail).catch(() => {})
+    getWorldDetail(worldId).then(setWorldDetail).catch(notifyError('No se pudo cargar el resumen del mundo'))
   }, [id])
 
   const {

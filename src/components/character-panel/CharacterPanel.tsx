@@ -6,6 +6,7 @@ import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphP
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import { CharacterProfilePicker } from './CharacterProfilePicker'
 import { Users, Sparkles, Wand2, Loader2 } from 'lucide-react'
+import { notifyError } from '@/lib/notifyError'
 
 interface Props {
   worldId: number
@@ -34,7 +35,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     }
     Promise.all(characterBriefs.map(b => getCharacterById(b.id)))
       .then(setCharacters)
-      .catch(() => {})
+      .catch(notifyError('No se pudieron cargar los personajes'))
   }, [characterBriefs])
 
   const handleSelect = (id: number) => {

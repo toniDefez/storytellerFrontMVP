@@ -12,6 +12,8 @@ interface ScenePaletteProps {
   locationOptions: PaletteOption[];
   onGenerate: () => void;
   generating: boolean;
+  /** Fase real en curso mientras genera ("comprobando los momentos · 31 s"). */
+  progress?: string;
 }
 
 // Un <select> que actúa como botón: elegir una opción la añade y vuelve al
@@ -32,7 +34,7 @@ function AddPicker({ label, options, onPick }: { label: string; options: Palette
 
 export function ScenePalette({
   onAddMoment, onAddNarrator, onAddCharacter, onAddLocation,
-  castOptions, locationOptions, onGenerate, generating,
+  castOptions, locationOptions, onGenerate, generating, progress,
 }: ScenePaletteProps) {
   return (
     <div style={{
@@ -48,6 +50,11 @@ export function ScenePalette({
       <button onClick={onGenerate} disabled={generating} style={{ background: '#7c3aed', color: '#fff' }}>
         {generating ? 'Generando…' : '✨ Generar prosa'}
       </button>
+      {generating && progress && (
+        <div role="status" aria-live="polite" style={{ fontSize: 11, color: '#6b7280', maxWidth: 180 }}>
+          {progress}
+        </div>
+      )}
     </div>
   );
 }

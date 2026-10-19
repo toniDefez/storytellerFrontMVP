@@ -19,6 +19,8 @@ import type { SeedTemplateBrief } from '@/services/api'
 import { SeedTemplatePicker } from '@/components/SeedTemplatePicker'
 import { BrainstormStep } from '@/components/brainstorm/BrainstormStep'
 import type { BrainstormCard } from '@/services/api'
+import { notifyError } from '@/lib/notifyError'
+import { toast } from 'sonner'
 
 const LOADING_MESSAGES = [
   'Interpretando la premisa...',
@@ -120,8 +122,8 @@ export default function CreateWorldPage() {
     try {
       const result = await suggestPremises()
       setSuggestions(result.premises ?? [])
-    } catch {
-      // silently fail
+    } catch (err) {
+      notifyError('No se pudieron sugerir ideas')(err)
     } finally {
       setSuggesting(false)
     }
@@ -133,11 +135,13 @@ export default function CreateWorldPage() {
     setSuggestions([])
     try {
       const result = await refinePremise(premise.trim())
-      if (result.premise) {
+      if (result.premise && result.premise.trim() !== premise.trim()) {
         setPremise(result.premise)
+      } else {
+        toast.info('La premisa ya tiene lo esencial: no hay nada que añadir.')
       }
-    } catch {
-      // silently fail
+    } catch (err) {
+      notifyError('No se pudo enriquecer la premisa')(err)
     } finally {
       setRefining(false)
     }
