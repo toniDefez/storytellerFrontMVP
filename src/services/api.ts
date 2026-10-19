@@ -524,6 +524,10 @@ export interface LocationNodeProperties {
   behavioral_rule?: string
   control?: string
   duration?: 'permanent' | 'temporary' | 'declining' | 'emerging'
+  /** Por qué está donde está en el mapa ("junto a un vado"); lo pone el backend al colocarla. */
+  emplazamiento?: string
+  /** Dónde la colocó el mapa por última vez; si el autor la mueve, el mapa la respeta. */
+  map_pos?: [number, number]
 }
 
 export interface LocationNode {

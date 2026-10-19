@@ -68,6 +68,13 @@ export function LocationNodeDetailPanel({ node, connectedNodes, childNodes, onAd
           </div>
         )}
 
+        {/* Por qué está donde está en el mapa: lo deriva el terreno, no el modelo. */}
+        {typeof p?.emplazamiento === 'string' && p.emplazamiento && (
+          <div className="text-xs text-muted-foreground">
+            <span className="uppercase tracking-widest mr-1">En el mapa:</span>{p.emplazamiento}
+          </div>
+        )}
+
         {connectedNodes.length > 0 && (
           <div>
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Conexiones</div>

@@ -97,7 +97,8 @@ export default function WorldDetailPage() {
     setGeographyGenerating(true)
     try {
       const res = await generateGeography(worldIdNum)
-      await Promise.all([reloadRegions(), reloadFactions()])
+      // El mapa nuevo recoloca las localizaciones sobre el terreno.
+      await Promise.all([reloadRegions(), reloadFactions(), loadLocationGraph()])
       toast.success(`Mapa físico generado: ${res.regions?.length ?? 0} regiones`)
     } catch (e) {
       notifyError('No se pudo generar el mapa')(e)
