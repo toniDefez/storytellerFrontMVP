@@ -11,8 +11,6 @@ import ErrorPage from './pages/ErrorPage'
 import WorldDetailPage from './pages/home/WorldDetailPage'
 import WorldBiblePage from './pages/home/WorldBiblePage'
 import SettingsPage from './pages/settings/SettingsPage'
-// StorySetupPage is no longer routed — story setup lives inside StoryPanel (WorldDetailPage)
-// import StorySetupPage from './pages/story/StorySetupPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <LoginPage />, errorElement: <ErrorPage /> },
@@ -30,8 +28,6 @@ export const router = createBrowserRouter([
           { path: 'worlds/:id', element: <WorldDetailPage /> },
           { path: 'worlds/:id/bible', element: <WorldBiblePage /> },
           { path: 'worlds/:id/edit', element: <EditWorldPage /> },
-          // Story setup is now an inline panel inside WorldDetailPage (StoryPanel)
-          // { path: 'worlds/:worldId/stories/:storyId', element: <StorySetupPage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'settings/installation', element: <Navigate to="/settings?tab=installation" replace /> },
         ],
