@@ -11,6 +11,7 @@ import { useInstallation } from '@/hooks/useInstallation'
 import {
   generateWorld,
   getJobStatus,
+  getGenerationProgress,
   refinePremise,
   suggestPremises,
   createWorldFromSeed,
@@ -22,15 +23,10 @@ import type { BrainstormCard } from '@/services/api'
 import { notifyError } from '@/lib/notifyError'
 import { toast } from 'sonner'
 
-const LOADING_MESSAGES = [
-  'Interpretando la premisa...',
-  'Generando el nodo raíz...',
-  'Expandiendo el grafo causal...',
-  'Sintetizando el mundo...',
-]
-
 const POLL_INTERVAL_MS = 2000
-const POLL_TIMEOUT_MS = 120_000
+// El backend da 5 minutos a la tarea; con 2 la app se rendía mientras el
+// mundo se seguía creando con un modelo lento.
+const POLL_TIMEOUT_MS = 6 * 60_000
 
 export default function CreateWorldPage() {
   const navigate = useNavigate()
@@ -41,7 +37,9 @@ export default function CreateWorldPage() {
   const [selectedSeed, setSelectedSeed] = useState<SeedTemplateBrief | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [messageIndex, setMessageIndex] = useState(0)
+  // Fase real del generador (la tarea usa su id como identificador de
+  // petición): antes eran mensajes rotando con un temporizador.
+  const [progress, setProgress] = useState('Preparando…')
   const [step, setStep] = useState<'premise' | 'brainstorm' | 'generating'>('premise')
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -49,7 +47,6 @@ export default function CreateWorldPage() {
   const [suggesting, setSuggesting] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>([])
 
-  const messageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollStartRef = useRef<number>(0)
 
@@ -66,24 +63,6 @@ export default function CreateWorldPage() {
     if (textareaRef.current) autoResize(textareaRef.current)
   }, [premise])
 
-  // Rotate loading messages
-  useEffect(() => {
-    if (loading) {
-      setMessageIndex(0)
-      messageIntervalRef.current = setInterval(() => {
-        setMessageIndex(i => (i + 1) % LOADING_MESSAGES.length)
-      }, 8000)
-    } else {
-      if (messageIntervalRef.current) {
-        clearInterval(messageIntervalRef.current)
-        messageIntervalRef.current = null
-      }
-    }
-    return () => {
-      if (messageIntervalRef.current) clearInterval(messageIntervalRef.current)
-    }
-  }, [loading])
-
   const stopPolling = () => {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current)
@@ -93,7 +72,15 @@ export default function CreateWorldPage() {
 
   const startPolling = (jobId: string) => {
     pollStartRef.current = Date.now()
+    setProgress('Preparando…')
     pollIntervalRef.current = setInterval(async () => {
+      const seconds = Math.round((Date.now() - pollStartRef.current) / 1000)
+      getGenerationProgress(jobId)
+        .then(({ runs }) => {
+          const current = runs.find(r => r.status === 'running') ?? runs[runs.length - 1]
+          setProgress(current?.phase ? `${current.phase} · ${seconds} s` : `Esperando al generador · ${seconds} s`)
+        })
+        .catch(() => {})  // informativo: si falla, la creación sigue
       if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
         stopPolling()
         setError('La generación tardó demasiado. Inténtalo de nuevo.')
@@ -268,7 +255,7 @@ export default function CreateWorldPage() {
                 className="text-sm text-center transition-all duration-500"
                 style={{ color: 'hsl(30 6% 47%)', fontFamily: 'var(--font-display)', fontStyle: 'italic' }}
               >
-                {LOADING_MESSAGES[messageIndex]}
+                <span role="status" aria-live="polite">{progress}</span>
               </p>
             </div>
           ) : step === 'brainstorm' ? (
