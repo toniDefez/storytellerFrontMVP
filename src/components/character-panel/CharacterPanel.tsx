@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise, applyCharacterProfile } from '@/services/api'
+import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
@@ -89,12 +89,9 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         premise: premise.trim(),
       })
 
-      // Exclusive: profile defines psychology OR premise-driven generation — not both
-      if (selectedProfileId) {
-        await applyCharacterProfile(result.id, selectedProfileId)
-      } else {
-        await generateCharacterNodes(result.id, premise.trim())
-      }
+      // The archetype is a seed the derivation reinterprets for this premise,
+      // not a replacement for it: both shape the character.
+      await generateCharacterNodes(result.id, premise.trim(), selectedProfileId ?? undefined)
 
       const newChar = await getCharacterById(result.id)
       setCharacters(prev => [...prev, newChar])
@@ -160,9 +157,9 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
                   className="text-[10px] tracking-[0.2em] uppercase"
                   style={{ fontFamily: 'var(--font-ui)', color: 'hsl(24 60% 45%)' }}
                 >
-                  {selectedProfileId ? 'Contexto del personaje' : 'La premisa del personaje'}
+                  La premisa del personaje
                 </label>
-                {!selectedProfileId && premise.trim().length > 10 && (
+                {premise.trim().length > 10 && (
                   <button
                     onClick={handleRefine}
                     disabled={refining}

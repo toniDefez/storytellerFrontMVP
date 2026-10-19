@@ -420,10 +420,10 @@ export function updateSpeechPattern(characterId: number, speechPattern: string) 
   })
 }
 
-export function generateCharacterNodes(characterId: number, premise: string) {
+export function generateCharacterNodes(characterId: number, premise: string, profileId?: number) {
   return request<{ nodes: CharacterNode[]; voice_register: VoiceRegister }>(`/character/generate-nodes?character_id=${characterId}`, {
     method: 'POST',
-    body: JSON.stringify({ premise }),
+    body: JSON.stringify({ premise, profile_id: profileId }),
   })
 }
 
