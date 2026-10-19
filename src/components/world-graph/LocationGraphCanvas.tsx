@@ -714,7 +714,7 @@ function LocationGraphInner({
             <Background color="#ded7c6" gap={28} size={1} />
             <Controls />
             <MiniMap
-              position="bottom-left"
+              position="bottom-right"
               nodeColor={miniMapNodeColor}
               nodeStrokeWidth={0}
               className="!bg-background/90 !border-border/50"

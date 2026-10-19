@@ -12,6 +12,7 @@ import { SceneVersionDropdown } from './SceneVersionDropdown';
 import { SplitView } from './SplitView';
 import { toast } from 'sonner';
 import { describeError, newRequestId } from '../../services/telemetry';
+import { notifyError } from '@/lib/notifyError';
 
 // Qué hace el generador, dicho para quien espera.
 function progressLabel(kind: string, phase: string, seconds: number): string {
@@ -63,7 +64,7 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
       const e = await createSceneNodeEdge(sceneId, fromId, toId, kind);
       setEdges((prev) => [...prev, e]);
     } catch (err) {
-      console.error('edge create failed', err);
+      notifyError('No se pudo conectar')(err);
     }
   }, [sceneId]);
 
@@ -90,15 +91,30 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
     try { await deleteSceneNodeEdge(id); } catch (err) { console.error(err); }
   }, []);
 
+  // Un momento nuevo va después del último y queda unido a él: los momentos
+  // sueltos no tienen orden de lectura, y nada le decía al autor que había
+  // que conectarlos arrastrando.
   const handleAddMoment = useCallback(async () => {
-    const created = await createSceneNode(sceneId, {
-      node_kind: 'moment',
-      description: '',
-      canvas_x: 200 + Math.random() * 100,
-      canvas_y: 200 + nodes.filter((n) => n.node_kind === 'moment').length * 120,
-    });
-    setNodes((prev) => [...prev, created]);
-  }, [sceneId, nodes]);
+    const withNext = new Set(edges.filter((e) => e.edge_kind === 'flow').map((e) => e.from_node_id));
+    const last = nodes
+      .filter((n) => n.node_kind === 'moment' && !withNext.has(n.id))
+      .sort((a, b) => b.canvas_y - a.canvas_y)[0];
+    try {
+      const created = await createSceneNode(sceneId, {
+        node_kind: 'moment',
+        description: '',
+        canvas_x: last ? last.canvas_x : 200,
+        canvas_y: last ? last.canvas_y + 280 : 200,
+      });
+      setNodes((prev) => [...prev, created]);
+      if (last) {
+        const edge = await createSceneNodeEdge(sceneId, last.id, created.id, 'flow');
+        setEdges((prev) => [...prev, edge]);
+      }
+    } catch (err) {
+      notifyError('No se pudo añadir el momento')(err);
+    }
+  }, [sceneId, nodes, edges]);
 
   const handleAddNarrator = useCallback(async () => {
     const created = await createSceneNode(sceneId, {

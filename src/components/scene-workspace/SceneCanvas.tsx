@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
-  ReactFlow, Background, Controls, MiniMap,
+  ReactFlow, Background, Controls, MiniMap, useReactFlow,
   type Node, type Edge, type Connection, type NodeTypes, type EdgeTypes, type OnConnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -24,6 +24,30 @@ interface SceneCanvasProps {
   unmetOutcomes?: string[];
   charNameByID: Record<number, string>;
   locationByID: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
+}
+
+// Con zoom máximo 1: sobre un lienzo casi vacío, fitView acercaba tanto que
+// los nodos nuevos caían fuera de la vista, detrás del panel de prosa.
+// Y mínimo 0,2: con el lienzo partido a la mitad, 0,5 no bastaba para que
+// cupieran personaje, lugar y momentos.
+const FIT = { padding: 0.2, maxZoom: 1, minZoom: 0.2, duration: 250 };
+
+// Al aparecer un nodo (momento, personaje, lugar) el lienzo se reajusta para
+// que se vea: antes se creaba fuera de pantalla y parecía que el botón no
+// hacía nada.
+function FitWhenNodesAppear({ count }: { count: number }) {
+  const { fitView } = useReactFlow();
+  const previous = useRef(count);
+  useEffect(() => {
+    if (count > previous.current) {
+      // tras el render, cuando el nodo nuevo ya tiene tamaño medido
+      const t = setTimeout(() => { void fitView(FIT); }, 50);
+      previous.current = count;
+      return () => clearTimeout(t);
+    }
+    previous.current = count;
+  }, [count, fitView]);
+  return null;
 }
 
 const nodeTypes: NodeTypes = {
@@ -75,7 +99,10 @@ export function SceneCanvas(props: SceneCanvasProps) {
       onNodeDragStop={(_, node) => onNodeMove(Number(node.id), node.position.x, node.position.y)}
       onEdgesDelete={(removed) => removed.forEach((r) => onEdgeDelete(Number(r.id)))}
       fitView
+      fitViewOptions={FIT}
+      minZoom={0.2}
     >
+      <FitWhenNodesAppear count={rfNodes.length} />
       <Background />
       <Controls />
       <MiniMap />
