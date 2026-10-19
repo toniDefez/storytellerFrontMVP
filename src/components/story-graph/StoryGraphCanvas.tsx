@@ -36,6 +36,7 @@ import {
   updateFact,
   deleteFact,
   getStoryGraph,
+  getLocationGraph,
   createScene,
   createSceneEdge,
   updateScenePosition,
@@ -185,6 +186,31 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
       .catch(err => toast.error(err instanceof Error ? err.message : 'Error al cargar la historia.'))
       .finally(() => setLoadingDetail(false))
   }, [panelOpen, panelMode, storyBrief.id, detail?.story.id])
+
+  /* ── Cast and places for the scene workspace ─── */
+  // El workspace pinta personajes y lugares por id, y su paleta ofrece el
+  // reparto de la historia y las localizaciones del mundo. Sin estos mapas los
+  // nodos salían como "?" y no había forma de añadirlos a la escena.
+  const [workspaceCharNames, setWorkspaceCharNames] = useState<Record<number, string>>({})
+  const [workspaceLocations, setWorkspaceLocations] = useState<Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>>({})
+
+  useEffect(() => {
+    if (enteredSceneId == null) return
+    let cancelled = false
+    getStoryDetail(storyBrief.id)
+      .then(async d => {
+        const graph = await getLocationGraph(d.story.world_id)
+        if (cancelled) return
+        setWorkspaceCharNames(Object.fromEntries((d.characters ?? []).map(c => [c.character_id, c.name])))
+        setWorkspaceLocations(Object.fromEntries((graph.nodes ?? []).map(n => [n.id, {
+          name: n.name,
+          nodeType: n.node_type,
+          narrativeFunction: n.narrative_function,
+        }])))
+      })
+      .catch(err => toast.error(err instanceof Error ? err.message : 'Error al cargar el reparto de la escena.'))
+    return () => { cancelled = true }
+  }, [enteredSceneId, storyBrief.id])
 
   /* ── Load scene graph ─── */
   const loadGraph = useCallback(async () => {
@@ -458,6 +484,8 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
       <SceneWorkspace
         sceneId={enteredSceneId}
         storyId={storyBrief.id}
+        charNameByID={workspaceCharNames}
+        locationByID={workspaceLocations}
         onBack={() => {
           setEnteredSceneId(null)
           onSceneEntered?.(false)

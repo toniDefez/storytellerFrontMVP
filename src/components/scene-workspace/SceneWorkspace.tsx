@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  listSceneNodes, listSceneNodeEdges, createSceneNode, updateSceneNode,
+  listSceneNodes, listSceneNodeEdges, createSceneNode, updateSceneNode, deleteSceneNode,
   updateSceneNodePosition, deleteSceneNodeEdge, createSceneNodeEdge,
   generateScene, listSceneOutputs, revertSceneOutput,
   type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput,
@@ -21,8 +21,16 @@ interface SceneWorkspaceProps {
 }
 
 export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: SceneWorkspaceProps) {
-  const charMap = charNameByID ?? {};
-  const locMap = locationByID ?? {};
+  const charMap = useMemo(() => charNameByID ?? {}, [charNameByID]);
+  const locMap = useMemo(() => locationByID ?? {}, [locationByID]);
+  const castOptions = useMemo(
+    () => Object.entries(charMap).map(([id, name]) => ({ id: Number(id), name })),
+    [charMap],
+  );
+  const locationOptions = useMemo(
+    () => Object.entries(locMap).map(([id, loc]) => ({ id: Number(id), name: loc.name })),
+    [locMap],
+  );
 
   const [nodes, setNodes] = useState<SceneNode[]>([]);
   const [edges, setEdges] = useState<SceneNodeEdge[]>([]);
@@ -92,6 +100,29 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
     setNodes((prev) => [...prev, created]);
   }, [sceneId, nodes]);
 
+  const handleAddCharacter = useCallback(async (characterId: number) => {
+    const created = await createSceneNode(sceneId, {
+      node_kind: 'character',
+      character_id: characterId,
+      canvas_x: -160,
+      canvas_y: 120 + nodes.filter((n) => n.node_kind === 'character').length * 100,
+    });
+    setNodes((prev) => [...prev, created]);
+  }, [sceneId, nodes]);
+
+  // Una escena ocurre en un solo lugar: elegir otro sustituye al anterior.
+  const handleAddLocation = useCallback(async (locationNodeId: number) => {
+    const previous = nodes.filter((n) => n.node_kind === 'location');
+    const created = await createSceneNode(sceneId, {
+      node_kind: 'location',
+      location_node_id: locationNodeId,
+      canvas_x: 80,
+      canvas_y: -80,
+    });
+    await Promise.all(previous.map((n) => deleteSceneNode(n.id)));
+    setNodes((prev) => [...prev.filter((n) => n.node_kind !== 'location'), created]);
+  }, [sceneId, nodes]);
+
   const handleGenerate = useCallback(async () => {
     setGenerating(true);
     try {
@@ -119,6 +150,10 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
       <ScenePalette
         onAddMoment={handleAddMoment}
         onAddNarrator={handleAddNarrator}
+        onAddCharacter={handleAddCharacter}
+        onAddLocation={handleAddLocation}
+        castOptions={castOptions}
+        locationOptions={locationOptions}
         onGenerate={handleGenerate}
         generating={generating}
       />
