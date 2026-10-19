@@ -51,7 +51,7 @@ export default function WorldDetailPage() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
-  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'scenes' | 'stories'>('causal')
+  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'stories'>('causal')
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
   const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
   const [confirmRegen, setConfirmRegen] = useState(false)
