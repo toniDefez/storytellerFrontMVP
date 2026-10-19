@@ -37,6 +37,7 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
   const [outputs, setOutputs] = useState<SceneOutput[]>([]);
   const [currentVersion, setCurrentVersion] = useState<number | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [unmetOutcomes, setUnmetOutcomes] = useState<string[]>([]);
 
   const refresh = useCallback(async () => {
     const [n, e, o] = await Promise.all([
@@ -62,9 +63,9 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
     try { await updateSceneNodePosition(id, x, y); } catch (err) { console.error(err); }
   }, []);
 
-  const handleMomentEdit = useCallback(async (id: number, description: string) => {
-    setNodes((prev) => prev.map((n) => n.id === id ? { ...n, description } : n));
-    try { await updateSceneNode(id, { description }); } catch (err) { console.error(err); }
+  const handleMomentEdit = useCallback(async (id: number, patch: { description?: string; outcomes?: string[] }) => {
+    setNodes((prev) => prev.map((n) => n.id === id ? { ...n, ...patch } : n));
+    try { await updateSceneNode(id, patch); } catch (err) { console.error(err); }
   }, []);
 
   const handleNarratorEdit = useCallback(async (id: number, patch: Partial<{ pov: string; style: string; distance: string; reliability: string }>) => {
@@ -127,6 +128,7 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
     setGenerating(true);
     try {
       const res = await generateScene(sceneId);
+      setUnmetOutcomes(res.unmet_outcomes ?? []);
       const fresh = await listSceneOutputs(sceneId);
       setOutputs(fresh);
       setCurrentVersion(res.version);
@@ -165,6 +167,7 @@ export function SceneWorkspace({ sceneId, onBack, charNameByID, locationByID }: 
         onMomentEdit={handleMomentEdit}
         onNarratorEdit={handleNarratorEdit}
         onEdgeDelete={handleEdgeDelete}
+        unmetOutcomes={unmetOutcomes}
         charNameByID={charMap}
         locationByID={locMap}
       />

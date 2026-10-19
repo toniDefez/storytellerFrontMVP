@@ -17,9 +17,11 @@ interface SceneCanvasProps {
   edges: SceneNodeEdge[];
   onConnect: (fromId: number, toId: number, kind: SceneEdgeKind) => void;
   onNodeMove: (id: number, x: number, y: number) => void;
-  onMomentEdit: (id: number, description: string) => void;
+  onMomentEdit: (id: number, patch: { description?: string; outcomes?: string[] }) => void;
   onNarratorEdit: (id: number, patch: { pov?: string; style?: string; distance?: string; reliability?: string }) => void;
   onEdgeDelete: (id: number) => void;
+  /** Salidas que la última generación no logró mostrar en la prosa. */
+  unmetOutcomes?: string[];
   charNameByID: Record<number, string>;
   locationByID: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
 }
@@ -37,14 +39,14 @@ const edgeTypes: EdgeTypes = {
 };
 
 export function SceneCanvas(props: SceneCanvasProps) {
-  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, locationByID } = props;
+  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, locationByID, unmetOutcomes } = props;
 
   const rfNodes = useMemo<Node[]>(() => nodes.map((n) => ({
     id: String(n.id),
     type: n.node_kind,
     position: { x: n.canvas_x, y: n.canvas_y },
-    data: nodeData(n, charNameByID, locationByID, onMomentEdit, onNarratorEdit, edges) as Record<string, unknown>,
-  })), [nodes, edges, charNameByID, locationByID, onMomentEdit, onNarratorEdit]);
+    data: nodeData(n, charNameByID, locationByID, onMomentEdit, onNarratorEdit, edges, unmetOutcomes ?? []) as Record<string, unknown>,
+  })), [nodes, edges, charNameByID, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes]);
 
   const rfEdges = useMemo<Edge[]>(() => edges.map((e) => ({
     id: String(e.id),
@@ -91,9 +93,10 @@ function nodeData(
   n: SceneNode,
   charNameByID: Record<number, string>,
   locByID: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>,
-  onMomentEdit: (id: number, description: string) => void,
+  onMomentEdit: (id: number, patch: { description?: string; outcomes?: string[] }) => void,
   onNarratorEdit: (id: number, patch: Partial<{ pov: string; style: string; distance: string; reliability: string }>) => void,
   edges: SceneNodeEdge[],
+  unmetOutcomes: string[],
 ): Record<string, unknown> {
   switch (n.node_kind) {
     case 'character':
@@ -104,9 +107,12 @@ function nodeData(
       const incoming = edges.filter((e) => e.to_node_id === n.id && e.edge_kind === 'attachment');
       return {
         description: n.description ?? '',
+        outcomes: n.outcomes ?? [],
+        unmet: (n.outcomes ?? []).filter((o) => unmetOutcomes.includes(o)),
         hasNarratorOverride: incoming.length > 0,
         hasActiveCharOverride: incoming.length > 0,
-        onChange: (desc: string) => onMomentEdit(n.id, desc),
+        onChange: (desc: string) => onMomentEdit(n.id, { description: desc }),
+        onOutcomesChange: (outcomes: string[]) => onMomentEdit(n.id, { outcomes }),
       };
     }
     case 'narrator': {

@@ -1106,6 +1106,8 @@ export interface SceneNode {
   owner_character_id?: number | null
   hidden: boolean
   narrator_config?: NarratorNodeConfig | null
+  /** Momentos: lo que es cierto después. El cómo ocurre lo decide el modelo. */
+  outcomes?: string[]
   canvas_x: number
   canvas_y: number
   created_at: string
@@ -1193,8 +1195,8 @@ export function listSceneNodeEdges(sceneId: number): Promise<SceneNodeEdge[]> {
 
 export function generateScene(
   sceneId: number,
-): Promise<{ prose: string; delta: SceneDeltaJSON; version: number }> {
-  return request<{ prose: string; delta: SceneDeltaJSON; version: number }>(
+): Promise<{ prose: string; delta: SceneDeltaJSON; version: number; unmet_outcomes?: string[] }> {
+  return request<{ prose: string; delta: SceneDeltaJSON; version: number; unmet_outcomes?: string[] }>(
     `/scene/generate/${sceneId}`,
     { method: 'POST' },
   )
