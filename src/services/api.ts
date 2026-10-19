@@ -1,3 +1,5 @@
+import { ApiError, newRequestId, reportClientError } from './telemetry'
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 function getToken(): string {
@@ -11,17 +13,53 @@ function authHeaders(): HeadersInit {
   }
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: { ...authHeaders(), ...options?.headers },
-  })
+/**
+ * Todas las llamadas a la API pasan por aquí. Cada una lleva un X-Request-ID
+ * (el que se pase, para seguir su progreso, o uno nuevo) y los fallos salen
+ * como ApiError con ese identificador. Los 5xx y los fallos de red se
+ * informan al backend: son los que el usuario sufre sin poder arreglar.
+ */
+export async function request<T>(path: string, options?: RequestInit & { requestId?: string }): Promise<T> {
+  const requestId = options?.requestId ?? newRequestId()
+  let res: Response
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: { ...authHeaders(), 'X-Request-ID': requestId, ...options?.headers },
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'fallo de red'
+    reportClientError({ source: `fetch ${path}`, message, request_id: requestId })
+    throw new ApiError(`No se pudo conectar con el servidor (${message})`, 0, requestId)
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || body.message || `Error ${res.status}`)
+    const message = body.error || body.message || `Error ${res.status}`
+    if (res.status >= 500) {
+      reportClientError({ source: `api ${path}`, message, request_id: requestId, status: res.status })
+    }
+    throw new ApiError(message, res.status, requestId)
   }
   const text = await res.text()
   return text ? JSON.parse(text) : ({} as T)
+}
+
+// --- Telemetry ---
+
+export interface GenerationRun {
+  id: number
+  kind: string
+  status: 'running' | 'ok' | 'error'
+  phase: string
+  phases: { name: string; ms: number }[]
+  error?: string
+  started_at: string
+  duration_ms?: number
+}
+
+/** Las generaciones de una petición, con la fase en curso. */
+export function getGenerationProgress(requestId: string) {
+  return request<{ request_id: string; runs: GenerationRun[] }>(`/telemetry/progress/${requestId}`)
 }
 
 // --- Auth ---
@@ -62,19 +100,13 @@ export interface CharacterBrief {
   name: string
 }
 
-export interface SceneBrief {
-  id: number
-  title: string
-  position: number
-}
-
 export interface WorldDetail {
   id: number
   name: string
   summary: string
   premise: string
   characters: CharacterBrief[]
-  scenes: SceneBrief[]
+  stories: StoryBrief[]
 }
 
 export function getWorldDetail(id: number) {
@@ -113,12 +145,6 @@ export interface WorldGraph {
 export interface SubtreePreview {
   node_count: number
   labels: string[]
-}
-
-export interface TensionOption {
-  id: string
-  label: string
-  description: string
 }
 
 export interface CandidateNode {
@@ -179,13 +205,6 @@ export interface PremiseAnalysis {
 
 export function refinePremise(premise: string) {
   return request<{ analysis: PremiseAnalysis; premise: string }>('/world/refine-premise', {
-    method: 'POST',
-    body: JSON.stringify({ premise }),
-  })
-}
-
-export function interpretTensions(premise: string) {
-  return request<{ options: TensionOption[] }>('/world/interpret-tensions', {
     method: 'POST',
     body: JSON.stringify({ premise }),
   })
@@ -317,17 +336,6 @@ export interface ChatMessage {
   created_at?: string
 }
 
-export interface Scene {
-  id: number
-  title: string
-  location: string
-  time: string
-  tone: string
-  context: string
-  world_id: number
-  position?: number
-}
-
 // --- Characters ---
 
 export function createCharacter(character: Omit<Character, 'id'>) {
@@ -450,10 +458,10 @@ export function updateSpeechPattern(characterId: number, speechPattern: string) 
   })
 }
 
-export function generateCharacterNodes(characterId: number, premise: string) {
+export function generateCharacterNodes(characterId: number, premise: string, profileId?: number) {
   return request<{ nodes: CharacterNode[]; voice_register: VoiceRegister }>(`/character/generate-nodes?character_id=${characterId}`, {
     method: 'POST',
-    body: JSON.stringify({ premise }),
+    body: JSON.stringify({ premise, profile_id: profileId }),
   })
 }
 
@@ -466,110 +474,6 @@ export function characterChat(characterId: number, message: string) {
 
 export function getCharacterChatHistory(characterId: number) {
   return request<ChatMessage[]>(`/character/chat/history?character_id=${characterId}`)
-}
-
-// --- Scenes ---
-
-export function createScene(scene: Omit<Scene, 'id'>) {
-  return request<{ id: number }>('/scene', {
-    method: 'POST',
-    body: JSON.stringify(scene),
-  })
-}
-
-export function generateScene(worldId: number, description: string) {
-  return request<Scene>('/scene/generate', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, description }),
-  })
-}
-
-export function getSceneById(id: number) {
-  return request<Scene>(`/scene/get?id=${id}`)
-}
-
-export function updateScene(id: number, input: Partial<Omit<Scene, 'id' | 'world_id'>>) {
-  return request<Scene>(`/scene/update?id=${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(input),
-  })
-}
-
-export function deleteScene(id: number) {
-  return request<{ status: string }>(`/scene/delete?id=${id}`, {
-    method: 'DELETE',
-  })
-}
-
-export function addCharacterToScene(sceneId: number, characterId: number) {
-  return request<{ message: string }>('/scene-add-character', {
-    method: 'POST',
-    body: JSON.stringify({ scene_id: sceneId, character_id: characterId }),
-  })
-}
-
-export function getSceneCharacters(sceneId: number) {
-  return request<Character[]>(`/scene/character/get?id=${sceneId}`)
-}
-
-// --- Scene Detail ---
-
-export interface Event {
-  id: number
-  scene_id: number
-  character_ids: number[]
-  action: string
-  spot: string
-  position: number
-}
-
-export interface SceneDetail {
-  scene: Scene
-  characters: Character[]
-  events: Event[]
-}
-
-export function getSceneDetail(id: number) {
-  return request<SceneDetail>(`/scene-detail/get?id=${id}`)
-}
-
-// --- Events ---
-
-export function createEvent(event: Omit<Event, 'id'>) {
-  return request<{ id: number }>('/event', {
-    method: 'POST',
-    body: JSON.stringify(event),
-  })
-}
-
-export function generateEvents(sceneId: number, characterIds: number[], description: string, numEvents: number) {
-  return request<{ events: Event[] }>('/event/generate', {
-    method: 'POST',
-    body: JSON.stringify({ scene_id: sceneId, character_ids: characterIds, description, num_events: numEvents }),
-  })
-}
-
-export function deleteEvent(id: number) {
-  return request<{ status: string }>(`/event/delete?id=${id}`, {
-    method: 'DELETE',
-  })
-}
-
-// --- Narrative ---
-
-export interface SceneNarrative {
-  text: string
-}
-
-export function getSceneNarrative(sceneId: number) {
-  return request<SceneNarrative>(`/scene/narrative/get?id=${sceneId}`)
-}
-
-export function regenerateNarrative(sceneId: number, feedback: string, existingNarrative: string) {
-  return request<SceneNarrative>('/scene/narrative/regenerate', {
-    method: 'POST',
-    body: JSON.stringify({ scene_id: sceneId, feedback, existing_narrative: existingNarrative }),
-  })
 }
 
 // --- Installation ---
@@ -620,6 +524,10 @@ export interface LocationNodeProperties {
   behavioral_rule?: string
   control?: string
   duration?: 'permanent' | 'temporary' | 'declining' | 'emerging'
+  /** Por qué está donde está en el mapa ("junto a un vado"); lo pone el backend al colocarla. */
+  emplazamiento?: string
+  /** Dónde la colocó el mapa por última vez; si el autor la mueve, el mapa la respeta. */
+  map_pos?: [number, number]
 }
 
 export interface LocationNode {
@@ -634,6 +542,7 @@ export interface LocationNode {
   source_hint?: string
   canvas_x: number
   canvas_y: number
+  faction_id?: number | null
 }
 
 export interface LocationEdge {
@@ -888,7 +797,8 @@ export async function getCharacterSoul(characterId: number): Promise<CharacterSo
   const res = await fetch(`${API_URL}/character/soul?character_id=${characterId}`, {
     headers: authHeaders(),
   })
-  if (res.status === 404) return null
+  // 204: el personaje aún no tiene alma (404 en backends anteriores).
+  if (res.status === 204 || res.status === 404) return null
   if (!res.ok) throw new Error('Failed to fetch soul')
   return res.json()
 }
@@ -926,4 +836,420 @@ export function generateBrainstormCards(premise: string, topic: string, question
     method: 'POST',
     body: JSON.stringify({ premise, topic, question }),
   })
+}
+
+// --- Story ---
+
+export interface NarratorConfig {
+  pov: string
+  style: string
+  distance: string
+  reliability: string
+  focus?: number
+}
+
+export interface Story {
+  id: number
+  world_id: number
+  title: string
+  premise?: string
+  narrator_default?: NarratorConfig
+  status: string
+}
+
+export interface StoryBrief {
+  id: number
+  title: string
+  status: string
+}
+
+export interface StoryCharacter {
+  character_id: number
+  name: string
+}
+
+export interface StoryRelationship {
+  id: number
+  story_id: number
+  character_a_id: number
+  character_b_id: number
+  character_a_name?: string
+  character_b_name?: string
+  rel_type: string
+  subtype: string
+  description?: string
+  directional: boolean
+}
+
+export interface StoryFact {
+  id: number
+  story_id: number
+  content: string
+  known_by: number[]
+}
+
+export interface StoryDetail {
+  story: Story
+  characters: StoryCharacter[]
+  relationships: StoryRelationship[]
+  facts: StoryFact[]
+}
+
+export function createStory(worldId: number, title: string, premise?: string) {
+  return request<Story>('/story', {
+    method: 'POST',
+    body: JSON.stringify({ world_id: worldId, title, premise }),
+  })
+}
+
+export function getStoriesByWorld(worldId: number) {
+  return request<StoryBrief[]>(`/story/list?world_id=${worldId}`)
+}
+
+export function getStoryDetail(storyId: number) {
+  return request<StoryDetail>(`/story/detail/${storyId}`)
+}
+
+export function updateStory(storyId: number, data: {
+  title?: string
+  premise?: string
+  status?: string
+  narrator_default?: NarratorConfig
+}) {
+  return request<void>(`/story/update/${storyId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteStory(storyId: number) {
+  return request<void>(`/story/delete/${storyId}`, {
+    method: 'DELETE',
+  })
+}
+
+export function addStoryCharacter(storyId: number, characterId: number) {
+  return request<void>(`/story/character/add/${storyId}`, {
+    method: 'POST',
+    body: JSON.stringify({ character_id: characterId }),
+  })
+}
+
+export function removeStoryCharacter(storyId: number, characterId: number) {
+  return request<void>(`/story/character/remove/${storyId}/${characterId}`, {
+    method: 'DELETE',
+  })
+}
+
+export function createRelationship(storyId: number, rel: {
+  character_a_id: number
+  character_b_id: number
+  rel_type: string
+  subtype: string
+  description?: string
+  directional: boolean
+}) {
+  return request<StoryRelationship>(`/story/relationship/create/${storyId}`, {
+    method: 'POST',
+    body: JSON.stringify(rel),
+  })
+}
+
+export function updateRelationship(relId: number, rel: {
+  rel_type: string
+  subtype: string
+  description?: string
+  directional: boolean
+}) {
+  return request<void>(`/story/relationship/update/${relId}`, {
+    method: 'PUT',
+    body: JSON.stringify(rel),
+  })
+}
+
+export function deleteRelationship(relId: number) {
+  return request<void>(`/story/relationship/${relId}/delete`, {
+    method: 'DELETE',
+  })
+}
+
+export function createFact(storyId: number, content: string, knownBy: number[]) {
+  return request<StoryFact>(`/story/fact/create/${storyId}`, {
+    method: 'POST',
+    body: JSON.stringify({ content, known_by: knownBy }),
+  })
+}
+
+export function updateFact(factId: number, content: string, knownBy: number[]) {
+  return request<void>(`/story/fact/update/${factId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ content, known_by: knownBy }),
+  })
+}
+
+export function deleteFact(factId: number) {
+  return request<void>(`/story/fact/${factId}/delete`, {
+    method: 'DELETE',
+  })
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Scene graph
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface StoryScene {
+  id: number
+  story_id: number
+  title: string
+  location_node_id?: number
+  location_name?: string
+  narrator_config?: NarratorConfig
+  vehicle: string
+  status: string
+  canvas_x: number
+  canvas_y: number
+}
+
+export interface SceneEdge {
+  id: number
+  from_scene_id: number
+  to_scene_id: number
+  edge_type: string
+  time_gap?: string
+}
+
+export interface SceneCharacter {
+  scene_id: number
+  character_id: number
+  name?: string
+}
+
+export interface SceneBrief {
+  id: number
+  title: string
+  status: string
+  location_name?: string
+  character_count: number
+  character_ids: number[]
+  is_opening: boolean
+  canvas_x: number
+  canvas_y: number
+}
+
+export interface StoryGraph {
+  scenes: SceneBrief[]
+  edges: SceneEdge[]
+}
+
+export function createScene(storyId: number, title: string, canvasX: number, canvasY: number) {
+  return request<StoryScene>('/scene/create', {
+    method: 'POST',
+    body: JSON.stringify({ story_id: storyId, title, canvas_x: canvasX, canvas_y: canvasY }),
+  })
+}
+
+export function getSceneDetail(id: number) {
+  return request<StoryScene>(`/scene/detail/${id}`)
+}
+
+export function updateScene(id: number, data: { title?: string; status?: string; location_node_id?: number; vehicle?: string }) {
+  return request<void>(`/scene/update/${id}`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateScenePosition(id: number, canvasX: number, canvasY: number) {
+  return request<void>(`/scene/position/${id}`, {
+    method: 'POST',
+    body: JSON.stringify({ canvas_x: canvasX, canvas_y: canvasY }),
+  })
+}
+
+export function deleteScene(id: number) {
+  return request<void>(`/scene/delete/${id}`, {
+    method: 'POST',
+  })
+}
+
+export function setSceneOpening(id: number, isOpening: boolean) {
+  return request<void>(`/scene/opening/${id}`, {
+    method: 'POST',
+    body: JSON.stringify({ is_opening: isOpening }),
+  })
+}
+
+export function getStoryGraph(storyId: number) {
+  return request<StoryGraph>(`/scene/graph/${storyId}`)
+}
+
+export interface ReadingScene {
+  scene_id: number
+  title: string
+  version?: number
+  prose: string
+}
+
+/** Scenes in reading order (graph edges), each with its current prose. */
+export function readStory(storyId: number) {
+  return request<ReadingScene[]>(`/story/read/${storyId}`)
+}
+
+export function createSceneEdge(fromSceneId: number, toSceneId: number, edgeType = 'causal') {
+  return request<SceneEdge>('/scene/edge/create', {
+    method: 'POST',
+    body: JSON.stringify({ from_scene_id: fromSceneId, to_scene_id: toSceneId, edge_type: edgeType }),
+  })
+}
+
+export function deleteSceneEdge(id: number) {
+  return request<void>(`/scene/edge/delete/${id}`, {
+    method: 'POST',
+  })
+}
+
+export function addSceneCharacter(sceneId: number, characterId: number) {
+  return request<void>(`/scene/character/add/${sceneId}`, {
+    method: 'POST',
+    body: JSON.stringify({ character_id: characterId }),
+  })
+}
+
+export function removeSceneCharacter(sceneId: number, characterId: number) {
+  return request<void>(`/scene/character/remove/${sceneId}/${characterId}`, {
+    method: 'POST',
+  })
+}
+
+export function getSceneCharacters(sceneId: number) {
+  return request<SceneCharacter[]>(`/scene/characters/${sceneId}`)
+}
+
+// --- Scenes v2 (Plan 3B-lite) ---
+
+export type SceneNodeKind = 'character' | 'location' | 'moment' | 'narrator'
+export type SceneEdgeKind = 'flow' | 'attachment'
+
+export interface NarratorNodeConfig {
+  pov: string
+  style: string
+  distance: string
+  reliability: string
+  focus_character_id?: number | null
+}
+
+export interface SceneNode {
+  id: number
+  scene_id: number
+  node_kind: SceneNodeKind
+  character_id?: number | null
+  location_node_id?: number | null
+  description?: string
+  owner_kind?: string
+  owner_character_id?: number | null
+  hidden: boolean
+  narrator_config?: NarratorNodeConfig | null
+  /** Momentos: lo que es cierto después. El cómo ocurre lo decide el modelo. */
+  outcomes?: string[]
+  canvas_x: number
+  canvas_y: number
+  created_at: string
+}
+
+export interface SceneNodeEdge {
+  id: number
+  scene_id: number
+  from_node_id: number
+  to_node_id: number
+  edge_kind: SceneEdgeKind
+  created_at: string
+}
+
+export interface SceneDeltaJSON {
+  facts?: string[]
+  reveals?: string[]
+  relationship_changes?: string[]
+  emotional_shifts?: string[]
+  marking_events?: string[]
+  location_effects?: string[]
+  unresolved?: string[]
+  summary?: string
+}
+
+export interface SceneOutput {
+  id: number
+  scene_id: number
+  version: number
+  vehicle: string
+  content: string
+  delta_json?: SceneDeltaJSON | null
+  correlation_id?: string
+  created_at: string
+}
+
+export function createSceneNode(sceneId: number, node: Partial<SceneNode>): Promise<SceneNode> {
+  return request<SceneNode>(`/scene/node/create/${sceneId}`, {
+    method: 'POST',
+    body: JSON.stringify(node),
+  })
+}
+
+export function updateSceneNode(id: number, patch: Partial<SceneNode>): Promise<void> {
+  return request<void>(`/scene/node/update/${id}`, {
+    method: 'POST',
+    body: JSON.stringify(patch),
+  })
+}
+
+export function updateSceneNodePosition(id: number, x: number, y: number): Promise<void> {
+  return request<void>(`/scene/node/position/${id}`, {
+    method: 'POST',
+    body: JSON.stringify({ canvas_x: x, canvas_y: y }),
+  })
+}
+
+export function deleteSceneNode(id: number): Promise<void> {
+  return request<void>(`/scene/node/delete/${id}`, { method: 'POST' })
+}
+
+export function listSceneNodes(sceneId: number): Promise<SceneNode[]> {
+  return request<SceneNode[]>(`/scene/node/list/${sceneId}`)
+}
+
+export function createSceneNodeEdge(
+  sceneId: number,
+  fromId: number,
+  toId: number,
+  edgeKind: SceneEdgeKind = 'flow',
+): Promise<SceneNodeEdge> {
+  return request<SceneNodeEdge>(`/scene/edge2/create/${sceneId}`, {
+    method: 'POST',
+    body: JSON.stringify({ from_node_id: fromId, to_node_id: toId, edge_kind: edgeKind }),
+  })
+}
+
+export function deleteSceneNodeEdge(id: number): Promise<void> {
+  return request<void>(`/scene/edge2/delete/${id}`, { method: 'POST' })
+}
+
+export function listSceneNodeEdges(sceneId: number): Promise<SceneNodeEdge[]> {
+  return request<SceneNodeEdge[]>(`/scene/edge2/list/${sceneId}`)
+}
+
+export function generateScene(
+  sceneId: number,
+  requestId?: string,
+): Promise<{ prose: string; delta: SceneDeltaJSON; version: number; unmet_outcomes?: string[] }> {
+  return request<{ prose: string; delta: SceneDeltaJSON; version: number; unmet_outcomes?: string[] }>(
+    `/scene/generate/${sceneId}`,
+    { method: 'POST', requestId },
+  )
+}
+
+export function listSceneOutputs(sceneId: number): Promise<SceneOutput[]> {
+  return request<SceneOutput[]>(`/scene/output/list/${sceneId}`)
+}
+
+export function revertSceneOutput(sceneId: number, version: number): Promise<void> {
+  return request<void>(`/scene/output/revert/${sceneId}/${version}`, { method: 'POST' })
 }

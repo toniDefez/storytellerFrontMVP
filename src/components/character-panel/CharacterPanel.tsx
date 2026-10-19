@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise, applyCharacterProfile } from '@/services/api'
+import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import { CharacterProfilePicker } from './CharacterProfilePicker'
 import { Users, Sparkles, Wand2, Loader2 } from 'lucide-react'
+import { notifyError } from '@/lib/notifyError'
 
 interface Props {
   worldId: number
@@ -34,7 +35,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     }
     Promise.all(characterBriefs.map(b => getCharacterById(b.id)))
       .then(setCharacters)
-      .catch(() => {})
+      .catch(notifyError('No se pudieron cargar los personajes'))
   }, [characterBriefs])
 
   const handleSelect = (id: number) => {
@@ -89,12 +90,9 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         premise: premise.trim(),
       })
 
-      // Exclusive: profile defines psychology OR premise-driven generation — not both
-      if (selectedProfileId) {
-        await applyCharacterProfile(result.id, selectedProfileId)
-      } else {
-        await generateCharacterNodes(result.id, premise.trim())
-      }
+      // The archetype is a seed the derivation reinterprets for this premise,
+      // not a replacement for it: both shape the character.
+      await generateCharacterNodes(result.id, premise.trim(), selectedProfileId ?? undefined)
 
       const newChar = await getCharacterById(result.id)
       setCharacters(prev => [...prev, newChar])
@@ -102,7 +100,13 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
       setMode('viewing')
       onCharacterListChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al generar')
+      const message = err instanceof Error ? err.message : ''
+      // El backend responde 409 si el nombre ya existe en el mundo: los nombres
+      // identifican al personaje en el chat y en las escenas.
+      const duplicate = message.match(/already exists in this world: "(.+)"/)
+      setError(duplicate
+        ? `Ya hay un personaje llamado «${duplicate[1]}» en este mundo. Elige otro nombre.`
+        : message || 'Error al generar')
     } finally {
       setGenerating(false)
     }
@@ -160,9 +164,9 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
                   className="text-[10px] tracking-[0.2em] uppercase"
                   style={{ fontFamily: 'var(--font-ui)', color: 'hsl(24 60% 45%)' }}
                 >
-                  {selectedProfileId ? 'Contexto del personaje' : 'La premisa del personaje'}
+                  La premisa del personaje
                 </label>
-                {!selectedProfileId && premise.trim().length > 10 && (
+                {premise.trim().length > 10 && (
                   <button
                     onClick={handleRefine}
                     disabled={refining}
@@ -188,7 +192,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
               <textarea
                 value={premise}
                 onChange={e => setPremise(e.target.value)}
-                placeholder="Una excavadora que descubrio que el Acuifero es un mito..."
+                placeholder="Una excavadora que descubrió que el Acuífero es un mito..."
                 rows={3}
                 className="w-full border-2 border-dashed border-amber-400/25 rounded-xl px-4 py-3
                            text-sm font-display italic text-foreground/80

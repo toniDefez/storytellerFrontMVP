@@ -10,9 +10,6 @@ import NotFoundPage from './pages/NotFoundPage'
 import ErrorPage from './pages/ErrorPage'
 import WorldDetailPage from './pages/home/WorldDetailPage'
 import WorldBiblePage from './pages/home/WorldBiblePage'
-import CreateScenePage from './pages/scenes/CreateScenePage'
-import EditScenePage from './pages/scenes/EditScenePage'
-import SceneDetailPage from './pages/scenes/SceneDetailPage'
 import SettingsPage from './pages/settings/SettingsPage'
 
 export const router = createBrowserRouter([
@@ -31,9 +28,6 @@ export const router = createBrowserRouter([
           { path: 'worlds/:id', element: <WorldDetailPage /> },
           { path: 'worlds/:id/bible', element: <WorldBiblePage /> },
           { path: 'worlds/:id/edit', element: <EditWorldPage /> },
-          { path: 'worlds/:id/scenes/create', element: <CreateScenePage /> },
-          { path: 'worlds/:worldId/scenes/:sceneId', element: <SceneDetailPage /> },
-          { path: 'worlds/:worldId/scenes/:sceneId/edit', element: <EditScenePage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'settings/installation', element: <Navigate to="/settings?tab=installation" replace /> },
         ],

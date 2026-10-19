@@ -7,6 +7,7 @@ import { BrainstormCard } from './BrainstormCard'
 import { KeepersPanel } from './KeepersPanel'
 import { suggestBrainstormAxes, generateBrainstormCards } from '@/services/api'
 import type { BrainstormAxis, BrainstormCard as CardType } from '@/services/api'
+import { notifyError } from '@/lib/notifyError'
 
 const VISIBLE_COUNT = 3
 const PREFETCH_THRESHOLD = 2
@@ -102,8 +103,8 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
         // Prefetch all other axes in background
         prefetchAllAxes(result.axes, 0)
       }
-    } catch {
-      // fall back silently
+    } catch (err) {
+      notifyError('No se pudieron explorar ideas')(err)
     } finally {
       setLoadingAxes(false)
       setLoadingCards(false)
@@ -132,8 +133,8 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
       axisCacheRef.current.set(index, { cards, fetched: true })
       bufferRef.current = cards.slice(VISIBLE_COUNT)
       setVisible(cards.slice(0, VISIBLE_COUNT))
-    } catch {
-      // silently fail
+    } catch (err) {
+      notifyError('No se pudieron cargar las ideas de este tema')(err)
     } finally {
       setLoadingCards(false)
     }
