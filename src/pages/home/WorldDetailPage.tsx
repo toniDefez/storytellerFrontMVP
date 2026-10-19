@@ -68,6 +68,7 @@ export default function WorldDetailPage() {
     nodes: locationNodes, edges: locationEdges,
     selected: locationSelected, setSelected: setLocationSelected,
     generating: locationGenerating,
+    error: locationError,
     expandingNodeId: locationExpandingNodeId,
     enrichingNodeId: locationEnrichingNodeId,
     loadGraph: loadLocationGraph, generate: generateLocations,
@@ -76,18 +77,32 @@ export default function WorldDetailPage() {
     editEdge, removeEdge,
   } = useLocationGraph(Number(id))
 
+  // El hook guardaba el error y nadie lo enseñaba: generar localizaciones
+  // podía fallar sin que la pantalla cambiase.
+  useEffect(() => {
+    if (locationError) toast.error(`Localizaciones: ${locationError}`)
+  }, [locationError])
+
   const _wid = Number(id)
   const worldIdNum = Number.isNaN(_wid) ? null : _wid
   const { factions, reload: reloadFactions } = useFactions(worldIdNum)
   const { regions, reload: reloadRegions } = useRegions(worldIdNum)
 
+  // El mapa tarda unos segundos (el modelo propone la intención y los
+  // nombres): tiene su propio estado y avisa al terminar o al fallar. Antes
+  // el botón no daba ninguna señal y el error solo iba a la consola.
+  const [geographyGenerating, setGeographyGenerating] = useState(false)
   const handleGenerateGeography = useCallback(async () => {
     if (worldIdNum == null) return
+    setGeographyGenerating(true)
     try {
-      await generateGeography(worldIdNum)
+      const res = await generateGeography(worldIdNum)
       await Promise.all([reloadRegions(), reloadFactions()])
+      toast.success(`Mapa físico generado: ${res.regions?.length ?? 0} regiones`)
     } catch (e) {
-      console.error('generateGeography failed', e)
+      notifyError('No se pudo generar el mapa')(e)
+    } finally {
+      setGeographyGenerating(false)
     }
   }, [worldIdNum, reloadRegions, reloadFactions])
 
@@ -97,7 +112,7 @@ export default function WorldDetailPage() {
       await generateFactions(worldIdNum)
       await reloadFactions()
     } catch (e) {
-      console.error('generateFactions failed', e)
+      notifyError('No se pudieron generar las facciones')(e)
     }
   }, [worldIdNum, reloadFactions])
 
@@ -411,11 +426,12 @@ export default function WorldDetailPage() {
               onDeleteNode={removeNode}
               onUpdateEdge={editEdge}
               onDeleteEdge={removeEdge}
-              onGenerate={() => setConfirmRegen(true)}
+              onGenerate={() => (locationNodes.length > 0 ? setConfirmRegen(true) : generateLocations())}
               onAddRegions={handleGenerateGeography}
               onGenerateFactions={handleGenerateFactions}
               onRegionsChanged={reloadRegions}
               generating={locationGenerating}
+              generatingMap={geographyGenerating}
               onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
               expandingNodeId={locationExpandingNodeId}
               onEnrichWithAI={node => enrichLocationNode(Number(id), node.id)}
@@ -480,9 +496,10 @@ export default function WorldDetailPage() {
       {confirmRegen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-background border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-semibold text-base mb-2">¿Regenerar el mapa?</h3>
+            <h3 className="font-semibold text-base mb-2">¿Regenerar las localizaciones?</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Se eliminará el mapa actual y se generará uno nuevo desde el grafo causal.
+              Se sustituirán las {locationNodes.length} localizaciones actuales por otras nuevas
+              generadas desde el grafo causal. El mapa físico no cambia.
             </p>
             <div className="flex gap-2 justify-end">
               <button

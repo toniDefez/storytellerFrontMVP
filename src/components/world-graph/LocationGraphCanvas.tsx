@@ -85,7 +85,10 @@ interface Props {
   onGenerateFactions: () => void
   /** Refetch regions after their geometry has been persisted. */
   onRegionsChanged: () => Promise<void>
+  /** Generando localizaciones desde el grafo causal. */
   generating: boolean
+  /** Generando el mapa físico: estado aparte, para que cada botón diga lo suyo. */
+  generatingMap?: boolean
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
   onEnrichWithAI: (node: LocationNode) => void
@@ -355,7 +358,7 @@ function LocationGraphInner({
   onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
   onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
-  onGenerate, onAddRegions, onGenerateFactions, onRegionsChanged, generating,
+  onGenerate, onAddRegions, onGenerateFactions, onRegionsChanged, generating, generatingMap = false,
   onExpandWithAI, expandingNodeId,
   onEnrichWithAI, enrichingNodeId,
 }: Props) {
@@ -644,19 +647,19 @@ function LocationGraphInner({
                 {worldId != null && (
                   <button
                     onClick={handleGenerateMap}
-                    disabled={generating}
+                    disabled={generating || generatingMap}
                     className="text-xs text-[#14b8a6] underline underline-offset-2 hover:text-[#0f766e] transition-colors disabled:opacity-50"
                   >
-                    {generating ? 'Generando...' : 'Generar el mapa físico →'}
+                    {generatingMap ? 'Generando el mapa…' : 'Generar el mapa físico →'}
                   </button>
                 )}
                 {worldId != null && (
                   <button
                     onClick={onGenerate}
-                    disabled={generating}
+                    disabled={generating || generatingMap}
                     className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors disabled:opacity-50"
                   >
-                    {generating ? 'Generando...' : 'Generar localizaciones desde el grafo causal →'}
+                    {generating ? 'Generando localizaciones…' : 'Generar localizaciones desde el grafo causal →'}
                   </button>
                 )}
                 <button
@@ -728,18 +731,18 @@ function LocationGraphInner({
               </button>
               <button
                 onClick={handleGenerateMap}
-                disabled={generating}
+                disabled={generating || generatingMap}
                 className="text-xs bg-background border border-border rounded-lg px-2.5 py-1.5 hover:border-violet-400 text-muted-foreground hover:text-violet-600 transition-colors disabled:opacity-50 flex items-center gap-1"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                {generating ? 'Generando...' : 'Generar mapa'}
+                {generatingMap ? 'Generando el mapa…' : 'Generar mapa'}
               </button>
               <button
                 onClick={onGenerate}
                 disabled={generating}
                 className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 hover:border-[#14b8a6] text-muted-foreground hover:text-[#14b8a6] transition-colors disabled:opacity-50"
               >
-                {generating ? 'Generando...' : '↺ Regenerar'}
+                {generating ? 'Generando localizaciones…' : '↺ Regenerar'}
               </button>
               <button
                 onClick={onGenerateFactions}
