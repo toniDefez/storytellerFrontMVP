@@ -22,6 +22,7 @@ import { BrainstormStep } from '@/components/brainstorm/BrainstormStep'
 import type { BrainstormCard } from '@/services/api'
 import { notifyError } from '@/lib/notifyError'
 import { toast } from 'sonner'
+import { ManualWorldForm } from '@/components/ManualWorldForm'
 
 const POLL_INTERVAL_MS = 2000
 // El backend da 5 minutos a la tarea; con 2 la app se rendía mientras el
@@ -199,6 +200,9 @@ export default function CreateWorldPage() {
                 <Button variant="ghost" onClick={() => navigate('/worlds')}>
                   {t('installation.guardGoBack')}
                 </Button>
+              </div>
+              <div className="max-w-xs mx-auto pt-4 border-t border-border">
+                <ManualWorldForm />
               </div>
             </CardContent>
           </Card>
