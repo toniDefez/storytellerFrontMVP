@@ -55,6 +55,7 @@ import { InicioNode, type InicioNodeData } from './InicioNode'
 import { SceneNode, type SceneNodeData } from './SceneNode'
 import { StoryGraphPanel, type PanelMode } from './StoryGraphPanel'
 import { SceneWorkspace } from '@/components/scene-workspace/SceneWorkspace'
+import { StoryReader } from './StoryReader'
 
 /* ── Node types ─────────────────────────────────────────────────── */
 
@@ -157,6 +158,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
 
   // Entered scene workspace
   const [enteredSceneId, setEnteredSceneId] = useState<number | null>(null)
+  const [reading, setReading] = useState(false)
 
   // Track last created node position to offset next one
   const lastPositionRef = useRef({ x: 400, y: 300 })
@@ -478,6 +480,20 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
     }
   }
 
+  /* ── Reader view ─── */
+  if (reading) {
+    return (
+      <StoryReader
+        storyId={storyBrief.id}
+        title={storyBrief.title}
+        onBack={() => {
+          setReading(false)
+          onSceneEntered?.(false)
+        }}
+      />
+    )
+  }
+
   /* ── Scene workspace view ─── */
   if (enteredSceneId != null) {
     return (
@@ -498,8 +514,18 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
     <div className="flex h-full w-full overflow-hidden">
       {/* ── Canvas ─────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 h-full relative" onDoubleClick={handleCanvasDoubleClick}>
+        <button
+          onClick={() => {
+            setReading(true)
+            onSceneEntered?.(true)
+          }}
+          onDoubleClick={e => e.stopPropagation()}
+          className="absolute top-3 right-3 z-20 bg-white/90 border border-stone-200 rounded-lg shadow-sm px-3 py-1.5 text-sm text-stone-700 hover:text-foreground transition-colors"
+        >
+          Leer historia
+        </button>
         {(loadingDetail || graphLoading) && (
-          <div className="absolute top-3 right-3 z-10 flex items-center gap-2 px-3 py-1.5 bg-white border border-stone-200 rounded-lg shadow-sm text-xs text-muted-foreground">
+          <div className="absolute top-14 right-3 z-10 flex items-center gap-2 px-3 py-1.5 bg-white border border-stone-200 rounded-lg shadow-sm text-xs text-muted-foreground">
             <div className="w-3 h-3 border border-[#06b6d4]/30 border-t-[#06b6d4] rounded-full animate-spin" />
             Cargando…
           </div>

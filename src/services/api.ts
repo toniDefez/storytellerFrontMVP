@@ -1040,6 +1040,18 @@ export function getStoryGraph(storyId: number) {
   return request<StoryGraph>(`/scene/graph/${storyId}`)
 }
 
+export interface ReadingScene {
+  scene_id: number
+  title: string
+  version?: number
+  prose: string
+}
+
+/** Scenes in reading order (graph edges), each with its current prose. */
+export function readStory(storyId: number) {
+  return request<ReadingScene[]>(`/story/read/${storyId}`)
+}
+
 export function createSceneEdge(fromSceneId: number, toSceneId: number, edgeType = 'causal') {
   return request<SceneEdge>('/scene/edge/create', {
     method: 'POST',
