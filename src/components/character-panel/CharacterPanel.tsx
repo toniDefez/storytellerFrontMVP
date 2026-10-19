@@ -99,7 +99,13 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
       setMode('viewing')
       onCharacterListChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al generar')
+      const message = err instanceof Error ? err.message : ''
+      // El backend responde 409 si el nombre ya existe en el mundo: los nombres
+      // identifican al personaje en el chat y en las escenas.
+      const duplicate = message.match(/already exists in this world: "(.+)"/)
+      setError(duplicate
+        ? `Ya hay un personaje llamado «${duplicate[1]}» en este mundo. Elige otro nombre.`
+        : message || 'Error al generar')
     } finally {
       setGenerating(false)
     }
