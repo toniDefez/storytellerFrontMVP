@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { SceneOutput } from '../../services/api';
 
 interface VersionDropdownProps {
@@ -7,6 +8,7 @@ interface VersionDropdownProps {
 }
 
 export function SceneVersionDropdown({ outputs, current, onSelect }: VersionDropdownProps) {
+  const { i18n } = useTranslation();
   if (!outputs.length) return null;
   return (
     <select
@@ -16,7 +18,7 @@ export function SceneVersionDropdown({ outputs, current, onSelect }: VersionDrop
     >
       {outputs.map((o) => (
         <option key={o.version} value={o.version}>
-          v{o.version} · {new Date(o.created_at).toLocaleString()}
+          v{o.version} · {new Date(o.created_at).toLocaleString(i18n.language?.startsWith('en') ? 'en-US' : 'es-ES', { dateStyle: 'short', timeStyle: 'short' })}
         </option>
       ))}
     </select>

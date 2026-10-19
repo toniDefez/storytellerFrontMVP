@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { readStory, type ReadingScene } from '@/services/api'
+import { proseParagraphs } from '@/lib/prose'
 
 interface Props {
   storyId: number
@@ -60,9 +61,9 @@ export function StoryReader({ storyId, title, onBack }: Props) {
               {toRoman(i + 1)} · {s.title}
             </h2>
             {s.prose ? (
-              s.prose.split(/\n\s*\n/).map((p, j) => (
+              proseParagraphs(s.prose).map((p, j) => (
                 <p key={j} className="mb-5 text-[1.125rem] leading-[1.75] text-stone-800" style={{ fontFamily: 'var(--font-display)' }}>
-                  {p.trim()}
+                  {p}
                 </p>
               ))
             ) : (
