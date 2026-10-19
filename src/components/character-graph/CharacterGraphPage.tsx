@@ -134,7 +134,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
         <textarea
           value={localPremise}
           onChange={e => setLocalPremise(e.target.value)}
-          placeholder="Una excavadora que descubrio que el Acuifero es un mito..."
+          placeholder="Una excavadora que descubrió que el Acuífero es un mito..."
           rows={3}
           className="w-full border-2 border-dashed border-amber-400/25 rounded-xl px-4 py-3
                      text-sm font-display italic text-foreground/80

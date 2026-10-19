@@ -4,6 +4,7 @@ import type { LocationNodeType, NarrativeFunction } from '@/services/api'
 import { useZoomLevel } from '@/hooks/useZoomLevel'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useLocationGraphContext } from './LocationGraphContext'
+import { narrativeFnLabel } from './locationLabels'
 
 const NODE_ICONS: Record<LocationNodeType, string> = {
   settlement: '🏘',
@@ -172,7 +173,7 @@ export const LocationNode = memo(function LocationNode({ id, data }: NodeProps) 
             {fn && (
               <div className="flex items-center gap-1">
                 <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${fn.dot}`} />
-                <span className={`text-[9px] font-medium ${fn.text} opacity-80`}>{d.narrative_function}</span>
+                <span className={`text-[9px] font-medium ${fn.text} opacity-80`}>{narrativeFnLabel(d.narrative_function)}</span>
               </div>
             )}
           </div>
@@ -232,7 +233,7 @@ export const LocationNode = memo(function LocationNode({ id, data }: NodeProps) 
           {fn && (
             <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${fn.bg} ${fn.text}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${fn.dot}`} />
-              {d.narrative_function}
+              {narrativeFnLabel(d.narrative_function)}
             </span>
           )}
 

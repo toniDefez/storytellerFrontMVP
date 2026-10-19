@@ -36,11 +36,11 @@ interface ContainerMeta {
 }
 
 const ALL_CONTAINERS: ContainerMeta[] = [
-  { domain: 'origin', label: 'CREENCIAS', subtitle: '¿Que da por hecho?', color: '#6366F1', bg: '#eef2ff', icon: Sprout },
-  { domain: 'fear',   label: 'MIEDOS',    subtitle: '¿Que evita?',        color: '#EF4444', bg: '#fef2f2', icon: Flame },
-  { domain: 'drive',  label: 'DESEOS',    subtitle: '¿Que persigue?',     color: '#F59E0B', bg: '#fffbeb', icon: Compass },
-  { domain: 'bond',   label: 'GRIETAS',   subtitle: '¿Donde se rompe?',   color: '#8B5CF6', bg: '#f5f3ff', icon: Zap },
-  { domain: 'mask',   label: 'MASCARAS',  subtitle: '¿Que muestra?',      color: '#10B981', bg: '#ecfdf5', icon: VenetianMask },
+  { domain: 'origin', label: 'CREENCIAS', subtitle: '¿Qué da por hecho?', color: '#6366F1', bg: '#eef2ff', icon: Sprout },
+  { domain: 'fear',   label: 'MIEDOS',    subtitle: '¿Qué evita?',        color: '#EF4444', bg: '#fef2f2', icon: Flame },
+  { domain: 'drive',  label: 'DESEOS',    subtitle: '¿Qué persigue?',     color: '#F59E0B', bg: '#fffbeb', icon: Compass },
+  { domain: 'bond',   label: 'GRIETAS',   subtitle: '¿Dónde se rompe?',   color: '#8B5CF6', bg: '#f5f3ff', icon: Zap },
+  { domain: 'mask',   label: 'MÁSCARAS',  subtitle: '¿Qué muestra?',      color: '#10B981', bg: '#ecfdf5', icon: VenetianMask },
 ]
 
 // Vertical flow — top to bottom, orbitals to the right

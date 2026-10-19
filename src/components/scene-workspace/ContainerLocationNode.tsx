@@ -1,4 +1,5 @@
 import type { Node, NodeProps } from '@xyflow/react';
+import { narrativeFnLabel, nodeTypeLabel } from '../world-graph/locationLabels';
 
 export interface ContainerLocationData extends Record<string, unknown> {
   name: string;
@@ -15,7 +16,7 @@ export function ContainerLocationNode({ data }: NodeProps<Node<ContainerLocation
     }}>
       <div style={{ fontWeight: 600, marginBottom: 2 }}>📍 {data.name}</div>
       <div style={{ color: '#1e3a8a', fontSize: 10 }}>
-        {[data.nodeType, data.narrativeFunction, data.atmosphere].filter(Boolean).join(' · ')}
+        {[nodeTypeLabel(data.nodeType), narrativeFnLabel(data.narrativeFunction), data.atmosphere].filter(Boolean).join(' · ')}
       </div>
     </div>
   );

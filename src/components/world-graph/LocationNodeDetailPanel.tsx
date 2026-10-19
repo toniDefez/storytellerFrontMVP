@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronRight, Plus, Sparkles, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { LocationNode, LocationNodeType, NarrativeFunction } from '@/services/api'
+import { NARRATIVE_FN_LABELS } from './locationLabels'
 
 const NODE_TYPE_ICONS: Record<LocationNodeType, string> = {
   settlement: '🏘',
@@ -12,12 +13,6 @@ const NODE_TYPE_ICONS: Record<LocationNodeType, string> = {
   structure: '🏛',
 }
 
-const NARRATIVE_FN_LABELS: Record<NarrativeFunction, string> = {
-  conflict: 'Conflicto',
-  origin: 'Origen',
-  threshold: 'Umbral',
-  atmosphere: 'Atmósfera',
-}
 
 const NARRATIVE_FN_COLORS: Record<NarrativeFunction, string> = {
   conflict: 'bg-red-500/15 text-red-700 border-red-500/20',
