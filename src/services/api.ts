@@ -793,7 +793,8 @@ export async function getCharacterSoul(characterId: number): Promise<CharacterSo
   const res = await fetch(`${API_URL}/character/soul?character_id=${characterId}`, {
     headers: authHeaders(),
   })
-  if (res.status === 404) return null
+  // 204: el personaje aún no tiene alma (404 en backends anteriores).
+  if (res.status === 204 || res.status === 404) return null
   if (!res.ok) throw new Error('Failed to fetch soul')
   return res.json()
 }
