@@ -41,12 +41,13 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
   // The backend only implements the soul-based chat, so a character without a
   // fresh soul cannot answer. It used to accept the message and return silence;
   // now the composer explains what is missing and offers the one action that
-  // fixes it. Needing synthesis first is a separate blocker with its own answer.
+  // fixes it. Generating the soul now synthesizes any missing domain first, so
+  // the only real blocker left is a character with no psychological nodes.
   const chatBlockedReason = (() => {
     if (soul && !soul.is_stale) return undefined
-    if (synthesis.length === 0) {
+    if (nodes.length === 0) {
       return {
-        message: `${characterName} aún no tiene síntesis. Añade nodos y sintetiza sus dominios antes de hablar.`,
+        message: `${characterName} aún no tiene psicología. Deriva o añade nodos antes de hablar.`,
         actionLabel: 'Ir al grafo',
         onAction: () => toggleMode('graph'),
       }
@@ -170,7 +171,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0">
         <span className="text-sm font-medium text-foreground/80">{characterName}</span>
         <div className="flex items-center gap-2">
-          {soul === null && synthesis.length > 0 && (
+          {soul === null && nodes.length > 0 && (
             <button
               onClick={regenerateSoul}
               disabled={soulLoading}
