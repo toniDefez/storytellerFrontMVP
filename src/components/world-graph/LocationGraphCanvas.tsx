@@ -454,11 +454,21 @@ function LocationGraphInner({
   // from under the handle being dragged. Vertex positions are likewise derived,
   // except for the one currently under the cursor — React Flow owns that one
   // mid-drag, and replacing it would fight its internal drag state.
+  //
+  // Locations keep the canvas position unless the server moved them: the map
+  // places them on the terrain, and the canvas kept painting them in the sea
+  // until the page was reloaded.
+  const lastServerPos = useRef(new Map<string, { x: number; y: number }>())
   useEffect(() => {
     setNodes(prev => {
       const posMap = new Map(prev.map(n => [n.id, n.position]))
       return flowNodes.map(fn => {
-        const keepPosition = fn.type === 'location' || fn.id === draggingNodeIdRef.current
+        let keepPosition = fn.id === draggingNodeIdRef.current
+        if (fn.type === 'location' && !keepPosition) {
+          const seen = lastServerPos.current.get(fn.id)
+          keepPosition = !!seen && seen.x === fn.position.x && seen.y === fn.position.y
+          lastServerPos.current.set(fn.id, fn.position)
+        }
         return {
           ...fn,
           position: keepPosition ? posMap.get(fn.id) ?? fn.position : fn.position,
