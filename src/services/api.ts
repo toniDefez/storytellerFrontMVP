@@ -1246,6 +1246,37 @@ export function generateScene(
   )
 }
 
+// Plan de escritura: las reglas del escritor y la hoja de cada escena con
+// momentos, en orden de lectura, para que escriba otro modelo o el autor.
+export interface WritingPlanScene {
+  scene_id: number
+  title: string
+  sheet: string
+  outcomes?: string[]
+}
+
+export interface WritingPlan {
+  rules: string
+  scenes: WritingPlanScene[]
+}
+
+export function getWritingPlan(storyId: number): Promise<WritingPlan> {
+  return request<WritingPlan>(`/story/plan/${storyId}`)
+}
+
+// Guarda una prosa escrita fuera como versión vigente; el juez local dice
+// qué "después" no ve cumplidos. Puede tardar: una comprobación por salida.
+export function saveSceneProse(
+  sceneId: number,
+  prose: string,
+  requestId?: string,
+): Promise<{ prose: string; version: number; unmet_outcomes?: string[] }> {
+  return request<{ prose: string; version: number; unmet_outcomes?: string[] }>(
+    `/scene/prose/${sceneId}`,
+    { method: 'POST', body: JSON.stringify({ prose }), requestId },
+  )
+}
+
 export function listSceneOutputs(sceneId: number): Promise<SceneOutput[]> {
   return request<SceneOutput[]>(`/scene/output/list/${sceneId}`)
 }

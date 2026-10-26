@@ -72,7 +72,8 @@ export function MomentNode({ data, selected }: NodeProps<Node<MomentNodeData>>) 
           <div onDoubleClick={() => { setOutcomesText(outcomes.join('\n')); setEditingOutcomes(true); }} style={{ cursor: 'text', minHeight: 16 }}>
             {outcomes.length === 0 && <span style={{ color: '#9ca3af' }}>Doble click: qué es cierto después…</span>}
             {outcomes.map((o) => {
-              const unmet = data.unmet?.includes(o);
+              // El juez recibe las líneas de control (§) sin la marca.
+              const unmet = data.unmet?.includes(o.replace(/^\s*§\s*/, '').trim());
               return (
                 <div key={o} style={{ color: unmet ? '#b91c1c' : '#374151' }}
                   title={unmet ? 'La última prosa generada no lo muestra' : undefined}>
