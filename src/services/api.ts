@@ -210,13 +210,6 @@ export function refinePremise(premise: string) {
   })
 }
 
-export function generateRoot(worldId: number, tension: string) {
-  return request<WorldNode>(`/world/generate-root?world_id=${worldId}`, {
-    method: 'POST',
-    body: JSON.stringify({ tension }),
-  })
-}
-
 export function createNode(worldId: number, node: {
   parent_id?: number
   parent_edge_type?: EdgeType
@@ -345,22 +338,8 @@ export function createCharacter(character: Omit<Character, 'id'>) {
   })
 }
 
-export function generateCharacter(worldId: number, description: string) {
-  return request<Character>('/character/generate', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, description }),
-  })
-}
-
 export function getCharacterById(id: number) {
   return request<Character>(`/character/get?id=${id}`)
-}
-
-export function updateCharacter(id: number, character: Omit<Character, 'id'>) {
-  return request<Character>(`/character/update?id=${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(character),
-  })
 }
 
 export function deleteCharacter(id: number) {
@@ -647,14 +626,6 @@ export interface ProfileTemplateBrief {
   node_count: number
 }
 
-export interface ProfileTemplate {
-  id: number
-  title: string
-  description: string
-  tags: string[]
-  nodes: CatalogNode[]
-}
-
 export interface CharacterPremiseAnalysis {
   origen: string
   deseo: string
@@ -666,28 +637,10 @@ export function getCharacterProfiles() {
   return request<ProfileTemplateBrief[]>('/character/profiles')
 }
 
-export function getCharacterProfile(id: number) {
-  return request<ProfileTemplate>(`/character/profile/get?id=${id}`)
-}
-
 export function refineCharacterPremise(premise: string) {
   return request<{ analysis: CharacterPremiseAnalysis; premise: string }>('/character/refine-premise', {
     method: 'POST',
     body: JSON.stringify({ premise }),
-  })
-}
-
-export function createCharacterFromProfile(worldId: number, profileId: number, premise: string) {
-  return request<{ character_id: number }>('/character/create-from-profile', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, profile_id: profileId, premise }),
-  })
-}
-
-export function applyCharacterProfile(characterId: number, profileId: number) {
-  return request<CharacterNode[]>('/character/apply-profile', {
-    method: 'POST',
-    body: JSON.stringify({ character_id: characterId, profile_id: profileId }),
   })
 }
 
@@ -902,10 +855,6 @@ export function createStory(worldId: number, title: string, premise?: string) {
   })
 }
 
-export function getStoriesByWorld(worldId: number) {
-  return request<StoryBrief[]>(`/story/list?world_id=${worldId}`)
-}
-
 export function getStoryDetail(storyId: number) {
   return request<StoryDetail>(`/story/detail/${storyId}`)
 }
@@ -919,12 +868,6 @@ export function updateStory(storyId: number, data: {
   return request<void>(`/story/update/${storyId}`, {
     method: 'PUT',
     body: JSON.stringify(data),
-  })
-}
-
-export function deleteStory(storyId: number) {
-  return request<void>(`/story/delete/${storyId}`, {
-    method: 'DELETE',
   })
 }
 
@@ -1099,12 +1042,6 @@ export function createSceneEdge(fromSceneId: number, toSceneId: number, edgeType
   return request<SceneEdge>('/scene/edge/create', {
     method: 'POST',
     body: JSON.stringify({ from_scene_id: fromSceneId, to_scene_id: toSceneId, edge_type: edgeType }),
-  })
-}
-
-export function deleteSceneEdge(id: number) {
-  return request<void>(`/scene/edge/delete/${id}`, {
-    method: 'POST',
   })
 }
 
