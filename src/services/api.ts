@@ -2,6 +2,9 @@ import { ApiError, newRequestId, reportClientError } from './telemetry'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
+/** Dirección del backend, para los comandos que el usuario ejecuta en su equipo. */
+export const apiUrl = () => API_URL
+
 function getToken(): string {
   return localStorage.getItem('token') || ''
 }
@@ -479,8 +482,9 @@ export async function getMyInstallation(): Promise<Installation | null> {
   return res.json()
 }
 
-export function getLinkingToken() {
-  return request<{ token: string }>('/installation/linking-token')
+/** Código corto para vincular un equipo: vale una vez y 10 minutos. */
+export function createPairingCode() {
+  return request<{ code: string; expires_at: string }>('/installation/pairing-code', { method: 'POST' })
 }
 
 export function revokeInstallation() {
