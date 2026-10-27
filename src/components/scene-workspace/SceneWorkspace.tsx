@@ -52,6 +52,9 @@ export function SceneWorkspace({ sceneId, storyId, onBack, charNameByID, locatio
   const [generating, setGenerating] = useState(false);
   const [unmetOutcomes, setUnmetOutcomes] = useState<string[]>([]);
   const [progress, setProgress] = useState('');
+  // Lo que el escritor lleva escrito mientras genera: se lee en un par de
+  // segundos en vez de esperar de 20 s a 2 min a la versión final.
+  const [liveDraft, setLiveDraft] = useState('');
   // Prosa escrita fuera (otro modelo o el autor) pegada aquí.
   const [pasting, setPasting] = useState(false);
   const [pastedText, setPastedText] = useState('');
@@ -162,14 +165,15 @@ export function SceneWorkspace({ sceneId, storyId, onBack, charNameByID, locatio
     const started = Date.now();
     return setInterval(async () => {
       try {
-        const { runs } = await getGenerationProgress(requestId);
+        const { runs, draft } = await getGenerationProgress(requestId);
+        if (draft) setLiveDraft(draft);
         const current = runs.find((r) => r.status === 'running') ?? runs[runs.length - 1];
         const seconds = Math.round((Date.now() - started) / 1000);
         setProgress(current ? progressLabel(current.kind, current.phase, seconds) : `esperando al generador · ${seconds} s`);
       } catch {
         // el progreso es informativo: si falla, la generación sigue
       }
-    }, 2000);
+    }, 800);
   }, []);
 
   const handleGenerate = useCallback(async () => {
@@ -189,6 +193,7 @@ export function SceneWorkspace({ sceneId, storyId, onBack, charNameByID, locatio
       clearInterval(poll);
       setGenerating(false);
       setProgress('');
+      setLiveDraft('');
     }
   }, [sceneId, trackProgress]);
 
@@ -314,7 +319,14 @@ export function SceneWorkspace({ sceneId, storyId, onBack, charNameByID, locatio
               </button>
             </div>
           </div>
-        ) : currentProse ? <SceneProseView content={currentProse} /> : <div style={{ padding: 24, color: '#9ca3af' }}>Aún no se ha generado prosa.</div>}
+        ) : generating && liveDraft ? (
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div role="status" style={{ padding: '6px 12px', background: '#f5f3ff', borderBottom: '1px solid #ddd6fe', fontSize: 12, color: '#5b21b6' }}>
+              Borrador en directo · {progress || 'escribiendo'}. Al terminar se guarda la versión revisada.
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}><SceneProseView content={liveDraft} /></div>
+          </div>
+        ) : currentProse ? <SceneProseView content={currentProse} /> : <div style={{ padding: 24, color: '#9ca3af' }}>{generating ? (progress || 'Esperando al generador…') : 'Aún no se ha generado prosa.'}</div>}
       </div>
     </div>
   );

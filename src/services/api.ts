@@ -62,7 +62,8 @@ export interface GenerationRun {
 
 /** Las generaciones de una petición, con la fase en curso. */
 export function getGenerationProgress(requestId: string) {
-  return request<{ request_id: string; runs: GenerationRun[] }>(`/telemetry/progress/${requestId}`)
+  // draft: el texto que el escritor lleva hasta ahora, mientras la escena se genera.
+  return request<{ request_id: string; runs: GenerationRun[]; draft?: string }>(`/telemetry/progress/${requestId}`)
 }
 
 // --- Auth ---
