@@ -1,3 +1,24 @@
+# [1.29.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.28.0...v1.29.0) (2026-10-28)
+
+
+### Features
+
+* add 'Completar con IA' button to location node detail panel ([381ba29](https://github.com/toniDefez/storytellerFrontMVP/commit/381ba29b0f816f1ddf43c1c45e01678ae29d2e65))
+* add additive AI region generation to location graph ([e29d1ad](https://github.com/toniDefez/storytellerFrontMVP/commit/e29d1ad0ebc48aec2e2fb0fe2affc01a45b9c59e))
+* add SpeechPatternEditor, make voice examples collapsable ([a16eac8](https://github.com/toniDefez/storytellerFrontMVP/commit/a16eac88dea9d9ada2fa5b0363be9edc3ec9321e))
+* **brainstorm:** add API functions and brainstorm UI components ([dda117d](https://github.com/toniDefez/storytellerFrontMVP/commit/dda117d5b39f7a98a6de529150acdff9b8063843))
+* **brainstorm:** create BrainstormStep orchestrator ([f184804](https://github.com/toniDefez/storytellerFrontMVP/commit/f1848046ebef96fa5a20cec6f8f79441c894abe5))
+* **brainstorm:** integrate brainstorm step into world creation wizard ([347dae3](https://github.com/toniDefez/storytellerFrontMVP/commit/347dae33f3152941ed45428d274e4a7348cafb5f))
+* **brainstorm:** prefetch all axes cards in parallel on brainstorm start ([ee33117](https://github.com/toniDefez/storytellerFrontMVP/commit/ee3311789fde67efd06f679707ec5fd229a3feb7))
+* **catalog:** contextual node edit/delete + voice improvements ([476dbd8](https://github.com/toniDefez/storytellerFrontMVP/commit/476dbd858f9f9e70e17bea9a98f24353a5d619cc))
+* **character:** simplify entity + add name field to panel creation ([03122f7](https://github.com/toniDefez/storytellerFrontMVP/commit/03122f7c6be7d1880efb08a6fb058c2bde198df5))
+* **voice:** API types + voice examples state in useCharacterGraph ([d003835](https://github.com/toniDefez/storytellerFrontMVP/commit/d0038355910cd3a097fd90b08521babb3c4fb97a))
+* **voice:** dynamic VoiceRegisterEditor from API catalog + registro dimension ([983e4ee](https://github.com/toniDefez/storytellerFrontMVP/commit/983e4eee7148472410345419b95191e3a5eedeeb))
+* **voice:** VoiceBadge read-only component for chat tab ([a2e5eed](https://github.com/toniDefez/storytellerFrontMVP/commit/a2e5eed9e3fef6b68c2df601a8342023dc910810))
+* **voice:** VoiceExamplesEditor component ([fe171d0](https://github.com/toniDefez/storytellerFrontMVP/commit/fe171d045d08c2c7083ea9bd9801eb919fd5e91b))
+* **voice:** VoiceTab combining register + examples ([c91c597](https://github.com/toniDefez/storytellerFrontMVP/commit/c91c59758ede7f5cac5b8b79d824c5c71960d749))
+* **voice:** wire VoiceTab into CharacterGraphPage + VoiceBadge in chat ([ed73d46](https://github.com/toniDefez/storytellerFrontMVP/commit/ed73d4639e27490a851c5961bf785632f8c7ee82))
+
 # [1.28.0](https://github.com/toniDefez/storytellerFrontMVP/compare/v1.27.0...v1.28.0) (2026-04-10)
 
 
