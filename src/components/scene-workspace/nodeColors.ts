@@ -4,4 +4,5 @@ export const NODE_COLORS = {
   location: '#4338ca',
   narrator: '#4a4452',
   moment: '#0e6470',
+  direction: '#4a4452',
 } as const;

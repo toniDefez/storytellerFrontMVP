@@ -140,6 +140,21 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     setNodes((prev) => [...prev, created]);
   }, [sceneId, nodes]);
 
+  // Una indicación nueva sale suelta (vale para toda la escena) y en edición.
+  const handleAddDirection = useCallback(async () => {
+    try {
+      const created = await createSceneNode(sceneId, {
+        node_kind: 'direction',
+        description: '',
+        canvas_x: -320,
+        canvas_y: 40 + nodes.filter((n) => n.node_kind === 'direction').length * 150,
+      });
+      setNodes((prev) => [...prev, created]);
+    } catch (err) {
+      notifyError('No se pudo añadir la indicación')(err);
+    }
+  }, [sceneId, nodes]);
+
   const handleAddCharacter = useCallback(async (characterId: number) => {
     const created = await createSceneNode(sceneId, {
       node_kind: 'character',
@@ -321,6 +336,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
         <ScenePalette
           onAddMoment={handleAddMoment}
           onAddNarrator={handleAddNarrator}
+          onAddDirection={handleAddDirection}
           onAddCharacter={handleAddCharacter}
           onAddLocation={handleAddLocation}
           castOptions={castOptions}

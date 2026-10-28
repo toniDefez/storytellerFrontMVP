@@ -6,6 +6,7 @@ interface PaletteOption {
 interface ScenePaletteProps {
   onAddMoment: () => void;
   onAddNarrator: () => void;
+  onAddDirection: () => void;
   onAddCharacter: (characterId: number) => void;
   onAddLocation: (locationNodeId: number) => void;
   castOptions: PaletteOption[];
@@ -40,7 +41,7 @@ function AddPicker({ label, options, onPick }: { label: string; options: Palette
 // La barra del taller, como la de ComfyUI: añadir nodos y, a la derecha, la
 // acción que ejecuta el grafo. El progreso se ve en el nodo de salida.
 export function ScenePalette({
-  onAddMoment, onAddNarrator, onAddCharacter, onAddLocation,
+  onAddMoment, onAddNarrator, onAddDirection, onAddCharacter, onAddLocation,
   castOptions, locationOptions, onGenerate, generating,
 }: ScenePaletteProps) {
   return (
@@ -49,6 +50,7 @@ export function ScenePalette({
       <AddPicker label="Personaje" options={castOptions} onPick={onAddCharacter} />
       <AddPicker label="Lugar" options={locationOptions} onPick={onAddLocation} />
       <button onClick={onAddNarrator} style={control}>+ Narrador</button>
+      <button onClick={onAddDirection} style={control} title="Cómo quieres que se escriba: suelta vale para toda la escena; conectada a un evento, solo para él">+ Indicación</button>
       <button
         onClick={onGenerate}
         disabled={generating}

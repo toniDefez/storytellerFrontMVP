@@ -1069,7 +1069,7 @@ export function getSceneCharacters(sceneId: number) {
 
 // --- Scenes v2 (Plan 3B-lite) ---
 
-export type SceneNodeKind = 'character' | 'location' | 'moment' | 'narrator'
+export type SceneNodeKind = 'character' | 'location' | 'moment' | 'narrator' | 'direction'
 export type SceneEdgeKind = 'flow' | 'attachment'
 
 export interface NarratorNodeConfig {

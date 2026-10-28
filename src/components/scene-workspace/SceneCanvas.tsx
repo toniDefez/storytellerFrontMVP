@@ -8,6 +8,7 @@ import { ContainerCharacterNode } from './ContainerCharacterNode';
 import { ContainerLocationNode } from './ContainerLocationNode';
 import { MomentNode } from './MomentNode';
 import { NarratorNode } from './NarratorNode';
+import { DirectionNode } from './DirectionNode';
 import { FlowEdge, ScopeEdge } from './FlowEdge';
 import { OutputNode, type OutputNodeData } from './OutputNode';
 import { AttachmentEdge } from './AttachmentEdge';
@@ -61,6 +62,7 @@ const nodeTypes: NodeTypes = {
   location: ContainerLocationNode as unknown as NodeTypes[string],
   moment: MomentNode as unknown as NodeTypes[string],
   narrator: NarratorNode as unknown as NodeTypes[string],
+  direction: DirectionNode as unknown as NodeTypes[string],
   // No "output": React Flow ya trae un tipo con ese nombre y le pone su marco.
   sceneOutput: OutputNode as unknown as NodeTypes[string],
 };
@@ -184,7 +186,7 @@ function TidyButton({ nodes, edges, onNodeMove, onDone }: {
       }
     }
     ordered.push(...moments.filter((m) => !seen.has(m.id)));
-    const inputs = ['location', 'character', 'narrator'].flatMap((k) => nodes.filter((n) => n.node_kind === k));
+    const inputs = ['location', 'character', 'narrator', 'direction'].flatMap((k) => nodes.filter((n) => n.node_kind === k));
     let y = 0;
     for (const n of inputs) { onNodeMove(n.id, 0, y); y += height(n.id) + 24; }
     y = 0;
@@ -201,7 +203,7 @@ function TidyButton({ nodes, edges, onNodeMove, onDone }: {
 
 function resolveEdgeKind(fromKind: string, toKind: string): SceneEdgeKind | null {
   if (fromKind === 'moment' && toKind === 'moment') return 'flow';
-  if ((fromKind === 'narrator' || fromKind === 'character') && toKind === 'moment') return 'attachment';
+  if ((fromKind === 'narrator' || fromKind === 'character' || fromKind === 'direction') && toKind === 'moment') return 'attachment';
   return null;
 }
 
@@ -231,6 +233,8 @@ function nodeData(
         onOutcomesChange: (outcomes: string[]) => onMomentEdit(n.id, { outcomes }),
       };
     }
+    case 'direction':
+      return { text: n.description ?? '', onChange: (text: string) => onMomentEdit(n.id, { description: text }) };
     case 'narrator': {
       const cfg = n.narrator_config ?? { pov: '3rd-limited', style: 'sparse', distance: 'intimate', reliability: 'reliable' };
       return {
