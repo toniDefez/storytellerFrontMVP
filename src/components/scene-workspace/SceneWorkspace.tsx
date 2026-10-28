@@ -4,7 +4,7 @@ import {
   updateSceneNodePosition, deleteSceneNodeEdge, createSceneNodeEdge,
   generateScene, listSceneOutputs, revertSceneOutput, getGenerationProgress,
   getWritingPlan, saveSceneProse, getSceneCarry,
-  type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry,
+  type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry, type NarratorNodeConfig, type StoryRelationship,
 } from '../../services/api';
 import { SceneCanvas } from './SceneCanvas';
 import { ScenePalette } from './ScenePalette';
@@ -30,19 +30,32 @@ interface SceneWorkspaceProps {
   onBack: () => void;
   charNameByID?: Record<number, string>;
   locationByID?: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
+  /** Relaciones de la historia: sugieren cómo ve quien narra a los demás. */
+  relationships?: StoryRelationship[];
   /** Para copiar la hoja de esta escena del plan de escritura de la historia. */
   storyId?: number;
   storyTitle?: string;
   sceneTitle?: string;
 }
 
-export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBack, charNameByID, locationByID }: SceneWorkspaceProps) {
+export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBack, charNameByID, locationByID, relationships }: SceneWorkspaceProps) {
   const charMap = useMemo(() => charNameByID ?? {}, [charNameByID]);
   const locMap = useMemo(() => locationByID ?? {}, [locationByID]);
   const castOptions = useMemo(
     () => Object.entries(charMap).map(([id, name]) => ({ id: Number(id), name })),
     [charMap],
   );
+  // "Cómo ve a…": lo que dice la relación entre los dos, por "quien-mirado".
+  const viewHints = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const r of relationships ?? []) {
+      const text = r.description?.trim() || [r.rel_type, r.subtype].filter(Boolean).join(', ');
+      if (!text) continue;
+      out[`${r.character_a_id}-${r.character_b_id}`] = text;
+      if (!r.directional) out[`${r.character_b_id}-${r.character_a_id}`] ??= text;
+    }
+    return out;
+  }, [relationships]);
   const locationOptions = useMemo(
     () => Object.entries(locMap).map(([id, loc]) => ({ id: Number(id), name: loc.name })),
     [locMap],
@@ -116,7 +129,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     try { await updateSceneNode(id, patch); } catch (err) { console.error(err); }
   }, []);
 
-  const handleNarratorEdit = useCallback(async (id: number, patch: Partial<{ pov: string; style: string; distance: string; reliability: string }>) => {
+  const handleNarratorEdit = useCallback(async (id: number, patch: Partial<NarratorNodeConfig>) => {
     const node = nodes.find((n) => n.id === id);
     if (!node) return;
     const cfg = { ...(node.narrator_config ?? { pov: '3rd-limited', style: 'sparse', distance: 'intimate', reliability: 'reliable' }), ...patch };
@@ -408,6 +421,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           unmetOutcomes={unmetOutcomes}
           charNameByID={charMap}
           carryByCharID={carryByCharID}
+          viewHints={viewHints}
           locationByID={locMap}
           output={outputData}
         />

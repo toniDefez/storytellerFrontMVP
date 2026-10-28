@@ -12,7 +12,7 @@ import { DirectionNode } from './DirectionNode';
 import { FlowEdge, ScopeEdge } from './FlowEdge';
 import { OutputNode, type OutputNodeData } from './OutputNode';
 import { AttachmentEdge } from './AttachmentEdge';
-import type { SceneNode, SceneNodeEdge, SceneEdgeKind, CharacterCarry } from '../../services/api';
+import type { SceneNode, SceneNodeEdge, SceneEdgeKind, CharacterCarry, NarratorNodeConfig } from '../../services/api';
 
 interface SceneCanvasProps {
   nodes: SceneNode[];
@@ -20,7 +20,9 @@ interface SceneCanvasProps {
   onConnect: (fromId: number, toId: number, kind: SceneEdgeKind) => void;
   onNodeMove: (id: number, x: number, y: number) => void;
   onMomentEdit: (id: number, patch: { description?: string; outcomes?: string[] }) => void;
-  onNarratorEdit: (id: number, patch: { pov?: string; style?: string; distance?: string; reliability?: string }) => void;
+  onNarratorEdit: (id: number, patch: Partial<NarratorNodeConfig>) => void;
+  /** Sugerencias de "cómo ve a…" sacadas de las relaciones, por "quien-mirado". */
+  viewHints?: Record<string, string>;
   onEdgeDelete: (id: number) => void;
   /** Salidas que la última generación no logró mostrar en la prosa. */
   unmetOutcomes?: string[];
@@ -76,7 +78,7 @@ const edgeTypes: EdgeTypes = {
 };
 
 export function SceneCanvas(props: SceneCanvasProps) {
-  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, carryByCharID, locationByID, unmetOutcomes, output } = props;
+  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, carryByCharID, viewHints, locationByID, unmetOutcomes, output } = props;
 
   // La Escena va a la derecha de los eventos; si la mueves, se queda donde la
   // dejes mientras estés en el taller (no se guarda: no es un nodo del backend).
@@ -90,15 +92,20 @@ export function SceneCanvas(props: SceneCanvasProps) {
   }, [nodes, outputMoved]);
 
   const rfNodes = useMemo<Node[]>(() => {
+    // El reparto de esta escena: quién puede narrar y a quién se mira.
+    const cast = nodes
+      .filter((n) => n.node_kind === 'character' && n.character_id)
+      .map((n) => ({ id: n.character_id as number, name: charNameByID[n.character_id as number] ?? '?' }));
+    const scene = { cast, viewHints: viewHints ?? {} };
     const real: Node[] = nodes.map((n) => ({
       id: String(n.id),
       type: n.node_kind,
       position: { x: n.canvas_x, y: n.canvas_y },
-      data: nodeData(n, charNameByID, carryByCharID ?? {}, locationByID, onMomentEdit, onNarratorEdit, edges, unmetOutcomes ?? []) as Record<string, unknown>,
+      data: nodeData(n, charNameByID, carryByCharID ?? {}, locationByID, onMomentEdit, onNarratorEdit, edges, unmetOutcomes ?? [], scene) as Record<string, unknown>,
     }));
     if (!output) return real;
     return [...real, { id: OUTPUT_ID, type: 'sceneOutput', position: outputPos, deletable: false, data: output }];
-  }, [nodes, edges, charNameByID, carryByCharID, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes, output, outputPos]);
+  }, [nodes, edges, charNameByID, carryByCharID, viewHints, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes, output, outputPos]);
 
   const rfEdges = useMemo<Edge[]>(() => {
     const real: Edge[] = edges.map((e) => ({
@@ -215,9 +222,10 @@ function nodeData(
   carryByCharID: Record<number, CharacterCarry>,
   locByID: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>,
   onMomentEdit: (id: number, patch: { description?: string; outcomes?: string[] }) => void,
-  onNarratorEdit: (id: number, patch: Partial<{ pov: string; style: string; distance: string; reliability: string }>) => void,
+  onNarratorEdit: (id: number, patch: Partial<NarratorNodeConfig>) => void,
   edges: SceneNodeEdge[],
   unmetOutcomes: string[],
+  scene: { cast: { id: number; name: string }[]; viewHints: Record<string, string> },
 ): Record<string, unknown> {
   switch (n.node_kind) {
     case 'character':
@@ -243,10 +251,15 @@ function nodeData(
       return { text: n.description ?? '', onChange: (text: string) => onMomentEdit(n.id, { description: text }) };
     case 'narrator': {
       const cfg = n.narrator_config ?? { pov: '3rd-limited', style: 'sparse', distance: 'intimate', reliability: 'reliable' };
+      const focus = cfg.focus_character_id ?? undefined;
       return {
         ...cfg,
-        focusName: cfg.focus_character_id ? charNameByID[cfg.focus_character_id] : undefined,
-        onChange: (patch: Partial<{ pov: string; style: string; distance: string; reliability: string }>) => onNarratorEdit(n.id, patch),
+        focusName: focus ? charNameByID[focus] : undefined,
+        cast: scene.cast,
+        // Lo que dicen las relaciones de la historia de cómo ve quien narra a
+        // cada uno; el autor lo usa, lo cambia o lo ignora.
+        hints: focus ? Object.fromEntries(scene.cast.map((c) => [c.id, scene.viewHints[`${focus}-${c.id}`]]).filter(([, h]) => h)) : {},
+        onChange: (patch: Partial<NarratorNodeConfig>) => onNarratorEdit(n.id, patch),
       };
     }
   }

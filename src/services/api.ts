@@ -1082,6 +1082,8 @@ export interface NarratorNodeConfig {
   distance: string
   reliability: string
   focus_character_id?: number | null
+  /** Cómo ve quien narra (focus_character_id) a cada uno de los demás. */
+  views?: { character_id: number; text: string }[]
 }
 
 export interface SceneNode {

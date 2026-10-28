@@ -528,6 +528,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         sceneTitle={String(nodes.find((n) => n.id === `scene-${enteredSceneId}`)?.data?.title ?? '')}
         charNameByID={workspaceCharNames}
         locationByID={workspaceLocations}
+        relationships={relationships}
         onBack={() => {
           setEnteredSceneId(null)
           onSceneEntered?.(false)
