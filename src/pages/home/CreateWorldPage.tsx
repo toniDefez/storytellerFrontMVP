@@ -4,13 +4,14 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Loader2, Server, Wand2, Sparkles, Feather } from 'lucide-react'
+import { Loader2, Server, Wand2, Sparkles, Feather, ArrowLeft } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { useInstallation } from '@/hooks/useInstallation'
 import {
   generateWorld,
   getJobStatus,
+  getGenerationProgress,
   refinePremise,
   suggestPremises,
   createWorldFromSeed,
@@ -19,16 +20,14 @@ import type { SeedTemplateBrief } from '@/services/api'
 import { SeedTemplatePicker } from '@/components/SeedTemplatePicker'
 import { BrainstormStep } from '@/components/brainstorm/BrainstormStep'
 import type { BrainstormCard } from '@/services/api'
-
-const LOADING_MESSAGES = [
-  'Interpretando la premisa...',
-  'Generando el nodo raíz...',
-  'Expandiendo el grafo causal...',
-  'Sintetizando el mundo...',
-]
+import { notifyError } from '@/lib/notifyError'
+import { toast } from 'sonner'
+import { ManualWorldForm } from '@/components/ManualWorldForm'
 
 const POLL_INTERVAL_MS = 2000
-const POLL_TIMEOUT_MS = 120_000
+// El backend da 5 minutos a la tarea; con 2 la app se rendía mientras el
+// mundo se seguía creando con un modelo lento.
+const POLL_TIMEOUT_MS = 6 * 60_000
 
 export default function CreateWorldPage() {
   const navigate = useNavigate()
@@ -39,7 +38,9 @@ export default function CreateWorldPage() {
   const [selectedSeed, setSelectedSeed] = useState<SeedTemplateBrief | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [messageIndex, setMessageIndex] = useState(0)
+  // Fase real del generador (la tarea usa su id como identificador de
+  // petición): antes eran mensajes rotando con un temporizador.
+  const [progress, setProgress] = useState('Preparando…')
   const [step, setStep] = useState<'premise' | 'brainstorm' | 'generating'>('premise')
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -47,9 +48,11 @@ export default function CreateWorldPage() {
   const [suggesting, setSuggesting] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>([])
 
-  const messageIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollStartRef = useRef<number>(0)
+  // Si la persona se va de la página, ni se sigue preguntando ni se la
+  // arrastra al mundo nuevo cuando termine.
+  const leftRef = useRef(false)
 
   useEffect(() => {
     document.title = `Crear Mundo — StoryTeller`
@@ -64,24 +67,6 @@ export default function CreateWorldPage() {
     if (textareaRef.current) autoResize(textareaRef.current)
   }, [premise])
 
-  // Rotate loading messages
-  useEffect(() => {
-    if (loading) {
-      setMessageIndex(0)
-      messageIntervalRef.current = setInterval(() => {
-        setMessageIndex(i => (i + 1) % LOADING_MESSAGES.length)
-      }, 8000)
-    } else {
-      if (messageIntervalRef.current) {
-        clearInterval(messageIntervalRef.current)
-        messageIntervalRef.current = null
-      }
-    }
-    return () => {
-      if (messageIntervalRef.current) clearInterval(messageIntervalRef.current)
-    }
-  }, [loading])
-
   const stopPolling = () => {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current)
@@ -89,24 +74,47 @@ export default function CreateWorldPage() {
     }
   }
 
+  useEffect(() => {
+    leftRef.current = false
+    return () => {
+      leftRef.current = true
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+    }
+  }, [])
+
+  // Si falla o se agota el tiempo, se vuelve a la premisa (que se conserva)
+  // con el error a la vista. Antes el spinner seguía para siempre y no había
+  // forma de volver.
+  const failGeneration = (message: string) => {
+    stopPolling()
+    setError(message)
+    setLoading(false)
+    setStep('premise')
+  }
+
   const startPolling = (jobId: string) => {
     pollStartRef.current = Date.now()
+    setProgress('Preparando…')
     pollIntervalRef.current = setInterval(async () => {
+      const seconds = Math.round((Date.now() - pollStartRef.current) / 1000)
+      getGenerationProgress(jobId)
+        .then(({ runs }) => {
+          const current = runs.find(r => r.status === 'running') ?? runs[runs.length - 1]
+          setProgress(current?.phase ? `${current.phase} · ${seconds} s` : `Esperando al generador · ${seconds} s`)
+        })
+        .catch(() => {})  // informativo: si falla, la creación sigue
       if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
-        stopPolling()
-        setError('La generación tardó demasiado. Inténtalo de nuevo.')
-        setLoading(false)
+        failGeneration('La generación tardó demasiado. Inténtalo de nuevo.')
         return
       }
       try {
         const job = await getJobStatus(jobId)
+        if (leftRef.current) return
         if (job.status === 'done') {
           stopPolling()
           navigate(`/worlds/${job.world_id}`)
         } else if (job.status === 'error') {
-          stopPolling()
-          setError(job.error || 'Error generando el mundo')
-          setLoading(false)
+          failGeneration(job.error || 'Error generando el mundo')
         }
       } catch {
         // transient network error — keep polling
@@ -120,8 +128,8 @@ export default function CreateWorldPage() {
     try {
       const result = await suggestPremises()
       setSuggestions(result.premises ?? [])
-    } catch {
-      // silently fail
+    } catch (err) {
+      notifyError('No se pudieron sugerir ideas')(err)
     } finally {
       setSuggesting(false)
     }
@@ -133,11 +141,13 @@ export default function CreateWorldPage() {
     setSuggestions([])
     try {
       const result = await refinePremise(premise.trim())
-      if (result.premise) {
+      if (result.premise && result.premise.trim() !== premise.trim()) {
         setPremise(result.premise)
+      } else {
+        toast.info('La premisa ya tiene lo esencial: no hay nada que añadir.')
       }
-    } catch {
-      // silently fail
+    } catch (err) {
+      notifyError('No se pudo enriquecer la premisa')(err)
     } finally {
       setRefining(false)
     }
@@ -172,7 +182,7 @@ export default function CreateWorldPage() {
         startPolling(job_id)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error iniciando la generacion')
+      setError(err instanceof Error ? err.message : 'Error iniciando la generación')
       setLoading(false)
       setStep('premise')
     }
@@ -208,6 +218,9 @@ export default function CreateWorldPage() {
                 <Button variant="ghost" onClick={() => navigate('/worlds')}>
                   {t('installation.guardGoBack')}
                 </Button>
+              </div>
+              <div className="max-w-xs mx-auto pt-4 border-t border-border">
+                <ManualWorldForm />
               </div>
             </CardContent>
           </Card>
@@ -264,15 +277,28 @@ export default function CreateWorldPage() {
                 className="text-sm text-center transition-all duration-500"
                 style={{ color: 'hsl(30 6% 47%)', fontFamily: 'var(--font-display)', fontStyle: 'italic' }}
               >
-                {LOADING_MESSAGES[messageIndex]}
+                <span role="status" aria-live="polite">{progress}</span>
               </p>
             </div>
           ) : step === 'brainstorm' ? (
-            <BrainstormStep
-              premise={premise}
-              onDone={handleGenerate}
-              onSkip={handleSkipBrainstorm}
-            />
+            <div>
+              <motion.button
+                type="button"
+                onClick={() => setStep('premise')}
+                className="flex items-center gap-1.5 text-xs mb-6 cursor-pointer"
+                style={{ fontFamily: 'var(--font-ui)', color: 'hsl(260 38% 40%)' }}
+                whileHover={{ x: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span>Volver a la premisa</span>
+              </motion.button>
+              <BrainstormStep
+                premise={premise}
+                onDone={handleGenerate}
+                onSkip={handleSkipBrainstorm}
+              />
+            </div>
           ) : (
             <form onSubmit={handleSubmit}>
               {/* ── Template picker ── */}

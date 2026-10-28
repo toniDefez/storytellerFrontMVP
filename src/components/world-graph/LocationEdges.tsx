@@ -7,6 +7,7 @@ import {
   type EdgeProps,
 } from '@xyflow/react'
 import { getEdgeParams } from './locationEdgeUtils'
+import { useZoomLevel } from '@/hooks/useZoomLevel'
 import type { LocationEffort } from '@/services/api'
 
 interface LocationEdgeData {
@@ -37,6 +38,7 @@ function FloatingLocationEdge({
 }: FloatingEdgeProps) {
   const sourceNode = useInternalNode(source)
   const targetNode = useInternalNode(target)
+  const zoomLevel = useZoomLevel()
 
   if (!sourceNode || !targetNode) return null
 
@@ -48,6 +50,7 @@ function FloatingLocationEdge({
 
   const d = data as unknown as LocationEdgeData
   const effort: LocationEffort = d?.effort ?? 'moderate'
+  const showEffortLabel = zoomLevel === 'full'
 
   return (
     <>
@@ -70,17 +73,19 @@ function FloatingLocationEdge({
           </div>
         </EdgeLabelRenderer>
       )}
-      <EdgeLabelRenderer>
-        <div
-          style={{
-            transform: `translate(-50%,-50%) translate(${labelX}px,${labelY + 14}px)`,
-            color: EFFORT_COLOR[effort],
-          }}
-          className="absolute text-[9px] font-semibold pointer-events-none bg-background/80 px-1 rounded"
-        >
-          {EFFORT_LABEL[effort]}
-        </div>
-      </EdgeLabelRenderer>
+      {showEffortLabel && (
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              transform: `translate(-50%,-50%) translate(${labelX}px,${labelY + 14}px)`,
+              color: EFFORT_COLOR[effort],
+            }}
+            className="absolute text-[9px] font-semibold pointer-events-none bg-background/80 px-1 rounded"
+          >
+            {EFFORT_LABEL[effort]}
+          </div>
+        </EdgeLabelRenderer>
+      )}
     </>
   )
 }

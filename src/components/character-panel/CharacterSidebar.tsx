@@ -27,7 +27,7 @@ export function CharacterSidebar({ worldPremise, characters, selectedId, onSelec
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1.5">
         {characters.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-            <p className="font-display text-xl italic text-foreground/15 mb-2">Sin personajes aun</p>
+            <p className="font-display text-xl italic text-foreground/15 mb-2">Sin personajes aún</p>
             <p className="text-sm text-muted-foreground/50">Todo mundo necesita sus protagonistas.</p>
           </div>
         ) : (

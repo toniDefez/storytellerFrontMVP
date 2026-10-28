@@ -14,9 +14,12 @@ import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
 import { LocationGraphCanvas } from '@/components/world-graph/LocationGraphCanvas'
 import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
+import { useFactions } from '@/hooks/useFactions'
+import { useRegions } from '@/hooks/useRegions'
+import { generateFactions, generateGeography } from '@/services/factionApi'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
-import { WorldScenesList } from '@/components/world-detail/WorldScenesList'
+import { StoryPanel } from '@/components/story-setup/StoryPanel'
 import { exportWorld } from '../../services/worldExport'
 import {
   DropdownMenu,
@@ -25,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { notifyError } from '@/lib/notifyError'
 
 function inferDotColor(world: World): string {
   const text = (world.premise || world.description || '').toLowerCase()
@@ -48,7 +52,7 @@ export default function WorldDetailPage() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
-  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'scenes'>('causal')
+  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'stories'>('causal')
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
   const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
   const [confirmRegen, setConfirmRegen] = useState(false)
@@ -57,20 +61,62 @@ export default function WorldDetailPage() {
   const refreshWorldDetail = useCallback(() => {
     const worldId = Number(id)
     if (!id || Number.isNaN(worldId)) return
-    getWorldDetail(worldId).then(setWorldDetail).catch(() => {})
+    getWorldDetail(worldId).then(setWorldDetail).catch(notifyError('No se pudo cargar el resumen del mundo'))
   }, [id])
 
   const {
     nodes: locationNodes, edges: locationEdges,
     selected: locationSelected, setSelected: setLocationSelected,
     generating: locationGenerating,
+    generatingProgress: locationGeneratingProgress,
+    error: locationError,
     expandingNodeId: locationExpandingNodeId,
     enrichingNodeId: locationEnrichingNodeId,
-    loadGraph: loadLocationGraph, generate: generateLocations, addRegions: addLocationRegions,
+    loadGraph: loadLocationGraph, generate: generateLocations,
     expandNode: expandLocationNode, enrichNode: enrichLocationNode,
     moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
     editEdge, removeEdge,
   } = useLocationGraph(Number(id))
+
+  // El hook guardaba el error y nadie lo enseñaba: generar localizaciones
+  // podía fallar sin que la pantalla cambiase.
+  useEffect(() => {
+    if (locationError) toast.error(`Localizaciones: ${locationError}`)
+  }, [locationError])
+
+  const _wid = Number(id)
+  const worldIdNum = Number.isNaN(_wid) ? null : _wid
+  const { factions, reload: reloadFactions } = useFactions(worldIdNum)
+  const { regions, reload: reloadRegions } = useRegions(worldIdNum)
+
+  // El mapa tarda unos segundos (el modelo propone la intención y los
+  // nombres): tiene su propio estado y avisa al terminar o al fallar. Antes
+  // el botón no daba ninguna señal y el error solo iba a la consola.
+  const [geographyGenerating, setGeographyGenerating] = useState(false)
+  const handleGenerateGeography = useCallback(async () => {
+    if (worldIdNum == null) return
+    setGeographyGenerating(true)
+    try {
+      const res = await generateGeography(worldIdNum)
+      // El mapa nuevo recoloca las localizaciones sobre el terreno.
+      await Promise.all([reloadRegions(), reloadFactions(), loadLocationGraph()])
+      toast.success(`Mapa físico generado: ${res.regions?.length ?? 0} regiones`)
+    } catch (e) {
+      notifyError('No se pudo generar el mapa')(e)
+    } finally {
+      setGeographyGenerating(false)
+    }
+  }, [worldIdNum, reloadRegions, reloadFactions])
+
+  const handleGenerateFactions = useCallback(async () => {
+    if (worldIdNum == null) return
+    try {
+      await generateFactions(worldIdNum)
+      await reloadFactions()
+    } catch (e) {
+      notifyError('No se pudieron generar las facciones')(e)
+    }
+  }, [worldIdNum, reloadFactions])
 
   const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
     const wid = Number(id)
@@ -193,21 +239,11 @@ export default function WorldDetailPage() {
         className="flex items-center gap-0 px-4 border-b border-border/60 bg-background"
         style={{ height: 44 }}
       >
-        {/* Left: back + world identity + tab switcher */}
+        {/* Left: world identity + tab switcher */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* Back link */}
-          <Link
-            to="/worlds"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 flex items-center gap-1 mr-1"
-          >
-            ← {t('nav.worlds')}
-          </Link>
-
-          <span className="text-border/60 text-xs shrink-0">/</span>
-
           {/* World dot */}
           <div
-            className="w-2 h-2 rounded-full shrink-0 ml-1"
+            className="w-2 h-2 rounded-full shrink-0"
             style={{ backgroundColor: dotColor }}
           />
 
@@ -232,7 +268,7 @@ export default function WorldDetailPage() {
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
-              Causal
+              Mundo
             </button>
             <button
               onClick={() => setGraphView('locations')}
@@ -242,7 +278,7 @@ export default function WorldDetailPage() {
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
-              Locs
+              Lugares
             </button>
             <button
               onClick={() => setGraphView('characters')}
@@ -255,14 +291,14 @@ export default function WorldDetailPage() {
               Personajes
             </button>
             <button
-              onClick={() => setGraphView('scenes')}
+              onClick={() => setGraphView('stories')}
               className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'scenes'
+                graphView === 'stories'
                   ? 'bg-[#06b6d4]/10 text-[#0e7490]'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
-              Escenas
+              Historias
             </button>
           </div>
         </div>
@@ -360,6 +396,8 @@ export default function WorldDetailPage() {
             <LocationGraphCanvas
               worldId={Number(id)}
               locationNodes={locationNodes}
+              regions={regions}
+              factions={factions}
               locationEdges={locationEdges}
               selected={locationSelected}
               visible={graphView === 'locations'}
@@ -390,9 +428,13 @@ export default function WorldDetailPage() {
               onDeleteNode={removeNode}
               onUpdateEdge={editEdge}
               onDeleteEdge={removeEdge}
-              onGenerate={() => setConfirmRegen(true)}
-              onAddRegions={addLocationRegions}
+              onGenerate={() => (locationNodes.length > 0 ? setConfirmRegen(true) : generateLocations())}
+              onAddRegions={handleGenerateGeography}
+              onGenerateFactions={handleGenerateFactions}
+              onRegionsChanged={reloadRegions}
               generating={locationGenerating}
+              generatingProgress={locationGeneratingProgress}
+              generatingMap={geographyGenerating}
               onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
               expandingNodeId={locationExpandingNodeId}
               onEnrichWithAI={node => enrichLocationNode(Number(id), node.id)}
@@ -415,16 +457,20 @@ export default function WorldDetailPage() {
             />
           </div>
 
-          {/* Scenes view */}
-          {graphView === 'scenes' && (
-            <div style={{ position: 'absolute', inset: 0 }}>
-              <WorldScenesList
-                worldId={Number(id)}
-                scenes={worldDetail?.scenes ?? []}
-                worldSummary={worldDetail?.summary || world?.premise || ''}
-              />
-            </div>
-          )}
+          {/* Stories view */}
+          <div
+            style={{
+              position: 'absolute', inset: 0,
+              display: graphView === 'stories' ? 'block' : 'none',
+            }}
+          >
+            <StoryPanel
+              worldId={Number(id)}
+              stories={worldDetail?.stories ?? []}
+              characters={worldDetail?.characters ?? []}
+              onStoryListChanged={refreshWorldDetail}
+            />
+          </div>
         </div>
       </div>
 
@@ -453,9 +499,10 @@ export default function WorldDetailPage() {
       {confirmRegen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-background border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-semibold text-base mb-2">¿Regenerar el mapa?</h3>
+            <h3 className="font-semibold text-base mb-2">¿Regenerar las localizaciones?</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Se eliminará el mapa actual y se generará uno nuevo desde el grafo causal.
+              Se sustituirán las {locationNodes.length} localizaciones actuales por otras nuevas
+              generadas desde el grafo causal. El mapa físico no cambia.
             </p>
             <div className="flex gap-2 justify-end">
               <button

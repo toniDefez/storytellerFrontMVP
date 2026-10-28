@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { listSeedTemplates } from '@/services/api'
 import type { SeedTemplateBrief } from '@/services/api'
+import { notifyError } from '@/lib/notifyError'
 
 const CATEGORY_ICONS: Record<string, string> = {
   fantasy: '🏰',
@@ -31,7 +32,7 @@ export function SeedTemplatePicker({ selected, onSelect }: Props) {
   useEffect(() => {
     listSeedTemplates()
       .then(s => setSeeds(s ?? []))
-      .catch(() => {})
+      .catch(notifyError('No se pudieron cargar las plantillas'))
       .finally(() => setLoading(false))
   }, [])
 

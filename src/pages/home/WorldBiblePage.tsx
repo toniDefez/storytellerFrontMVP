@@ -3,13 +3,24 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { ArrowLeft, BookOpen, MapPin, Clock, Music, Users, Clapperboard } from 'lucide-react'
-import { getWorldById, getSceneDetail, getSceneNarrative } from '../../services/api'
-import type { World, Character, Scene, Event, SceneNarrative } from '../../services/api'
+import { getWorldById } from '../../services/api'
+import type { World, Character } from '../../services/api'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 
 const DEFAULT_GRADIENT = 'from-violet-500 to-purple-700'
+
+// The bible used to print role / faction / personality / background / goals.
+// Those fields left the Character type when the psychological-graph redesign
+// landed, and the page kept referencing them — 13 TS errors that broke
+// `npm run build` for months. These are what a character actually carries now.
+const VOICE_REGISTER_FIELDS = [
+  { key: 'emotional_rhythm', label: 'Ritmo emocional' },
+  { key: 'social_posture', label: 'Postura social' },
+  { key: 'cognitive_tempo', label: 'Tempo cognitivo' },
+  { key: 'expressive_style', label: 'Estilo expresivo' },
+] as const
 
 function inferGradient(world: World): string {
   const text = (world.premise || world.description || '').toLowerCase()
@@ -23,9 +34,13 @@ function inferGradient(world: World): string {
   return DEFAULT_GRADIENT
 }
 
-interface SceneWithNarrative extends Scene {
-  narrative?: string
-  events?: Event[]
+interface SceneData {
+  id: number
+  title: string
+  location?: string
+  time?: string
+  tone?: string
+  context?: string
 }
 
 const sectionVariants = {
@@ -48,7 +63,7 @@ export default function WorldBiblePage() {
   const { id } = useParams()
   const [world, setWorld] = useState<World | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
-  const [scenes, setScenes] = useState<SceneWithNarrative[]>([])
+  const [scenes, setScenes] = useState<SceneData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -81,31 +96,9 @@ export default function WorldBiblePage() {
         const raw = data as unknown as Record<string, unknown>
         setCharacters(Array.isArray(raw.characters) ? raw.characters as Character[] : [])
 
-        const rawScenes: Scene[] = Array.isArray(raw.scenes) ? raw.scenes as Scene[] : []
+        const rawScenes: SceneData[] = Array.isArray(raw.scenes) ? raw.scenes as SceneData[] : []
 
-        // Fetch scene details (events) and narratives in parallel
-        const enrichedScenes = await Promise.all(
-          rawScenes.map(async (scene): Promise<SceneWithNarrative> => {
-            const enriched: SceneWithNarrative = { ...scene }
-            try {
-              const [detail, narrative] = await Promise.allSettled([
-                getSceneDetail(scene.id),
-                getSceneNarrative(scene.id),
-              ])
-              if (detail.status === 'fulfilled' && detail.value.events) {
-                enriched.events = detail.value.events
-              }
-              if (narrative.status === 'fulfilled' && (narrative.value as SceneNarrative).text) {
-                enriched.narrative = (narrative.value as SceneNarrative).text
-              }
-            } catch {
-              // Scene enrichment is best-effort
-            }
-            return enriched
-          })
-        )
-
-        setScenes(enrichedScenes)
+        setScenes(rawScenes)
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
       } finally {
@@ -229,36 +222,27 @@ export default function WorldBiblePage() {
                   <h3 className="text-xl font-bold text-foreground font-[var(--font-display)]">
                     {character.name}
                   </h3>
-                  {character.role && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-entity-character/10 text-entity-character border border-entity-character/20">
-                      {character.role}
-                    </span>
-                  )}
-                  {character.faction_affiliation && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-600 border border-rose-200">
-                      {character.faction_affiliation}
-                    </span>
-                  )}
                 </div>
 
-                {character.personality && (
-                  <p className="text-foreground/80 leading-relaxed mb-3 font-[var(--font-display)]">
-                    {character.personality}
-                  </p>
-                )}
-
-                {character.background && (
+                {character.speech_pattern && (
                   <p className="text-foreground/75 leading-relaxed mb-3 font-[var(--font-display)] text-sm">
-                    {character.background}
+                    {character.speech_pattern}
                   </p>
                 )}
 
-                {character.goals && character.goals.length > 0 && (
-                  <ol className="list-decimal list-inside space-y-1 text-sm text-foreground/70 font-[var(--font-display)]">
-                    {character.goals.map((goal, i) => (
-                      <li key={i}>{goal}</li>
-                    ))}
-                  </ol>
+                {character.voice_register && (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-foreground/70 font-[var(--font-display)]">
+                    {VOICE_REGISTER_FIELDS.map(({ key, label }) => {
+                      const value = character.voice_register?.[key]
+                      if (!value) return null
+                      return (
+                        <div key={key} className="flex gap-1.5">
+                          <dt className="text-muted-foreground shrink-0">{label}:</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      )
+                    })}
+                  </dl>
                 )}
               </motion.div>
             ))}
@@ -325,41 +309,10 @@ export default function WorldBiblePage() {
                   )}
                 </div>
 
-                {/* Narrative (preferred) or context + events fallback */}
-                {scene.narrative ? (
-                  <div className="prose prose-sm max-w-none font-[var(--font-display)] text-foreground/85 leading-relaxed">
-                    {scene.narrative.split('\n').filter(Boolean).map((paragraph, i) => (
-                      <p key={i} className="mb-3 last:mb-0">{paragraph}</p>
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    {scene.context && (
-                      <p className="text-foreground/80 leading-relaxed font-[var(--font-display)] mb-4">
-                        {scene.context}
-                      </p>
-                    )}
-
-                    {scene.events && scene.events.length > 0 ? (
-                      <ol className="space-y-3 border-l-2 border-entity-scene/20 pl-4 ml-1">
-                        {scene.events
-                          .sort((a, b) => a.position - b.position)
-                          .map((event, i) => (
-                          <li key={event.id} className="text-sm text-foreground/75 font-[var(--font-display)]">
-                            <span className="font-semibold text-entity-scene/70 mr-2">{i + 1}.</span>
-                            {event.action}
-                            {event.spot && (
-                              <span className="text-muted-foreground ml-2 text-xs">({event.spot})</span>
-                            )}
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic font-[var(--font-display)]">
-                        {t('bible.noNarrative')}
-                      </p>
-                    )}
-                  </>
+                {scene.context && (
+                  <p className="text-foreground/80 leading-relaxed font-[var(--font-display)]">
+                    {scene.context}
+                  </p>
                 )}
               </motion.div>
             ))}

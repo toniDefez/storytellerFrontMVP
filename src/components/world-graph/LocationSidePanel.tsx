@@ -7,8 +7,6 @@ interface Props {
   selected: SelectedLocation
   nodes: LocationNode[]
   edges: LocationEdge[]
-  onEditNode: (node: LocationNode) => void
-  onDeleteNode: (id: number) => void
   onAddChildNode: (parentNode: LocationNode) => void
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
@@ -20,14 +18,8 @@ interface Props {
   onClose: () => void
 }
 
-export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDeleteNode, onAddChildNode, onExpandWithAI, expandingNodeId, onEnrichWithAI, enrichingNodeId, onSelectNode, onUpdateEdge, onDeleteEdge, onClose }: Props) {
-  if (!selected) return (
-    <div className="w-64 border-l border-border/50 flex flex-col items-center justify-center gap-3 p-6">
-      <p className="text-sm text-muted-foreground italic text-center">
-        Selecciona una localización o conexión para ver sus detalles
-      </p>
-    </div>
-  )
+export function LocationSidePanel({ selected, nodes, edges, onAddChildNode, onExpandWithAI, expandingNodeId, onEnrichWithAI, enrichingNodeId, onSelectNode, onUpdateEdge, onDeleteEdge, onClose }: Props) {
+  if (!selected) return null
 
   if (selected.type === 'node') {
     const node = selected.item
@@ -39,13 +31,11 @@ export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDelete
     const childNodes = nodes.filter(n => n.parent_id === node.id)
 
     return (
-      <div className="w-72 border-l border-border/50 overflow-hidden">
+      <div className="h-full overflow-hidden">
         <LocationNodeDetailPanel
           node={node}
           connectedNodes={connectedNodes}
           childNodes={childNodes}
-          onEdit={onEditNode}
-          onDelete={onDeleteNode}
           onAddChild={onAddChildNode}
           onExpandWithAI={onExpandWithAI}
           expandingNodeId={expandingNodeId}
@@ -63,7 +53,7 @@ export function LocationSidePanel({ selected, nodes, edges, onEditNode, onDelete
   const targetNode = nodes.find(n => n.id === edge.target_node_id)
 
   return (
-    <div className="w-72 border-l border-border/50 overflow-hidden">
+    <div className="h-full overflow-hidden">
       <LocationEdgeDetailPanel
         edge={edge}
         sourceNode={sourceNode}

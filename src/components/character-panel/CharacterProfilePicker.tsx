@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { getCharacterProfiles } from '@/services/api'
 import type { ProfileTemplateBrief } from '@/services/api'
+import { notifyError } from '@/lib/notifyError'
 
 const ARCHETYPE_ICONS: Record<string, string> = {
   control: '🎯',
@@ -39,7 +40,7 @@ export function CharacterProfilePicker({ selectedId, onSelect }: Props) {
   useEffect(() => {
     getCharacterProfiles()
       .then(p => setProfiles(p ?? []))
-      .catch(() => {})
+      .catch(notifyError('No se pudieron cargar los arquetipos'))
       .finally(() => setLoading(false))
   }, [])
 

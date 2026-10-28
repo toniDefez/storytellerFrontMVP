@@ -13,11 +13,11 @@ import { getCatalog, getContextualNodes, createContextualNode, updateContextualN
 /* ── Container metadata (mirrors canvas) ─────────────────────── */
 
 const DOMAIN_META: Record<CharacterNodeDomain, { label: string; subtitle: string; color: string }> = {
-  origin:  { label: 'Creencias',  subtitle: '¿Que da por hecho?',  color: '#6366F1' },
-  fear:    { label: 'Miedos',     subtitle: '¿Que evita?',         color: '#EF4444' },
-  drive:   { label: 'Deseos',     subtitle: '¿Que persigue?',      color: '#F59E0B' },
-  bond:    { label: 'Grietas',    subtitle: '¿Donde se rompe?',    color: '#8B5CF6' },
-  mask:    { label: 'Mascaras',   subtitle: '¿Que muestra?',       color: '#10B981' },
+  origin:  { label: 'Creencias',  subtitle: '¿Qué da por hecho?',  color: '#6366F1' },
+  fear:    { label: 'Miedos',     subtitle: '¿Qué evita?',         color: '#EF4444' },
+  drive:   { label: 'Deseos',     subtitle: '¿Qué persigue?',      color: '#F59E0B' },
+  bond:    { label: 'Grietas',    subtitle: '¿Dónde se rompe?',    color: '#8B5CF6' },
+  mask:    { label: 'Máscaras',   subtitle: '¿Qué muestra?',       color: '#10B981' },
 }
 
 function getSalienceDotSize(salience: number): string {
@@ -240,7 +240,7 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
                           value={editDescription}
                           onChange={e => setEditDescription(e.target.value)}
                           rows={2}
-                          placeholder="Descripcion (opcional)..."
+                          placeholder="Descripción (opcional)..."
                           className="w-full text-xs bg-transparent border border-border/30 rounded-lg px-3 py-1.5
                                      focus:border-amber-400/60 focus:outline-none resize-none
                                      placeholder:text-muted-foreground/30"
@@ -330,7 +330,7 @@ export function CatalogDrawer({ open, domain, worldId, onClose, onAddFromCatalog
                   value={newDescription}
                   onChange={e => setNewDescription(e.target.value)}
                   rows={2}
-                  placeholder="Descripcion (opcional)..."
+                  placeholder="Descripción (opcional)..."
                   className="w-full mt-2 text-xs bg-transparent border border-border/30 rounded-lg px-3 py-2
                              focus:border-amber-400/60 focus:outline-none resize-none
                              placeholder:text-muted-foreground/30"

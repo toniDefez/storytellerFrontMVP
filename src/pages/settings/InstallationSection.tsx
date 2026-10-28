@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ModelSelector, MODELS } from './ModelSelector'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getLinkingToken, revokeInstallation } from '../../services/api'
+import { apiUrl, createPairingCode, revokeInstallation } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
@@ -88,62 +88,92 @@ type WizardStep =
 
 // --- Sub-components ---
 
-function TokenGenerator({
+export interface Pairing {
+  code: string
+  expiresAt: number
+}
+
+/** "K7M2QXA9" → "K7M2-QXA9": se lee en una pantalla y se teclea en otra. */
+const showCode = (code: string) => code.replace(/^(.{4})(.+)$/, '$1-$2')
+
+function useSecondsLeft(expiresAt: number | undefined): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!expiresAt) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [expiresAt])
+  return expiresAt ? Math.max(0, Math.round((expiresAt - now) / 1000)) : 0
+}
+
+/**
+ * El código corto que el equipo cambia por sus credenciales (pair). Sustituye
+ * al token largo: vale una vez y diez minutos, y no hay que pegarlo en ficheros.
+ */
+function PairingCodeGenerator({
   compact,
-  token,
-  setToken,
+  pairing,
+  setPairing,
 }: {
   compact?: boolean
-  token: string
-  setToken: (t: string) => void
+  pairing: Pairing | null
+  setPairing: (p: Pairing | null) => void
 }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const secondsLeft = useSecondsLeft(pairing?.expiresAt)
+  const expired = !!pairing && secondsLeft === 0
 
   const handleGenerate = async () => {
     setLoading(true)
     setError('')
     setCopied(false)
     try {
-      const result = await getLinkingToken()
-      setToken(result.token)
+      const result = await createPairingCode()
+      setPairing({ code: result.code, expiresAt: new Date(result.expires_at).getTime() })
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : t('installation.tokenError'))
+      setError(err instanceof Error ? err.message : t('installation.codeError'))
     } finally {
       setLoading(false)
     }
   }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(token)
+    if (!pairing) return
+    navigator.clipboard.writeText(pairing.code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const minutes = Math.floor(secondsLeft / 60)
+  const seconds = String(secondsLeft % 60).padStart(2, '0')
+
   return (
     <div>
-      <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-        <Button
-          size={compact ? 'default' : 'lg'}
-          className={compact ? '' : 'w-full'}
-          onClick={handleGenerate}
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('installation.generating')}
-            </>
-          ) : (
-            <>
-              <Key className="mr-2 h-4 w-4" />
-              {t('installation.generateToken')}
-            </>
-          )}
-        </Button>
-      </motion.div>
+      {(!pairing || expired) && (
+        <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            size={compact ? 'default' : 'lg'}
+            className={compact ? '' : 'w-full'}
+            onClick={handleGenerate}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('installation.generating')}
+              </>
+            ) : (
+              <>
+                <Key className="mr-2 h-4 w-4" />
+                {expired ? t('installation.newCode') : t('installation.generateCode')}
+              </>
+            )}
+          </Button>
+        </motion.div>
+      )}
 
       <AnimatePresence>
         {error && (
@@ -159,7 +189,7 @@ function TokenGenerator({
       </AnimatePresence>
 
       <AnimatePresence>
-        {token && (
+        {pairing && !expired && (
           <motion.div
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -170,47 +200,27 @@ function TokenGenerator({
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-2">
                 <Zap className="h-3.5 w-3.5 text-primary" />
-                <span className="font-semibold text-sm text-foreground">
-                  {t('installation.tokenLabel')}
-                </span>
+                <span className="font-semibold text-sm text-foreground">{t('installation.codeLabel')}</span>
               </div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 gap-1.5">
-                  <AnimatePresence mode="wait">
-                    {copied ? (
-                      <motion.span
-                        key="copied"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.15 }}
-                        className="flex items-center gap-1.5 text-emerald-600"
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                        {t('installation.tokenCopied')}
-                      </motion.span>
-                    ) : (
-                      <motion.span
-                        key="copy"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.15 }}
-                        className="flex items-center gap-1.5"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                        {t('installation.tokenCopy')}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Button>
-              </motion.div>
+              <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 gap-1.5">
+                {copied ? (
+                  <span className="flex items-center gap-1.5 text-emerald-600">
+                    <Check className="h-3.5 w-3.5" />
+                    {t('installation.tokenCopied')}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <Copy className="h-3.5 w-3.5" />
+                    {t('installation.tokenCopy')}
+                  </span>
+                )}
+              </Button>
             </div>
-            <div className="bg-zinc-900 text-emerald-400 p-3 rounded-md font-mono text-xs break-all overflow-auto max-h-32 select-all leading-relaxed ring-1 ring-zinc-800">
-              {token}
+            <div className="bg-zinc-900 text-emerald-400 py-3 rounded-md font-mono text-2xl tracking-[0.3em] text-center select-all ring-1 ring-zinc-800">
+              {showCode(pairing.code)}
             </div>
             <p className="text-xs text-muted-foreground mt-2.5">
-              {t('installation.tokenWarning')}
+              {t('installation.codeExpires', { time: `${minutes}:${seconds}` })}
             </p>
           </motion.div>
         )}
@@ -219,19 +229,44 @@ function TokenGenerator({
   )
 }
 
-function SetupSteps({ token, selectedModel }: { token: string; selectedModel: string }) {
+function CopyableCommand({ command, children }: { command: string; children: React.ReactNode }) {
   const { t } = useTranslation()
-  const [commandCopied, setCommandCopied] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const handleCopy = () => {
+    navigator.clipboard.writeText(command)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div>
+      <div className="bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto">
+        <span className="text-emerald-400">$</span> {children}
+      </div>
+      <Button variant="outline" size="sm" onClick={handleCopy} className="w-full gap-1.5 mt-2">
+        {copied ? (
+          <span className="flex items-center gap-1.5 text-emerald-600">
+            <Check className="h-3.5 w-3.5" />{t('installation.commandCopied')}
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5">
+            <Copy className="h-3.5 w-3.5" />{t('installation.copyCommand')}
+          </span>
+        )}
+      </Button>
+    </div>
+  )
+}
+
+const IMAGE = 'ghcr.io/tonidefez/storyteller-generator'
+const pairCommandFor = (code: string) => `docker run --rm -v storyteller-generator:/config ${IMAGE} pair ${code} --server ${apiUrl()}`
+
+function SetupSteps({ pairing, setPairing, selectedModel }: { pairing: Pairing | null; setPairing: (p: Pairing | null) => void; selectedModel: string }) {
+  const { t } = useTranslation()
 
   const codeBlock = "bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto"
-
-  const dockerCommand = `docker run --name storyteller-generator -e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e RABBIT_URL=amqp://guest:guest@host.docker.internal:5672 -e INSTALLATION_ACCESS_TOKEN=${token || '<tu-token>'} -e OLLAMA_MODEL=${selectedModel} ghcr.io/tonidefez/storyteller-generator`
-
-  const handleCopyCommand = () => {
-    navigator.clipboard.writeText(dockerCommand)
-    setCommandCopied(true)
-    setTimeout(() => setCommandCopied(false), 2000)
-  }
+  const code = pairing?.code ?? '<código>'
+  const pairCommand = pairCommandFor(code)
+  const runCommand = `docker run -d --name storyteller-generator --restart unless-stopped -v storyteller-generator:/config -e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e OLLAMA_MODEL=${selectedModel} ${IMAGE}`
 
   const steps = [
     {
@@ -277,7 +312,6 @@ function SetupSteps({ token, selectedModel }: { token: string; selectedModel: st
                 </motion.span>
               </AnimatePresence>
             </div>
-            <div><span className="text-emerald-400">$</span> ollama pull nomic-embed-text</div>
           </div>
         </>
       ),
@@ -287,57 +321,43 @@ function SetupSteps({ token, selectedModel }: { token: string; selectedModel: st
       color: 'text-amber-500',
       bg: 'bg-amber-500',
       title: t('installation.step3Title'),
-      description: t('installation.step3Desc'),
+      content: (
+        <>
+          <p className="text-sm text-muted-foreground mb-3">{t('installation.step3Desc')}</p>
+          <PairingCodeGenerator pairing={pairing} setPairing={setPairing} />
+        </>
+      ),
+    },
+    {
+      icon: Terminal,
+      color: 'text-sky-500',
+      bg: 'bg-sky-500',
+      title: t('installation.step4Title'),
+      content: (
+        <>
+          <p className="text-sm text-muted-foreground mb-2">{t('installation.step4Desc')}</p>
+          <CopyableCommand command={pairCommand}>
+            docker run --rm -v storyteller-generator:/config {IMAGE} pair{' '}
+            <span className={pairing ? 'text-emerald-400' : 'text-amber-300'}>{code}</span>{' '}
+            --server <span className="text-amber-300">{apiUrl()}</span>
+          </CopyableCommand>
+        </>
+      ),
     },
     {
       icon: Play,
       color: 'text-primary',
       bg: 'bg-primary',
-      title: t('installation.step4Title'),
+      title: t('installation.step5Title'),
       content: (
         <>
-          <p className="text-sm text-muted-foreground mb-2">{t('installation.step4Desc')}</p>
-          <div className="relative">
-            <div className={codeBlock}>
-              <span className="text-emerald-400">$</span>{' '}
-              docker run --name storyteller-generator{' '}
-              -e <span className="text-sky-400">OLLAMA_BASE_URL</span>=<span className="text-amber-300">http://host.docker.internal:11434</span>{' '}
-              -e <span className="text-sky-400">RABBIT_URL</span>=<span className="text-amber-300">amqp://guest:guest@host.docker.internal:5672</span>{' '}
-              -e <span className="text-sky-400">INSTALLATION_ACCESS_TOKEN</span>=
-              <span className={token ? 'text-emerald-400' : 'text-amber-300'}>{token || '<tu-token>'}</span>{' '}
-              -e <span className="text-sky-400">OLLAMA_MODEL</span>=
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={selectedModel}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="text-amber-300"
-                >
-                  {selectedModel}
-                </motion.span>
-              </AnimatePresence>{' '}
-              <span>ghcr.io/tonidefez/storyteller-generator</span>
-            </div>
-            {token && (
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="mt-2">
-                <Button variant="outline" size="sm" onClick={handleCopyCommand} className="w-full gap-1.5">
-                  <AnimatePresence mode="wait">
-                    {commandCopied ? (
-                      <motion.span key="copied" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5 text-emerald-600">
-                        <Check className="h-3.5 w-3.5" />{t('installation.commandCopied')}
-                      </motion.span>
-                    ) : (
-                      <motion.span key="copy" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                        <Copy className="h-3.5 w-3.5" />{t('installation.copyCommand')}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Button>
-              </motion.div>
-            )}
-          </div>
+          <p className="text-sm text-muted-foreground mb-2">{t('installation.step5Desc')}</p>
+          <CopyableCommand command={runCommand}>
+            docker run -d --name storyteller-generator --restart unless-stopped -v storyteller-generator:/config{' '}
+            -e <span className="text-sky-400">OLLAMA_BASE_URL</span>=<span className="text-amber-300">http://host.docker.internal:11434</span>{' '}
+            -e <span className="text-sky-400">OLLAMA_MODEL</span>=<span className="text-amber-300">{selectedModel}</span>{' '}
+            {IMAGE}
+          </CopyableCommand>
           <p className="text-xs text-muted-foreground mt-2">{t('installation.step4Hint')}</p>
         </>
       ),
@@ -380,7 +400,7 @@ function LinkedView({
   onUnlink: () => void
 }) {
   const { t, i18n } = useTranslation()
-  const [token, setToken] = useState('')
+  const [pairing, setPairing] = useState<Pairing | null>(null)
   const [showRelink, setShowRelink] = useState(false)
 
   const isActive = installation.status?.toLowerCase() === 'active'
@@ -507,7 +527,15 @@ function LinkedView({
                   >
                     <div className="pt-3">
                       <p className="text-xs text-muted-foreground mb-3">{t('installation.relinkDesc')}</p>
-                      <TokenGenerator compact token={token} setToken={setToken} />
+                      <PairingCodeGenerator compact pairing={pairing} setPairing={setPairing} />
+                      {pairing && (
+                        <div className="mt-3">
+                          <p className="text-xs text-muted-foreground mb-2">{t('installation.step4Desc')}</p>
+                          <CopyableCommand command={pairCommandFor(pairing.code)}>
+                            docker run --rm -v storyteller-generator:/config {IMAGE} pair {pairing.code} --server {apiUrl()}
+                          </CopyableCommand>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -526,7 +554,7 @@ export function InstallationSection() {
   const { t } = useTranslation()
   const { installation, hasInstallation, loading, resetInstallation } = useInstallation()
 
-  const [token, setToken] = useState('')
+  const [pairing, setPairing] = useState<Pairing | null>(null)
   const [revoking, setRevoking] = useState(false)
   const [revokeError, setRevokeError] = useState('')
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false)
@@ -616,10 +644,7 @@ export function InstallationSection() {
             <div className="mb-6">
               <ModelSelector value={selectedModel} onChange={handleModelChange} />
             </div>
-            <SetupSteps token={token} selectedModel={selectedModel} />
-            <div className="mt-6 pt-6 border-t border-border">
-              <TokenGenerator token={token} setToken={setToken} />
-            </div>
+            <SetupSteps pairing={pairing} setPairing={setPairing} selectedModel={selectedModel} />
           </CardContent>
         </Card>
       </motion.div>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,8 @@ import { BrainstormCard } from './BrainstormCard'
 import { KeepersPanel } from './KeepersPanel'
 import { suggestBrainstormAxes, generateBrainstormCards } from '@/services/api'
 import type { BrainstormAxis, BrainstormCard as CardType } from '@/services/api'
+import { notifyError } from '@/lib/notifyError'
+import { describeError } from '@/services/telemetry'
 
 const VISIBLE_COUNT = 3
 const PREFETCH_THRESHOLD = 2
@@ -17,11 +19,6 @@ interface Props {
   onSkip: () => void
 }
 
-interface AxisCache {
-  cards: CardType[]
-  fetched: boolean
-}
-
 export function BrainstormStep({ premise, onDone, onSkip }: Props) {
   const [axes, setAxes] = useState<BrainstormAxis[]>([])
   const [activeAxisIndex, setActiveAxisIndex] = useState(0)
@@ -30,58 +27,97 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
   const [loadingAxes, setLoadingAxes] = useState(false)
   const [loadingCards, setLoadingCards] = useState(false)
   const [started, setStarted] = useState(false)
+  // Antes un fallo se tragaba y salía «Has votado todas las ideas»: ahora se
+  // dice qué ha pasado y se puede reintentar.
+  const [cardsError, setCardsError] = useState('')
 
   const bufferRef = useRef<CardType[]>([])
   const fetchingRef = useRef(false)
-  const axisCacheRef = useRef<Map<number, AxisCache>>(new Map())
+  const activeIndexRef = useRef(0)
+  // Una promesa por eje: pedir el mismo eje dos veces reutiliza la petición.
+  const axisCacheRef = useRef<Map<number, Promise<CardType[]>>>(new Map())
+  // El generador local atiende una tarea cada vez: al pulsar Generar (o al
+  // salir) no se lanzan más peticiones de cartas que retrasen el mundo.
+  const stoppedRef = useRef(false)
 
-  const fetchCards = useCallback(async (axis: BrainstormAxis) => {
-    try {
-      const result = await generateBrainstormCards(premise, axis.topic, axis.question)
-      return result.cards
-    } catch {
-      return []
-    }
+  useEffect(() => {
+    stoppedRef.current = false
+    return () => { stoppedRef.current = true }
+  }, [])
+
+  const fetchCards = useCallback(async (axis: BrainstormAxis): Promise<CardType[]> => {
+    if (stoppedRef.current) return []
+    const result = await generateBrainstormCards(premise, axis.topic, axis.question)
+    return result.cards ?? []
   }, [premise])
 
-  // Prefetch all axes in background
-  const prefetchAllAxes = useCallback((allAxes: BrainstormAxis[], skipIndex: number) => {
-    allAxes.forEach((axis, i) => {
-      if (i === skipIndex) return // already fetching this one
-      if (axisCacheRef.current.has(i)) return
-      // Mark as in-flight to avoid duplicates
-      axisCacheRef.current.set(i, { cards: [], fetched: false })
-      fetchCards(axis).then(cards => {
-        axisCacheRef.current.set(i, { cards, fetched: true })
-      })
+  const loadAxis = useCallback((index: number, allAxes: BrainstormAxis[]): Promise<CardType[]> => {
+    const cached = axisCacheRef.current.get(index)
+    if (cached) return cached
+    const promise = fetchCards(allAxes[index])
+    axisCacheRef.current.set(index, promise)
+    // Si falla, se olvida para que reintentar vuelva a pedirlo.
+    promise.catch(() => {
+      if (axisCacheRef.current.get(index) === promise) axisCacheRef.current.delete(index)
     })
+    return promise
   }, [fetchCards])
 
-  const refillFromBuffer = useCallback((currentAxis: BrainstormAxis) => {
-    setVisible(prev => {
-      if (prev.length >= VISIBLE_COUNT) return prev
-      const needed = VISIBLE_COUNT - prev.length
-      const fromBuffer = bufferRef.current.splice(0, needed)
-      const updated = [...prev, ...fromBuffer]
+  // Solo el eje siguiente: adelantar los cinco ponía varias tareas por
+  // delante de la generación del mundo (~46 s de espera medidos).
+  const prefetchNext = useCallback((index: number, allAxes: BrainstormAxis[]) => {
+    const next = index + 1
+    if (stoppedRef.current || next >= allAxes.length || axisCacheRef.current.has(next)) return
+    loadAxis(next, allAxes).catch(() => {})  // si falla, se verá al abrir ese eje
+  }, [loadAxis])
 
-      if (bufferRef.current.length < PREFETCH_THRESHOLD && !fetchingRef.current) {
-        fetchingRef.current = true
-        fetchCards(currentAxis).then(newCards => {
-          bufferRef.current.push(...newCards)
-          fetchingRef.current = false
-          setVisible(v => {
-            if (v.length < VISIBLE_COUNT && bufferRef.current.length > 0) {
-              const extra = bufferRef.current.splice(0, VISIBLE_COUNT - v.length)
-              return [...v, ...extra]
-            }
-            return v
-          })
-        })
+  const showAxis = useCallback(async (index: number, allAxes: BrainstormAxis[]) => {
+    activeIndexRef.current = index
+    setActiveAxisIndex(index)
+    setCardsError('')
+    fetchingRef.current = false
+    bufferRef.current = []
+    setVisible([])
+    setLoadingCards(true)
+    try {
+      const cards = await loadAxis(index, allAxes)
+      if (activeIndexRef.current !== index) return
+      bufferRef.current = cards.slice(VISIBLE_COUNT)
+      setVisible(cards.slice(0, VISIBLE_COUNT))
+      prefetchNext(index, allAxes)
+    } catch (err) {
+      if (activeIndexRef.current === index) {
+        setCardsError(describeError(err, 'error desconocido'))
       }
+    } finally {
+      if (activeIndexRef.current === index) setLoadingCards(false)
+    }
+  }, [loadAxis, prefetchNext])
 
-      return updated
-    })
-  }, [fetchCards])
+  // Pide más cartas del eje en pantalla cuando quedan pocas en reserva.
+  const topUp = useCallback((index: number) => {
+    const axis = axes[index]
+    if (!axis || stoppedRef.current || fetchingRef.current || bufferRef.current.length >= PREFETCH_THRESHOLD) return
+    fetchingRef.current = true
+    fetchCards(axis)
+      .then(newCards => {
+        if (activeIndexRef.current !== index) return
+        bufferRef.current.push(...newCards)
+        setVisible(v => {
+          if (v.length < VISIBLE_COUNT && bufferRef.current.length > 0) {
+            const extra = bufferRef.current.splice(0, VISIBLE_COUNT - v.length)
+            return [...v, ...extra]
+          }
+          return v
+        })
+      })
+      .catch(err => {
+        if (activeIndexRef.current === index) setCardsError(describeError(err, 'error desconocido'))
+      })
+      .finally(() => {
+        if (activeIndexRef.current === index) fetchingRef.current = false
+      })
+  }, [axes, fetchCards])
 
   const startBrainstorm = useCallback(async () => {
     setLoadingAxes(true)
@@ -89,55 +125,30 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
     try {
       const result = await suggestBrainstormAxes(premise)
       setAxes(result.axes)
-      if (result.axes.length > 0) {
-        setActiveAxisIndex(0)
-        setLoadingCards(true)
-
-        // Fetch first axis cards
-        const cards = await fetchCards(result.axes[0])
-        bufferRef.current = cards.slice(VISIBLE_COUNT)
-        setVisible(cards.slice(0, VISIBLE_COUNT))
-        axisCacheRef.current.set(0, { cards, fetched: true })
-
-        // Prefetch all other axes in background
-        prefetchAllAxes(result.axes, 0)
-      }
-    } catch {
-      // fall back silently
+      setLoadingAxes(false)
+      if (result.axes.length > 0) await showAxis(0, result.axes)
+    } catch (err) {
+      notifyError('No se pudieron explorar ideas')(err)
     } finally {
       setLoadingAxes(false)
-      setLoadingCards(false)
     }
-  }, [premise, fetchCards, prefetchAllAxes])
+  }, [premise, showAxis])
 
-  const selectAxis = useCallback(async (index: number) => {
-    setActiveAxisIndex(index)
-    fetchingRef.current = false
+  const selectAxis = useCallback((index: number) => {
+    showAxis(index, axes)
+  }, [axes, showAxis])
 
-    // Check cache first
-    const cached = axisCacheRef.current.get(index)
-    if (cached?.fetched && cached.cards.length > 0) {
-      bufferRef.current = cached.cards.slice(VISIBLE_COUNT)
-      setVisible(cached.cards.slice(0, VISIBLE_COUNT))
+  const retryCards = useCallback(() => {
+    const index = activeIndexRef.current
+    if (visible.length > 0) {
+      // Falló una recarga con cartas aún en pantalla: basta con volver a pedir.
+      setCardsError('')
+      topUp(index)
       return
     }
-
-    // Not cached yet — fetch
-    setLoadingCards(true)
-    setVisible([])
-    bufferRef.current = []
-    try {
-      const axis = axes[index]
-      const cards = await fetchCards(axis)
-      axisCacheRef.current.set(index, { cards, fetched: true })
-      bufferRef.current = cards.slice(VISIBLE_COUNT)
-      setVisible(cards.slice(0, VISIBLE_COUNT))
-    } catch {
-      // silently fail
-    } finally {
-      setLoadingCards(false)
-    }
-  }, [axes, fetchCards])
+    axisCacheRef.current.delete(index)
+    showAxis(index, axes)
+  }, [visible.length, topUp, showAxis, axes])
 
   const voteCard = useCallback((cardIndex: number, keep: boolean) => {
     const card = visible[cardIndex]
@@ -156,20 +167,22 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
       return next
     })
 
-    const currentAxis = axes[activeAxisIndex]
-    if (currentAxis && bufferRef.current.length < PREFETCH_THRESHOLD && !fetchingRef.current) {
-      fetchingRef.current = true
-      fetchCards(currentAxis).then(newCards => {
-        bufferRef.current.push(...newCards)
-        fetchingRef.current = false
-        refillFromBuffer(currentAxis)
-      })
-    }
-  }, [visible, axes, activeAxisIndex, fetchCards, refillFromBuffer])
+    topUp(activeAxisIndex)
+  }, [visible, activeAxisIndex, topUp])
 
   const removeKeeper = useCallback((index: number) => {
     setKeepers(prev => prev.filter((_, i) => i !== index))
   }, [])
+
+  const finish = (chosen: CardType[]) => {
+    stoppedRef.current = true
+    onDone(chosen)
+  }
+
+  const skip = () => {
+    stoppedRef.current = true
+    onSkip()
+  }
 
   // ── Not started ──
   if (!started) {
@@ -182,7 +195,7 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
           <Button onClick={startBrainstorm} style={{ fontFamily: 'var(--font-ui)' }}>
             Explorar ideas
           </Button>
-          <Button variant="ghost" onClick={onSkip} style={{ fontFamily: 'var(--font-ui)' }}>
+          <Button variant="ghost" onClick={skip} style={{ fontFamily: 'var(--font-ui)' }}>
             Generar directamente
           </Button>
         </div>
@@ -235,18 +248,28 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
               ))}
             </AnimatePresence>
           )}
-          {!loadingCards && visible.length === 0 && bufferRef.current.length === 0 && (
+          {!loadingCards && cardsError && (
+            <div role="alert" className="flex flex-col items-center gap-2 py-6 text-center">
+              <p className="text-sm" style={{ color: 'hsl(0 55% 45%)' }}>
+                No se pudieron generar ideas para este tema: {cardsError}
+              </p>
+              <Button variant="outline" size="sm" onClick={retryCards} style={{ fontFamily: 'var(--font-ui)' }}>
+                Reintentar
+              </Button>
+            </div>
+          )}
+          {!loadingCards && !cardsError && visible.length === 0 && bufferRef.current.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-6">
               {fetchingRef.current ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'hsl(260 38% 40%)' }} />
                   <span className="text-sm italic" style={{ fontFamily: 'var(--font-display)', color: 'hsl(30 6% 47%)' }}>
-                    Buscando mas ideas...
+                    Buscando más ideas...
                   </span>
                 </>
               ) : (
                 <p className="text-sm text-center" style={{ color: 'hsl(30 6% 47%)' }}>
-                  Has votado todas las ideas de este tema. Prueba otro eje o continua.
+                  Has votado todas las ideas de este tema. Prueba otro eje o continúa.
                 </p>
               )}
             </div>
@@ -265,10 +288,10 @@ export function BrainstormStep({ premise, onDone, onSkip }: Props) {
           {keepers.length} idea{keepers.length !== 1 ? 's' : ''} guardada{keepers.length !== 1 ? 's' : ''}
         </span>
         <div className="flex gap-3">
-          <Button variant="ghost" onClick={onSkip} style={{ fontFamily: 'var(--font-ui)' }}>
+          <Button variant="ghost" onClick={skip} style={{ fontFamily: 'var(--font-ui)' }}>
             Generar sin ideas
           </Button>
-          <Button onClick={() => onDone(keepers)} style={{ fontFamily: 'var(--font-ui)' }}>
+          <Button onClick={() => finish(keepers)} style={{ fontFamily: 'var(--font-ui)' }}>
             Generar con {keepers.length} idea{keepers.length !== 1 ? 's' : ''}
           </Button>
         </div>

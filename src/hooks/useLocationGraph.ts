@@ -6,6 +6,7 @@ import {
   createLocationEdge, updateLocationEdge, deleteLocationEdge,
   generateLocationRegions, expandLocationNode, enrichLocationNode,
 } from '@/services/api'
+import { useGenerationProgress } from './useGenerationProgress'
 
 async function fetchGraph(worldId: number) {
   const graph = await getLocationGraph(worldId)
@@ -26,6 +27,9 @@ export function useLocationGraph(worldId: number | null) {
   const [expandingNodeId, setExpandingNodeId] = useState<number | null>(null)
   const [enrichingNodeId, setEnrichingNodeId] = useState<number | null>(null)
   const [error, setError] = useState('')
+  // Generar tarda ~40 s y el modelo corrige su propia salida: la fase real
+  // («corrigiendo localizaciones…») se enseña junto al botón.
+  const { progress: generatingProgress, start: startProgress, stop: stopProgress } = useGenerationProgress()
 
   const loadGraph = useCallback(async () => {
     if (!worldId) return
@@ -45,23 +49,26 @@ export function useLocationGraph(worldId: number | null) {
     if (!worldId) return
     setGenerating(true)
     setError('')
+    const requestId = startProgress()
     try {
-      const graph = await generateLocationRegions(worldId)
+      const graph = await generateLocationRegions(worldId, false, requestId)
       setNodes(graph.nodes ?? [])
       setEdges(graph.edges ?? [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error generando localizaciones')
     } finally {
+      stopProgress()
       setGenerating(false)
     }
-  }, [worldId])
+  }, [worldId, startProgress, stopProgress])
 
   const addRegions = useCallback(async () => {
     if (!worldId) return
     setGenerating(true)
     setError('')
+    const requestId = startProgress()
     try {
-      await generateLocationRegions(worldId, true)
+      await generateLocationRegions(worldId, true, requestId)
       // Reload full graph from DB to get accurate state (includes pre-existing nodes)
       const { nodes: fresh, edges: freshEdges } = await fetchGraph(worldId)
       setNodes(fresh)
@@ -69,9 +76,10 @@ export function useLocationGraph(worldId: number | null) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error añadiendo regiones')
     } finally {
+      stopProgress()
       setGenerating(false)
     }
-  }, [worldId])
+  }, [worldId, startProgress, stopProgress])
 
   const expandNode = useCallback(async (worldId: number, nodeId: number) => {
     setExpandingNodeId(nodeId)
@@ -145,7 +153,7 @@ export function useLocationGraph(worldId: number | null) {
 
   return {
     nodes, edges, selected, setSelected,
-    loading, generating, expandingNodeId, enrichingNodeId, error,
+    loading, generating, generatingProgress, expandingNodeId, enrichingNodeId, error,
     loadGraph, generate, addRegions, expandNode, enrichNode,
     addNode, editNode, moveNode, removeNode,
     addEdge, editEdge, removeEdge,

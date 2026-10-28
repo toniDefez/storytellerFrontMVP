@@ -10,7 +10,7 @@ const DOMAIN_META: Record<string, { label: string; color: string; bg: string }> 
 }
 
 // Fixed order for pipeline display
-const PIPELINE_ORDER = ['origin', 'fear', 'drive', 'mask', 'bond']
+const PIPELINE_ORDER = ['origin', 'fear', 'drive', 'bond', 'mask']
 
 interface Props {
   nodes: CharacterNode[]
@@ -19,7 +19,7 @@ interface Props {
   onRemoveNode?: (id: number) => void
 }
 
-export function GraphMinimap({ nodes, selectedNodeId, onSelectNode, onRemoveNode }: Props) {
+export function DecisionFlowOutline({ nodes, selectedNodeId, onSelectNode, onRemoveNode }: Props) {
   const nodeByDomain = new Map<string, CharacterNode[]>()
   for (const node of nodes) {
     const list = nodeByDomain.get(node.domain) || []
