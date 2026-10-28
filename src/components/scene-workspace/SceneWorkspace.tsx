@@ -11,6 +11,7 @@ import { ScenePalette } from './ScenePalette';
 import { SceneProseView } from './SceneProseView';
 import { SceneVersionDropdown } from './SceneVersionDropdown';
 import type { OutputNodeData } from './OutputNode';
+import { formatInfo, type SceneFormat } from '@/lib/sceneFormats';
 import { toast } from 'sonner';
 import { describeError, newRequestId } from '../../services/telemetry';
 import { notifyError } from '@/lib/notifyError';
@@ -62,6 +63,8 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   const [pastedText, setPastedText] = useState('');
   // La prosa en grande, en un panel sobre el lienzo.
   const [expanded, setExpanded] = useState(false);
+  // El formato de la salida: cada uno con sus versiones, sin mezclarse.
+  const [format, setFormat] = useState<SceneFormat>('prose');
 
   const refresh = useCallback(async () => {
     const [n, e, o] = await Promise.all([
@@ -201,7 +204,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     const requestId = newRequestId();
     const poll = trackProgress(requestId);
     try {
-      const res = await generateScene(sceneId, requestId);
+      const res = await generateScene(sceneId, requestId, format);
       setUnmetOutcomes(res.unmet_outcomes ?? []);
       const fresh = await listSceneOutputs(sceneId);
       setOutputs(fresh);
@@ -214,7 +217,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
       setProgress('');
       setLiveDraft('');
     }
-  }, [sceneId, trackProgress]);
+  }, [sceneId, trackProgress, format]);
 
   // La hoja de esta escena con las reglas del escritor, para pegarla en otro
   // modelo. Es la misma que recibe el escritor local.
@@ -263,10 +266,31 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     setCurrentVersion(version);
     // El veredicto del juez era de la última prosa, no de la que se elige.
     setUnmetOutcomes([]);
+    // Solo la novela es la versión vigente de la escena.
+    if (format !== 'prose') return;
     try { await revertSceneOutput(sceneId, version); } catch (err) { console.error(err); }
-  }, [sceneId]);
+  }, [sceneId, format]);
 
-  const currentProse = useMemo(() => outputs.find((o) => o.version === currentVersion)?.content ?? '', [outputs, currentVersion]);
+  // Las versiones del formato elegido (las antiguas, sin vehicle, son novela).
+  const formatOutputs = useMemo(() => outputs.filter((o) => (o.vehicle || 'prose') === format), [outputs, format]);
+
+  const handleFormatChange = useCallback((next: SceneFormat) => {
+    setFormat(next);
+    setUnmetOutcomes([]);
+    const of = outputs.filter((o) => (o.vehicle || 'prose') === next);
+    setCurrentVersion((of.find((o) => o.current) ?? of[0])?.version ?? null);
+  }, [outputs]);
+
+  const currentProse = useMemo(() => formatOutputs.find((o) => o.version === currentVersion)?.content ?? '', [formatOutputs, currentVersion]);
+
+  const handleCopyOutput = useCallback(async () => {
+    try {
+      const how = await copyOrDownload(currentProse, `escena-${sceneId}-${format}.txt`);
+      toast.success(how === 'copied' ? `Copiado: ${formatInfo(format).label}.` : 'Descargado como fichero.');
+    } catch (err) {
+      notifyError('No se pudo copiar')(err);
+    }
+  }, [currentProse, sceneId, format]);
 
   const outputData = useMemo<OutputNodeData>(() => ({
     prose: generating && liveDraft ? liveDraft : currentProse,
@@ -274,10 +298,13 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     progress,
     generating,
     unmet: unmetOutcomes,
-    versions: <SceneVersionDropdown outputs={outputs} current={currentVersion} onSelect={handleVersionSelect} />,
+    versions: <SceneVersionDropdown outputs={formatOutputs} current={currentVersion} onSelect={handleVersionSelect} />,
     onExpand: () => { setPasting(false); setExpanded(true); },
     onPaste: () => { setExpanded(false); setPasting(true); },
-  }), [generating, liveDraft, currentProse, progress, unmetOutcomes, outputs, currentVersion, handleVersionSelect]);
+    format,
+    onFormatChange: handleFormatChange,
+    onCopy: handleCopyOutput,
+  }), [generating, liveDraft, currentProse, progress, unmetOutcomes, formatOutputs, currentVersion, handleVersionSelect, format, handleFormatChange, handleCopyOutput]);
 
   // Ampliar para leer, o pegar una prosa escrita fuera: un panel a la derecha
   // sobre el lienzo, que sigue a la vista.
@@ -343,6 +370,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           locationOptions={locationOptions}
           onGenerate={handleGenerate}
           generating={generating}
+          generateLabel={format === 'prose' ? 'Escribir escena' : `Escribir · ${formatInfo(format).label}`}
         />
       </header>
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>

@@ -1180,12 +1180,15 @@ export function listSceneNodeEdges(sceneId: number): Promise<SceneNodeEdge[]> {
   return request<SceneNodeEdge[]>(`/scene/edge2/list/${sceneId}`)
 }
 
+/** format: prose (novela, por defecto), audio, video o image. */
 export function generateScene(
   sceneId: number,
   requestId?: string,
+  format: string = 'prose',
 ): Promise<{ prose: string; delta: SceneDeltaJSON; version: number; unmet_outcomes?: string[] }> {
+  const query = format === 'prose' ? '' : `?format=${encodeURIComponent(format)}`
   return request<{ prose: string; delta: SceneDeltaJSON; version: number; unmet_outcomes?: string[] }>(
-    `/scene/generate/${sceneId}`,
+    `/scene/generate/${sceneId}${query}`,
     { method: 'POST', requestId },
   )
 }

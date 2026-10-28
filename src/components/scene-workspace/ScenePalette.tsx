@@ -13,6 +13,8 @@ interface ScenePaletteProps {
   locationOptions: PaletteOption[];
   onGenerate: () => void;
   generating: boolean;
+  /** Qué se escribe: «Escribir escena» o «Escribir · Guion de audio». */
+  generateLabel?: string;
 }
 
 const control = {
@@ -42,7 +44,7 @@ function AddPicker({ label, options, onPick }: { label: string; options: Palette
 // acción que ejecuta el grafo. El progreso se ve en el nodo de salida.
 export function ScenePalette({
   onAddMoment, onAddNarrator, onAddDirection, onAddCharacter, onAddLocation,
-  castOptions, locationOptions, onGenerate, generating,
+  castOptions, locationOptions, onGenerate, generating, generateLabel = "Escribir escena",
 }: ScenePaletteProps) {
   return (
     <div role="toolbar" aria-label="Taller de escena" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
@@ -57,7 +59,7 @@ export function ScenePalette({
         style={{ ...control, border: 0, background: generating ? '#b9a9a4' : '#7f2d2d', color: '#fff', fontWeight: 600, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 8 }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z" /></svg>
-        {generating ? 'Escribiendo…' : 'Escribir escena'}
+        {generating ? 'Escribiendo…' : generateLabel}
       </button>
     </div>
   );
