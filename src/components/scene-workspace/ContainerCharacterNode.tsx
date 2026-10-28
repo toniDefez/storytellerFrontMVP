@@ -1,4 +1,6 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
+import { NodeCard } from './NodeCard';
+import { NODE_COLORS } from './nodeColors';
 
 export interface ContainerCharacterData extends Record<string, unknown> {
   name: string;
@@ -7,16 +9,12 @@ export interface ContainerCharacterData extends Record<string, unknown> {
   soulSummary?: string;
 }
 
-export function ContainerCharacterNode({ data }: NodeProps<Node<ContainerCharacterData>>) {
+export function ContainerCharacterNode({ data, selected }: NodeProps<Node<ContainerCharacterData>>) {
   return (
-    <div style={{
-      background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8,
-      padding: '8px 12px', minWidth: 160, fontSize: 12,
-    }}>
-      <div style={{ fontWeight: 600, marginBottom: 2 }}>{data.name}</div>
-      {data.voiceRegisterSummary && <div style={{ color: '#78350f', fontSize: 10 }}>{data.voiceRegisterSummary}</div>}
-      {data.speechPattern && <div style={{ color: '#78350f', fontSize: 10, fontStyle: 'italic' }}>{data.speechPattern}</div>}
-      <Handle type="source" position={Position.Right} id="attach" style={{ background: '#f59e0b' }} />
-    </div>
+    <NodeCard label="Personaje" color={NODE_COLORS.character} width={200} selected={selected}>
+      <div style={{ fontSize: 16, fontWeight: 600 }}>{data.name}</div>
+      {data.speechPattern && <div style={{ fontSize: 13, color: '#5f5868', fontStyle: 'italic' }}>{data.speechPattern}</div>}
+      <Handle type="source" position={Position.Right} id="attach" style={{ background: '#c2410c', width: 12, height: 12 }} />
+    </NodeCard>
   );
 }

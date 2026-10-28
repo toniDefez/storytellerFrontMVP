@@ -10,7 +10,7 @@ import { SceneCanvas } from './SceneCanvas';
 import { ScenePalette } from './ScenePalette';
 import { SceneProseView } from './SceneProseView';
 import { SceneVersionDropdown } from './SceneVersionDropdown';
-import { SplitView } from './SplitView';
+import type { OutputNodeData } from './OutputNode';
 import { toast } from 'sonner';
 import { describeError, newRequestId } from '../../services/telemetry';
 import { notifyError } from '@/lib/notifyError';
@@ -31,9 +31,11 @@ interface SceneWorkspaceProps {
   locationByID?: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
   /** Para copiar la hoja de esta escena del plan de escritura de la historia. */
   storyId?: number;
+  storyTitle?: string;
+  sceneTitle?: string;
 }
 
-export function SceneWorkspace({ sceneId, storyId, onBack, charNameByID, locationByID }: SceneWorkspaceProps) {
+export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBack, charNameByID, locationByID }: SceneWorkspaceProps) {
   const charMap = useMemo(() => charNameByID ?? {}, [charNameByID]);
   const locMap = useMemo(() => locationByID ?? {}, [locationByID]);
   const castOptions = useMemo(
@@ -58,13 +60,15 @@ export function SceneWorkspace({ sceneId, storyId, onBack, charNameByID, locatio
   // Prosa escrita fuera (otro modelo o el autor) pegada aquí.
   const [pasting, setPasting] = useState(false);
   const [pastedText, setPastedText] = useState('');
+  // La prosa en grande, en un panel sobre el lienzo.
+  const [expanded, setExpanded] = useState(false);
 
   const refresh = useCallback(async () => {
     const [n, e, o] = await Promise.all([
       listSceneNodes(sceneId), listSceneNodeEdges(sceneId), listSceneOutputs(sceneId),
     ]);
     setNodes(n); setEdges(e); setOutputs(o);
-    if (o.length && currentVersion === null) setCurrentVersion(o[0].version);
+    if (o.length && currentVersion === null) setCurrentVersion((o.find((x) => x.current) ?? o[0]).version);
   }, [sceneId, currentVersion]);
 
   useEffect(() => { void refresh(); }, [refresh]);
@@ -249,96 +253,108 @@ export function SceneWorkspace({ sceneId, storyId, onBack, charNameByID, locatio
 
   const currentProse = useMemo(() => outputs.find((o) => o.version === currentVersion)?.content ?? '', [outputs, currentVersion]);
 
-  const canvas = (
-    <>
-      <ScenePalette
-        onAddMoment={handleAddMoment}
-        onAddNarrator={handleAddNarrator}
-        onAddCharacter={handleAddCharacter}
-        onAddLocation={handleAddLocation}
-        castOptions={castOptions}
-        locationOptions={locationOptions}
-        onGenerate={handleGenerate}
-        generating={generating}
-        progress={progress}
-      />
-      <SceneCanvas
-        nodes={nodes}
-        edges={edges}
-        onConnect={handleConnect}
-        onNodeMove={handleNodeMove}
-        onMomentEdit={handleMomentEdit}
-        onNarratorEdit={handleNarratorEdit}
-        onEdgeDelete={handleEdgeDelete}
-        unmetOutcomes={unmetOutcomes}
-        charNameByID={charMap}
-        locationByID={locMap}
-      />
-    </>
-  );
+  const outputData = useMemo<OutputNodeData>(() => ({
+    prose: generating && liveDraft ? liveDraft : currentProse,
+    live: generating && !!liveDraft,
+    progress,
+    generating,
+    unmet: unmetOutcomes,
+    versions: <SceneVersionDropdown outputs={outputs} current={currentVersion} onSelect={handleVersionSelect} />,
+    onExpand: () => { setPasting(false); setExpanded(true); },
+    onPaste: () => { setExpanded(false); setPasting(true); },
+  }), [generating, liveDraft, currentProse, progress, unmetOutcomes, outputs, currentVersion, handleVersionSelect]);
 
-  const prose = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: 8, borderBottom: '1px solid #e5e7eb', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-        <SceneVersionDropdown outputs={outputs} current={currentVersion} onSelect={handleVersionSelect} />
-        <div style={{ display: 'flex', gap: 10, whiteSpace: 'nowrap', flexWrap: 'wrap' }}>
-          {storyId != null && (
-            <button onClick={handleCopySheet} disabled={generating} title="Las reglas y la hoja de esta escena, para que escriba otro modelo">
-              Copiar hoja
-            </button>
+  // Ampliar para leer, o pegar una prosa escrita fuera: un panel a la derecha
+  // sobre el lienzo, que sigue a la vista.
+  const drawer = (expanded || pasting) && (
+    <aside aria-label={pasting ? 'Pegar prosa' : 'Prosa de la escena'} style={{
+      position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(640px, 100%)', zIndex: 20,
+      display: 'flex', flexDirection: 'column', background: '#fff', borderLeft: '1px solid #e5ded4',
+      boxShadow: '-8px 0 24px rgba(30,26,36,0.08)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '10px 16px', borderBottom: '1px solid #e5ded4' }}>
+        <strong style={{ fontSize: 15 }}>{pasting ? 'Pegar prosa escrita fuera' : 'Prosa de la escena'}</strong>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!pasting && storyId != null && (
+            <button onClick={handleCopySheet} disabled={generating} style={toolButton} title="Las reglas y la hoja de esta escena, para que escriba otro modelo">Copiar hoja</button>
           )}
-          <button onClick={() => setPasting((v) => !v)} disabled={generating} title="Pegar una prosa escrita fuera y que el juez la compruebe">
-            {pasting ? 'Ver prosa' : 'Pegar prosa'}
-          </button>
-          <button onClick={handleGenerate} disabled={generating}>
-            {generating ? 'Generando…' : 'Regenerar'}
-          </button>
+          <button onClick={() => { setExpanded(false); setPasting(false); setPastedText(''); }} disabled={generating && pasting} style={toolButton}>Cerrar</button>
         </div>
       </div>
-      {unmetOutcomes.length > 0 && !pasting && (
-        <div style={{ padding: '6px 12px', background: '#fef2f2', borderBottom: '1px solid #fecaca', fontSize: 12, color: '#b91c1c' }}>
-          El juez no ve en esta prosa: {unmetOutcomes.join(' · ')}
+      {pasting ? (
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: 16, gap: 10 }}>
+          <textarea
+            autoFocus
+            value={pastedText}
+            onChange={(e) => setPastedText(e.target.value)}
+            disabled={generating}
+            placeholder="Pega aquí la escena escrita por otro modelo o por ti. Al guardarla, el juez comprueba que cumple lo que declaraste en cada evento."
+            style={{ flex: 1, resize: 'none', padding: 12, border: '1px solid #e5ded4', borderRadius: 8, fontFamily: 'inherit', fontSize: 15, lineHeight: 1.6 }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+            {generating && <span role="status" style={{ fontSize: 13, color: '#5f5868' }}>{progress || 'guardando…'}</span>}
+            <button onClick={handleSaveProse} disabled={generating || !pastedText.trim()} style={primaryButton}>
+              {generating ? 'Comprobando…' : 'Guardar y comprobar'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, minHeight: 0 }}>
+          {outputData.prose ? <SceneProseView content={outputData.prose} /> : <div style={{ padding: 24, color: '#5f5868' }}>Aún no hay prosa.</div>}
         </div>
       )}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        {pasting ? (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 12, gap: 8 }}>
-            <textarea
-              autoFocus
-              value={pastedText}
-              onChange={(e) => setPastedText(e.target.value)}
-              disabled={generating}
-              placeholder="Pega aquí la escena escrita por otro modelo o por ti. Al guardarla, el juez comprueba que cumple lo que declaraste en cada momento."
-              style={{ flex: 1, resize: 'none', padding: 12, border: '1px solid #e5e7eb', borderRadius: 6, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.6 }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-              {generating && <span style={{ fontSize: 12, color: '#6b7280' }}>{progress || 'guardando…'}</span>}
-              <button onClick={() => { setPasting(false); setPastedText(''); }} disabled={generating}>Cancelar</button>
-              <button onClick={handleSaveProse} disabled={generating || !pastedText.trim()}>
-                {generating ? 'Comprobando…' : 'Guardar y comprobar'}
-              </button>
-            </div>
-          </div>
-        ) : generating && liveDraft ? (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div role="status" style={{ padding: '6px 12px', background: '#f5f3ff', borderBottom: '1px solid #ddd6fe', fontSize: 12, color: '#5b21b6' }}>
-              Borrador en directo · {progress || 'escribiendo'}. Al terminar se guarda la versión revisada.
-            </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}><SceneProseView content={liveDraft} /></div>
-          </div>
-        ) : currentProse ? <SceneProseView content={currentProse} /> : <div style={{ padding: 24, color: '#9ca3af' }}>{generating ? (progress || 'Esperando al generador…') : 'Aún no se ha generado prosa.'}</div>}
-      </div>
-    </div>
+    </aside>
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div style={{ padding: 8, borderBottom: '1px solid #e5e7eb' }}>
-        <button onClick={onBack}>← Volver al grafo</button>
-      </div>
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        <SplitView left={canvas} right={prose} />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f4f1ec' }}>
+      <header style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: '#fff', borderBottom: '1px solid #e5ded4' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+          <button onClick={onBack} style={toolButton} aria-label="Volver a la historia">←</button>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            {storyTitle && <span style={{ fontSize: 13, color: '#5f5868' }}>{storyTitle}</span>}
+            <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {sceneTitle || 'Escena'}
+            </h1>
+          </div>
+        </div>
+        <ScenePalette
+          onAddMoment={handleAddMoment}
+          onAddNarrator={handleAddNarrator}
+          onAddCharacter={handleAddCharacter}
+          onAddLocation={handleAddLocation}
+          castOptions={castOptions}
+          locationOptions={locationOptions}
+          onGenerate={handleGenerate}
+          generating={generating}
+        />
+      </header>
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <SceneCanvas
+          nodes={nodes}
+          edges={edges}
+          onConnect={handleConnect}
+          onNodeMove={handleNodeMove}
+          onMomentEdit={handleMomentEdit}
+          onNarratorEdit={handleNarratorEdit}
+          onEdgeDelete={handleEdgeDelete}
+          unmetOutcomes={unmetOutcomes}
+          charNameByID={charMap}
+          locationByID={locMap}
+          output={outputData}
+        />
+        {drawer}
       </div>
     </div>
   );
 }
+
+const toolButton = {
+  height: 40, padding: '0 14px', border: '1px solid #ddd5cb', borderRadius: 10,
+  background: '#fff', color: '#1e1a24', fontSize: 14, cursor: 'pointer',
+} as const;
+
+const primaryButton = {
+  height: 40, padding: '0 18px', border: 0, borderRadius: 10,
+  background: '#7f2d2d', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+} as const;

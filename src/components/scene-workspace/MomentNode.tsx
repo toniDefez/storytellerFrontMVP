@@ -34,27 +34,32 @@ export function MomentNode({ data, selected }: NodeProps<Node<MomentNodeData>>) 
 
   return (
     <div style={{
-      background: '#fff', border: `2px solid ${selected ? '#7c3aed' : '#9ca3af'}`,
-      borderRadius: 8, padding: 10, minWidth: 240, maxWidth: 320, fontSize: 13,
+      background: '#fff', border: `2px solid ${selected ? '#0e7490' : '#7fb8c2'}`,
+      borderRadius: 12, width: 300, boxSizing: 'border-box', fontSize: 15, lineHeight: 1.45, color: '#1e1a24',
     }}>
-      <Handle type="target" position={Position.Top} id="flow-in" style={{ background: '#9ca3af' }} />
-      <Handle type="target" position={Position.Left} id="attach-in" style={{ background: '#a78bfa' }} />
+      <Handle type="target" position={Position.Top} id="flow-in" style={{ background: '#0e7490', width: 12, height: 12 }} />
+      <Handle type="target" position={Position.Left} id="attach-in" style={{ background: '#c2410c', width: 12, height: 12 }} />
+      <div style={{ padding: '8px 12px', borderBottom: '1px solid #dceff2', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#0e6470' }}>
+        Evento
+      </div>
+      <div style={{ padding: '10px 12px' }}>
       {editing ? (
         <textarea
+          className="nodrag"
           autoFocus
           value={text}
           onChange={(e) => setText(e.target.value)}
           onBlur={commit}
-          rows={3}
-          style={{ width: '100%', border: 'none', outline: 'none', resize: 'vertical', fontSize: 13, fontFamily: 'inherit' }}
+          rows={4}
+          style={{ width: '100%', border: 'none', outline: 'none', resize: 'vertical', fontSize: 15, fontFamily: 'inherit', lineHeight: 1.45 }}
         />
       ) : (
-        <div onDoubleClick={() => setEditing(true)} style={{ whiteSpace: 'pre-wrap', cursor: 'text', minHeight: 36 }}>
-          {data.description || <span style={{ color: '#9ca3af' }}>Doble click para editar…</span>}
+        <div onDoubleClick={() => setEditing(true)} style={{ whiteSpace: 'pre-wrap', cursor: 'text', minHeight: 40 }}>
+          {data.description || <span style={{ color: '#6b6371' }}>Doble clic: qué pasa en este evento…</span>}
         </div>
       )}
-      <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px dashed #e5e7eb', fontSize: 11 }}>
-        <div style={{ color: '#6b7280', fontWeight: 600, marginBottom: 2 }}
+      <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 8, background: '#f6f2ec', fontSize: 14 }}>
+        <div style={{ color: '#5f5868', fontWeight: 600, fontSize: 12, marginBottom: 2 }}
           title="Lo que tiene que ser cierto cuando acaba el momento. El cómo ocurre lo decide el modelo.">
           Después
         </div>
@@ -66,16 +71,17 @@ export function MomentNode({ data, selected }: NodeProps<Node<MomentNodeData>>) 
             onBlur={commitOutcomes}
             rows={3}
             placeholder="Una por línea: El lobo se ha tragado a la abuela"
-            style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 4, outline: 'none', resize: 'vertical', fontSize: 11, fontFamily: 'inherit' }}
+            className="nodrag"
+            style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 4, outline: 'none', resize: 'vertical', fontSize: 14, fontFamily: 'inherit' }}
           />
         ) : (
-          <div onDoubleClick={() => { setOutcomesText(outcomes.join('\n')); setEditingOutcomes(true); }} style={{ cursor: 'text', minHeight: 16 }}>
-            {outcomes.length === 0 && <span style={{ color: '#9ca3af' }}>Doble click: qué es cierto después…</span>}
+          <div onDoubleClick={() => { setOutcomesText(outcomes.join('\n')); setEditingOutcomes(true); }} style={{ cursor: 'text', minHeight: 18 }}>
+            {outcomes.length === 0 && <span style={{ color: '#6b6371' }}>Doble clic: qué es cierto después…</span>}
             {outcomes.map((o) => {
               // El juez recibe las líneas de control (§) sin la marca.
               const unmet = data.unmet?.includes(o.replace(/^\s*§\s*/, '').trim());
               return (
-                <div key={o} style={{ color: unmet ? '#b91c1c' : '#374151' }}
+                <div key={o} style={{ color: unmet ? '#b91c1c' : '#1e1a24' }}
                   title={unmet ? 'La última prosa generada no lo muestra' : undefined}>
                   {unmet ? '✗' : '→'} {o}
                 </div>
@@ -84,11 +90,9 @@ export function MomentNode({ data, selected }: NodeProps<Node<MomentNodeData>>) 
           </div>
         )}
       </div>
-      <div style={{ display: 'flex', gap: 6, marginTop: 6, fontSize: 10 }}>
-        {data.hasNarratorOverride && <span style={{ background: '#ede9fe', padding: '1px 6px', borderRadius: 4 }}>narrador ✦</span>}
-        {data.hasActiveCharOverride && <span style={{ background: '#fef3c7', padding: '1px 6px', borderRadius: 4 }}>activo ●</span>}
       </div>
-      <Handle type="source" position={Position.Bottom} id="flow-out" style={{ background: '#9ca3af' }} />
+      <Handle type="source" position={Position.Bottom} id="flow-out" style={{ background: '#0e7490', width: 12, height: 12 }} />
+      <Handle type="source" position={Position.Right} id="out" style={{ background: '#0e7490', width: 12, height: 12, opacity: 0 }} isConnectable={false} />
     </div>
   );
 }

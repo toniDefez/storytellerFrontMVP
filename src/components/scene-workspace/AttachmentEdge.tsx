@@ -1,6 +1,7 @@
 import { BaseEdge, getBezierPath, type EdgeProps } from '@xyflow/react';
 
-export function AttachmentEdge({ id, sourceX, sourceY, targetX, targetY }: EdgeProps) {
-  const [path] = getBezierPath({ sourceX, sourceY, targetX, targetY });
-  return <BaseEdge id={id} path={path} style={{ stroke: '#a78bfa', strokeWidth: 1.5, strokeDasharray: '6 4', opacity: 0.75 }} />;
+/** Un personaje o un narrador conectado a un evento concreto. */
+export function AttachmentEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition }: EdgeProps) {
+  const [path] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+  return <BaseEdge id={id} path={path} style={{ stroke: '#c2410c', strokeWidth: 2.5 }} />;
 }

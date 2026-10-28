@@ -12,49 +12,51 @@ interface ScenePaletteProps {
   locationOptions: PaletteOption[];
   onGenerate: () => void;
   generating: boolean;
-  /** Fase real en curso mientras genera ("comprobando los momentos · 31 s"). */
-  progress?: string;
 }
+
+const control = {
+  height: 40, padding: '0 12px', border: '1px solid #ddd5cb', borderRadius: 10,
+  background: '#fff', color: '#1e1a24', fontSize: 14, cursor: 'pointer',
+} as const;
 
 // Un <select> que actúa como botón: elegir una opción la añade y vuelve al
 // placeholder, así se puede añadir otro personaje sin pasos extra.
 function AddPicker({ label, options, onPick }: { label: string; options: PaletteOption[]; onPick: (id: number) => void }) {
   return (
     <select
+      aria-label={`Añadir ${label.toLowerCase()}`}
       value=""
       disabled={options.length === 0}
       onChange={(e) => { if (e.target.value) onPick(Number(e.target.value)); }}
       title={options.length === 0 ? `No hay opciones para ${label.toLowerCase()}` : undefined}
+      style={control}
     >
-      <option value="">{`+ ${label}…`}</option>
+      <option value="">{`+ ${label}`}</option>
       {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
     </select>
   );
 }
 
+// La barra del taller, como la de ComfyUI: añadir nodos y, a la derecha, la
+// acción que ejecuta el grafo. El progreso se ve en el nodo de salida.
 export function ScenePalette({
   onAddMoment, onAddNarrator, onAddCharacter, onAddLocation,
-  castOptions, locationOptions, onGenerate, generating, progress,
+  castOptions, locationOptions, onGenerate, generating,
 }: ScenePaletteProps) {
   return (
-    <div style={{
-      position: 'absolute', top: 12, left: 12, zIndex: 10,
-      display: 'flex', flexDirection: 'column', gap: 6,
-      background: '#fff', padding: 8, border: '1px solid #d1d5db', borderRadius: 8,
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    }}>
-      <button onClick={onAddMoment}>+ Momento</button>
-      <button onClick={onAddNarrator}>+ Narrador</button>
+    <div role="toolbar" aria-label="Taller de escena" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+      <button onClick={onAddMoment} style={control}>+ Evento</button>
       <AddPicker label="Personaje" options={castOptions} onPick={onAddCharacter} />
       <AddPicker label="Lugar" options={locationOptions} onPick={onAddLocation} />
-      <button onClick={onGenerate} disabled={generating} style={{ background: '#7c3aed', color: '#fff' }}>
-        {generating ? 'Generando…' : '✨ Generar prosa'}
+      <button onClick={onAddNarrator} style={control}>+ Narrador</button>
+      <button
+        onClick={onGenerate}
+        disabled={generating}
+        style={{ ...control, border: 0, background: generating ? '#b9a9a4' : '#7f2d2d', color: '#fff', fontWeight: 600, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 8 }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z" /></svg>
+        {generating ? 'Escribiendo…' : 'Escribir escena'}
       </button>
-      {generating && progress && (
-        <div role="status" aria-live="polite" style={{ fontSize: 11, color: '#6b7280', maxWidth: 180 }}>
-          {progress}
-        </div>
-      )}
     </div>
   );
 }

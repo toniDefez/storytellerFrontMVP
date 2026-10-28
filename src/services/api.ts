@@ -1127,6 +1127,8 @@ export interface SceneOutput {
   delta_json?: SceneDeltaJSON | null
   correlation_id?: string
   created_at: string
+  /** La versión vigente de la escena. */
+  current?: boolean
 }
 
 export function createSceneNode(sceneId: number, node: Partial<SceneNode>): Promise<SceneNode> {
