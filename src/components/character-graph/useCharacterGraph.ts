@@ -16,6 +16,9 @@ import {
   saveVoiceExamples as apiSaveVoiceExamples,
   generateVoiceExamples as apiGenerateVoiceExamples,
 } from '@/services/api'
+import { notifyError } from '@/lib/notifyError'
+import { describeError } from '@/services/telemetry'
+import { useGenerationProgress } from '@/hooks/useGenerationProgress'
 
 export type CharacterGraphMode = 'graph' | 'talk' | 'voice'
 
@@ -40,6 +43,14 @@ export function useCharacterGraph(characterId: number) {
   const [premise, setPremise] = useState('')
   const [speechPattern, setSpeechPattern] = useState('')
   const [generatingExamples, setGeneratingExamples] = useState(false)
+  const { progress: generatingProgress, start: startProgress, stop: stopProgress } = useGenerationProgress()
+
+  // El error solo se pintaba en la vista vacía: con el grafo abierto, fallar
+  // al añadir un nodo o en el chat no decía nada. Ahora sale como aviso.
+  const fail = useCallback((context: string) => (err: unknown) => {
+    setError(`${context}: ${describeError(err, 'error desconocido')}`)
+    notifyError(context)(err)
+  }, [])
 
   const loadGraph = useCallback(async () => {
     setLoading(true)
@@ -62,11 +73,11 @@ export function useCharacterGraph(characterId: number) {
       const examples = await getVoiceExamples(characterId)
       setVoiceExamples(examples ?? [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error loading graph')
+      fail('No se pudo cargar el personaje')(err)
     } finally {
       setLoading(false)
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const addNode = useCallback(async (node: Omit<CharacterNode, 'id'>) => {
     try {
@@ -75,19 +86,19 @@ export function useCharacterGraph(characterId: number) {
       setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return created
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error creating node')
+      fail('No se pudo crear el nodo')(err)
       return null
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const editNode = useCallback(async (id: number, updates: Partial<CharacterNode>) => {
     try {
       await updateCharacterNode(id, updates)
       setNodes(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error updating node')
+      fail('No se pudo guardar el nodo')(err)
     }
-  }, [])
+  }, [fail])
 
   const removeNode = useCallback(async (id: number) => {
     try {
@@ -96,9 +107,9 @@ export function useCharacterGraph(characterId: number) {
       setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       if (selectedNodeId === id) setSelectedNodeId(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error deleting node')
+      fail('No se pudo quitar el nodo')(err)
     }
-  }, [selectedNodeId])
+  }, [selectedNodeId, fail])
 
   const moveNode = useCallback(async (id: number, x: number, y: number) => {
     setNodes(prev => prev.map(n => n.id === id ? { ...n, canvas_x: x, canvas_y: y } : n))
@@ -114,19 +125,18 @@ export function useCharacterGraph(characterId: number) {
     try {
       await apiUpdateVoiceRegister(characterId, vr)
     } catch (err) {
-      console.error('Failed to save voice register:', err)
-      setError('Error guardando la voz')
+      fail('No se pudo guardar la voz')(err)
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const saveExamples = useCallback(async (examples: VoiceExample[]) => {
     setVoiceExamples(examples)
     try {
       await apiSaveVoiceExamples(characterId, examples)
     } catch (err) {
-      console.error('Failed to save voice examples:', err)
+      fail('No se pudieron guardar las muestras de voz')(err)
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const generateExamples = useCallback(async () => {
     setGeneratingExamples(true)
@@ -134,12 +144,11 @@ export function useCharacterGraph(characterId: number) {
       const examples = await apiGenerateVoiceExamples(characterId)
       setVoiceExamples(examples ?? [])
     } catch (err) {
-      console.error('Failed to generate voice examples:', err)
-      setError(err instanceof Error ? err.message : 'Error generando muestras')
+      fail('No se pudieron generar las muestras de voz')(err)
     } finally {
       setGeneratingExamples(false)
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const clearChat = useCallback(() => {
     setChatMessages([])
@@ -153,28 +162,31 @@ export function useCharacterGraph(characterId: number) {
       setChatMessages(prev => [...prev, { id: 0, role: 'character' as const, content: result.reply }])
       return result
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error in chat')
+      fail('El personaje no pudo responder')(err)
       return null
     } finally {
       setChatLoading(false)
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const generateNodes = useCallback(async (premise: string) => {
     setGenerating(true)
+    setError('')
+    const requestId = startProgress()
     try {
-      const result = await generateCharacterNodes(characterId, premise)
+      const result = await generateCharacterNodes(characterId, premise, undefined, requestId)
       setNodes(prev => [...prev, ...(result.nodes || [])])
       if (result.voice_register) setVoiceRegister(result.voice_register)
       setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return result
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error generating nodes')
+      fail('No se pudieron generar los nodos del personaje')(err)
       return null
     } finally {
+      stopProgress()
       setGenerating(false)
     }
-  }, [characterId])
+  }, [characterId, fail, startProgress, stopProgress])
 
   const loadSynthesis = useCallback(async () => {
     try {
@@ -194,10 +206,10 @@ export function useCharacterGraph(characterId: number) {
       setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return created
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error adding node from catalog')
+      fail('No se pudo añadir el nodo del catálogo')(err)
       return null
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const addFromContextual = useCallback(async (contextualNodeId: number) => {
     try {
@@ -207,10 +219,10 @@ export function useCharacterGraph(characterId: number) {
       setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return created
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error adding node from contextual catalog')
+      fail('No se pudo añadir el nodo del catálogo del mundo')(err)
       return null
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const regenerateSynthesis = useCallback(async (domain: string) => {
     setSynthesisLoading(domain)
@@ -224,22 +236,24 @@ export function useCharacterGraph(characterId: number) {
       setSoul(prev => prev ? { ...prev, is_stale: true } : prev)
       return result
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error regenerating synthesis')
+      fail('No se pudo regenerar la síntesis')(err)
       return null
     } finally {
       setSynthesisLoading(null)
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const regenerateSoul = useCallback(async () => {
     setSoulLoading(true)
     try {
       const result = await regenerateCharacterSoul(characterId)
       setSoul(result)
+    } catch (err) {
+      fail('No se pudo generar el alma del personaje')(err)
     } finally {
       setSoulLoading(false)
     }
-  }, [characterId])
+  }, [characterId, fail])
 
   const toggleMode = useCallback((target?: 'graph' | 'talk' | 'voice') => {
     setMode(prev => target ?? (prev === 'graph' ? 'talk' : 'graph'))
@@ -248,7 +262,7 @@ export function useCharacterGraph(characterId: number) {
   return {
     // State
     nodes, voiceRegister, chatMessages, characterName,
-    mode, selectedNodeId, loading, chatLoading, generating, error,
+    mode, selectedNodeId, loading, chatLoading, generating, generatingProgress, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
     voiceExamples, premise, speechPattern, generatingExamples,

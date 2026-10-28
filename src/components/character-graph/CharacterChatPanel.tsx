@@ -8,7 +8,8 @@ interface Props {
   characterName: string
   loading: boolean
   onSend: (text: string) => void
-  onHarvest: (messageContent: string) => void
+  /** Sin implementar todavía: sin él no se enseña el botón «Cosechar como nodo». */
+  onHarvest?: (messageContent: string) => void
   onClearChat?: () => void
   voiceBadge?: React.ReactNode
   /**
@@ -110,7 +111,7 @@ export function CharacterChatPanel({
               >
                 {msg.content}
               </div>
-              {msg.role === 'character' && (
+              {msg.role === 'character' && onHarvest && (
                 <div className="pt-2">
                   <HarvestButton onClick={() => onHarvest(msg.content)} />
                 </div>

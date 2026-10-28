@@ -10,6 +10,7 @@ import { CatalogDrawer } from './CatalogDrawer'
 import { ContainerContextMenu, OrbitalContextMenu } from './CharacterContextMenu'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import type { CharacterNode, CharacterNodeDomain } from '@/services/api'
+import { CHARACTER_DOMAIN_LABEL } from './domainLabels'
 
 interface Props {
   characterId: number
@@ -20,7 +21,7 @@ interface Props {
 export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
   const {
     nodes, voiceRegister, chatMessages, characterName,
-    mode, selectedNodeId, loading, chatLoading, generating, error,
+    mode, selectedNodeId, loading, chatLoading, generating, generatingProgress, error,
     synthesis, synthesisLoading,
     soul, soulLoading,
     voiceExamples, premise, speechPattern, generatingExamples,
@@ -32,7 +33,10 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
   } = useCharacterGraph(characterId)
 
   const [selectedNode, setSelectedNode] = useState<CharacterNode | undefined>()
-  const [localPremise, setLocalPremise] = useState('')
+  // null: aún sin tocar, se propone la premisa con la que se creó el
+  // personaje (si generar falló al crearlo, reintentar es un clic).
+  const [localPremise, setLocalPremise] = useState<string | null>(null)
+  const draftPremise = localPremise ?? premise
   const [selectedContainer, setSelectedContainer] = useState<CharacterNodeDomain | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuEvent | null>(null)
 
@@ -107,14 +111,10 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
 
   const closeContextMenu = () => setContextMenu(null)
 
-  const handleHarvest = async () => {
-    // TODO: harvest from chat — open catalog for the relevant domain
-  }
-
   const handleGenerate = async () => {
-    if (!localPremise.trim()) return
-    await generateNodes(localPremise.trim())
-    setLocalPremise('')
+    if (!draftPremise.trim()) return
+    await generateNodes(draftPremise.trim())
+    setLocalPremise(null)
   }
 
   if (loading) {
@@ -129,10 +129,10 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
           Definir personaje
         </p>
         <p className="text-sm text-muted-foreground/60 mb-4 text-center">
-          Escribe una premisa para generar el flujo de decision de <strong>{characterName}</strong>
+          Escribe una premisa para generar el flujo de decisión de <strong>{characterName}</strong>
         </p>
         <textarea
-          value={localPremise}
+          value={draftPremise}
           onChange={e => setLocalPremise(e.target.value)}
           placeholder="Una excavadora que descubrió que el Acuífero es un mito..."
           rows={3}
@@ -143,14 +143,14 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
         />
         <button
           onClick={handleGenerate}
-          disabled={!localPremise.trim()}
+          disabled={!draftPremise.trim()}
           className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl
                      bg-gradient-to-r from-amber-600 to-orange-500 text-white font-medium text-sm
                      disabled:opacity-40 hover:shadow-lg hover:shadow-amber-500/20
                      transition-all duration-200"
         >
           <Sparkles className="w-4 h-4" />
-          Generar flujo de decision
+          Generar flujo de decisión
         </button>
         {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
       </div>
@@ -160,7 +160,7 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
   if (generating) {
     return (
       <div className="flex items-center justify-center h-full">
-        <AIGeneratingIndicator />
+        <AIGeneratingIndicator label="Creando el personaje…" detail={generatingProgress} accent="character" />
       </div>
     )
   }
@@ -262,15 +262,15 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                 <div className="px-4 py-4 space-y-4">
                   <div>
                     <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Dominio</p>
-                    <span className="text-xs font-medium text-foreground/80 capitalize">{selectedNode.domain}</span>
+                    <span className="text-xs font-medium text-foreground/80">{CHARACTER_DOMAIN_LABEL[selectedNode.domain] ?? selectedNode.domain}</span>
                   </div>
                   <div>
-                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Label</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Etiqueta</p>
                     <p className="text-sm font-semibold text-foreground">{selectedNode.label}</p>
                   </div>
                   {selectedNode.description && (
                     <div>
-                      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Descripcion</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Descripción</p>
                       <p className="text-xs text-foreground/70 leading-relaxed">{selectedNode.description}</p>
                     </div>
                   )}
@@ -384,7 +384,6 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
                 characterName={characterName}
                 loading={chatLoading}
                 onSend={sendMessage}
-                onHarvest={handleHarvest}
                 onClearChat={clearChat}
                 blockedReason={chatBlockedReason}
                 voiceBadge={

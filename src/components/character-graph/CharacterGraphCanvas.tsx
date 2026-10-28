@@ -23,6 +23,7 @@ import { useReducedMotion } from 'framer-motion'
 import { RefreshCw, Sprout, Flame, Compass, Zap, VenetianMask } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { CharacterNode, CharacterNodeDomain, DomainSynthesis } from '@/services/api'
+import { CHARACTER_DOMAIN_LABEL as L } from './domainLabels'
 
 /* ── Container metadata ────────────────────────────────────────── */
 
@@ -36,11 +37,11 @@ interface ContainerMeta {
 }
 
 const ALL_CONTAINERS: ContainerMeta[] = [
-  { domain: 'origin', label: 'CREENCIAS', subtitle: '¿Qué da por hecho?', color: '#6366F1', bg: '#eef2ff', icon: Sprout },
-  { domain: 'fear',   label: 'MIEDOS',    subtitle: '¿Qué evita?',        color: '#EF4444', bg: '#fef2f2', icon: Flame },
-  { domain: 'drive',  label: 'DESEOS',    subtitle: '¿Qué persigue?',     color: '#F59E0B', bg: '#fffbeb', icon: Compass },
-  { domain: 'bond',   label: 'GRIETAS',   subtitle: '¿Dónde se rompe?',   color: '#8B5CF6', bg: '#f5f3ff', icon: Zap },
-  { domain: 'mask',   label: 'MÁSCARAS',  subtitle: '¿Qué muestra?',      color: '#10B981', bg: '#ecfdf5', icon: VenetianMask },
+  { domain: 'origin', label: L.origin, subtitle: '¿Qué da por hecho?', color: '#6366F1', bg: '#eef2ff', icon: Sprout },
+  { domain: 'fear',   label: L.fear,   subtitle: '¿Qué evita?',        color: '#EF4444', bg: '#fef2f2', icon: Flame },
+  { domain: 'drive',  label: L.drive,  subtitle: '¿Qué persigue?',     color: '#F59E0B', bg: '#fffbeb', icon: Compass },
+  { domain: 'bond',   label: L.bond,   subtitle: '¿Dónde se rompe?',   color: '#8B5CF6', bg: '#f5f3ff', icon: Zap },
+  { domain: 'mask',   label: L.mask,   subtitle: '¿Qué muestra?',      color: '#10B981', bg: '#ecfdf5', icon: VenetianMask },
 ]
 
 // Vertical flow — top to bottom, orbitals to the right

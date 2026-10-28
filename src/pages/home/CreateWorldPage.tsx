@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Loader2, Server, Wand2, Sparkles, Feather } from 'lucide-react'
+import { Loader2, Server, Wand2, Sparkles, Feather, ArrowLeft } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { useInstallation } from '@/hooks/useInstallation'
@@ -50,6 +50,9 @@ export default function CreateWorldPage() {
 
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollStartRef = useRef<number>(0)
+  // Si la persona se va de la página, ni se sigue preguntando ni se la
+  // arrastra al mundo nuevo cuando termine.
+  const leftRef = useRef(false)
 
   useEffect(() => {
     document.title = `Crear Mundo — StoryTeller`
@@ -71,6 +74,24 @@ export default function CreateWorldPage() {
     }
   }
 
+  useEffect(() => {
+    leftRef.current = false
+    return () => {
+      leftRef.current = true
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+    }
+  }, [])
+
+  // Si falla o se agota el tiempo, se vuelve a la premisa (que se conserva)
+  // con el error a la vista. Antes el spinner seguía para siempre y no había
+  // forma de volver.
+  const failGeneration = (message: string) => {
+    stopPolling()
+    setError(message)
+    setLoading(false)
+    setStep('premise')
+  }
+
   const startPolling = (jobId: string) => {
     pollStartRef.current = Date.now()
     setProgress('Preparando…')
@@ -83,20 +104,17 @@ export default function CreateWorldPage() {
         })
         .catch(() => {})  // informativo: si falla, la creación sigue
       if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
-        stopPolling()
-        setError('La generación tardó demasiado. Inténtalo de nuevo.')
-        setLoading(false)
+        failGeneration('La generación tardó demasiado. Inténtalo de nuevo.')
         return
       }
       try {
         const job = await getJobStatus(jobId)
+        if (leftRef.current) return
         if (job.status === 'done') {
           stopPolling()
           navigate(`/worlds/${job.world_id}`)
         } else if (job.status === 'error') {
-          stopPolling()
-          setError(job.error || 'Error generando el mundo')
-          setLoading(false)
+          failGeneration(job.error || 'Error generando el mundo')
         }
       } catch {
         // transient network error — keep polling
@@ -164,7 +182,7 @@ export default function CreateWorldPage() {
         startPolling(job_id)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error iniciando la generacion')
+      setError(err instanceof Error ? err.message : 'Error iniciando la generación')
       setLoading(false)
       setStep('premise')
     }
@@ -263,11 +281,24 @@ export default function CreateWorldPage() {
               </p>
             </div>
           ) : step === 'brainstorm' ? (
-            <BrainstormStep
-              premise={premise}
-              onDone={handleGenerate}
-              onSkip={handleSkipBrainstorm}
-            />
+            <div>
+              <motion.button
+                type="button"
+                onClick={() => setStep('premise')}
+                className="flex items-center gap-1.5 text-xs mb-6 cursor-pointer"
+                style={{ fontFamily: 'var(--font-ui)', color: 'hsl(260 38% 40%)' }}
+                whileHover={{ x: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span>Volver a la premisa</span>
+              </motion.button>
+              <BrainstormStep
+                premise={premise}
+                onDone={handleGenerate}
+                onSkip={handleSkipBrainstorm}
+              />
+            </div>
           ) : (
             <form onSubmit={handleSubmit}>
               {/* ── Template picker ── */}

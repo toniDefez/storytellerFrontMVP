@@ -441,10 +441,12 @@ export function updateSpeechPattern(characterId: number, speechPattern: string) 
   })
 }
 
-export function generateCharacterNodes(characterId: number, premise: string, profileId?: number) {
+/** requestId: para seguir la fase con getGenerationProgress mientras tarda. */
+export function generateCharacterNodes(characterId: number, premise: string, profileId?: number, requestId?: string) {
   return request<{ nodes: CharacterNode[]; voice_register: VoiceRegister }>(`/character/generate-nodes?character_id=${characterId}`, {
     method: 'POST',
     body: JSON.stringify({ premise, profile_id: profileId }),
+    requestId,
   })
 }
 
@@ -578,10 +580,12 @@ export function deleteLocationEdge(id: number) {
   return request<void>(`/location/edges/delete?id=${id}`, { method: 'DELETE' })
 }
 
-export function generateLocationRegions(worldId: number, additive = false) {
+/** requestId: para seguir la fase con getGenerationProgress mientras tarda. */
+export function generateLocationRegions(worldId: number, additive = false, requestId?: string) {
   return request<LocationGraph>('/location/generate-regions', {
     method: 'POST',
     body: JSON.stringify({ world_id: worldId, additive }),
+    requestId,
   })
 }
 

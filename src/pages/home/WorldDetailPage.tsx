@@ -68,6 +68,7 @@ export default function WorldDetailPage() {
     nodes: locationNodes, edges: locationEdges,
     selected: locationSelected, setSelected: setLocationSelected,
     generating: locationGenerating,
+    generatingProgress: locationGeneratingProgress,
     error: locationError,
     expandingNodeId: locationExpandingNodeId,
     enrichingNodeId: locationEnrichingNodeId,
@@ -267,7 +268,7 @@ export default function WorldDetailPage() {
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
-              Causal
+              Mundo
             </button>
             <button
               onClick={() => setGraphView('locations')}
@@ -277,7 +278,7 @@ export default function WorldDetailPage() {
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
-              Locs
+              Lugares
             </button>
             <button
               onClick={() => setGraphView('characters')}
@@ -432,6 +433,7 @@ export default function WorldDetailPage() {
               onGenerateFactions={handleGenerateFactions}
               onRegionsChanged={reloadRegions}
               generating={locationGenerating}
+              generatingProgress={locationGeneratingProgress}
               generatingMap={geographyGenerating}
               onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
               expandingNodeId={locationExpandingNodeId}

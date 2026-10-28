@@ -87,6 +87,8 @@ interface Props {
   onRegionsChanged: () => Promise<void>
   /** Generando localizaciones desde el grafo causal. */
   generating: boolean
+  /** Fase real de esa generación («corrigiendo localizaciones…» · 12 s). */
+  generatingProgress?: string
   /** Generando el mapa físico: estado aparte, para que cada botón diga lo suyo. */
   generatingMap?: boolean
   onExpandWithAI: (node: LocationNode) => void
@@ -358,7 +360,7 @@ function LocationGraphInner({
   onSelectNode, onSelectEdge,
   onMoveNode, onConnect: onConnectProp,
   onAddNode, onEditNode, onDeleteNode, onUpdateEdge, onDeleteEdge,
-  onGenerate, onAddRegions, onGenerateFactions, onRegionsChanged, generating, generatingMap = false,
+  onGenerate, onAddRegions, onGenerateFactions, onRegionsChanged, generating, generatingProgress = '', generatingMap = false,
   onExpandWithAI, expandingNodeId,
   onEnrichWithAI, enrichingNodeId,
 }: Props) {
@@ -672,6 +674,11 @@ function LocationGraphInner({
                     {generating ? 'Generando localizaciones…' : 'Generar localizaciones desde el grafo causal →'}
                   </button>
                 )}
+                {generating && generatingProgress && (
+                  <p role="status" aria-live="polite" className="text-[11px] italic text-[#0f766e] max-w-xs break-words">
+                    {generatingProgress}
+                  </p>
+                )}
                 <button
                   onClick={() => setFormState({ mode: 'create' })}
                   className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
@@ -763,6 +770,16 @@ function LocationGraphInner({
                 <Users className="w-3.5 h-3.5" />
                 Facciones
               </button>
+              {generating && generatingProgress && (
+                <span
+                  role="status"
+                  aria-live="polite"
+                  title={generatingProgress}
+                  className="self-center max-w-[320px] truncate text-[11px] italic text-[#0f766e] bg-background/90 rounded px-2 py-1"
+                >
+                  {generatingProgress}
+                </span>
+              )}
             </div>
 
             {selectedRegion && (

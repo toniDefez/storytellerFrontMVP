@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
@@ -7,6 +9,21 @@ import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingI
 import { CharacterProfilePicker } from './CharacterProfilePicker'
 import { Users, Sparkles, Wand2, Loader2 } from 'lucide-react'
 import { notifyError } from '@/lib/notifyError'
+import { describeError } from '@/services/telemetry'
+import { useGenerationProgress } from '@/hooks/useGenerationProgress'
+
+const UNNAMED = 'Personaje sin nombre'
+
+// Nombre neutro cuando no se da ninguno. El backend no admite dos personajes
+// con el mismo nombre en un mundo: el segundo sería «Personaje sin nombre 2».
+// Antes se usaban los 50 primeros caracteres de la premisa.
+function placeholderName(taken: string[]): string {
+  const names = new Set(taken)
+  if (!names.has(UNNAMED)) return UNNAMED
+  let n = 2
+  while (names.has(`${UNNAMED} ${n}`)) n++
+  return `${UNNAMED} ${n}`
+}
 
 interface Props {
   worldId: number
@@ -18,6 +35,8 @@ interface Props {
 type Mode = 'empty' | 'new' | 'viewing'
 
 export function CharacterPanel({ worldId, worldPremise, characterBriefs, onCharacterListChanged }: Props) {
+  const { t } = useTranslation()
+  const { progress, start: startProgress, stop: stopProgress } = useGenerationProgress()
   const [mode, setMode] = useState<Mode>('empty')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
@@ -53,7 +72,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
       }
       onCharacterListChanged()
     } catch (err) {
-      console.error('Failed to delete character:', err)
+      notifyError('No se pudo eliminar el personaje')(err)
     }
   }
 
@@ -83,16 +102,29 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     if (!premise.trim()) return
     setGenerating(true)
     setError('')
+    // Se crea en dos pasos: si falla el segundo, el personaje ya existe.
+    let createdId: number | null = null
     try {
+      const taken = [...characterBriefs.map(b => b.name), ...characters.map(c => c.name)]
       const result = await createCharacter({
-        name: name.trim() || premise.trim().slice(0, 50),
+        name: name.trim() || placeholderName(taken),
         world_id: worldId,
         premise: premise.trim(),
       })
+      createdId = result.id
 
       // The archetype is a seed the derivation reinterprets for this premise,
       // not a replacement for it: both shape the character.
-      await generateCharacterNodes(result.id, premise.trim(), selectedProfileId ?? undefined)
+      const requestId = startProgress()
+      try {
+        await generateCharacterNodes(result.id, premise.trim(), selectedProfileId ?? undefined, requestId)
+      } catch (err) {
+        // Los nodos son los que fallan, no la creación: el personaje existe.
+        toast.error(`El personaje se ha creado, pero no se pudieron generar sus nodos (${describeError(err, 'error desconocido')}). Puedes reintentarlo desde su ficha.`)
+        throw err
+      } finally {
+        stopProgress()
+      }
 
       const newChar = await getCharacterById(result.id)
       setCharacters(prev => [...prev, newChar])
@@ -100,6 +132,15 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
       setMode('viewing')
       onCharacterListChanged()
     } catch (err) {
+      if (createdId !== null) {
+        // Antes el personaje a medias no aparecía en la lista y reintentar
+        // con el mismo nombre daba 409. Ahora se abre: su vista vacía
+        // permite volver a generar los nodos con la misma premisa.
+        onCharacterListChanged()
+        setSelectedId(createdId)
+        setMode('viewing')
+        return
+      }
       const message = err instanceof Error ? err.message : ''
       // El backend responde 409 si el nombre ya existe en el mundo: los nombres
       // identifican al personaje en el chat y en las escenas.
@@ -220,14 +261,14 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
                          transition-all duration-200"
             >
               <Sparkles className="w-4 h-4" />
-              Derivar personaje
+              {t('character.create.deriveButton')}
             </button>
           </div>
         )}
 
         {mode === 'new' && generating && (
           <div className="flex items-center justify-center h-full">
-            <AIGeneratingIndicator />
+            <AIGeneratingIndicator label="Creando el personaje…" detail={progress} accent="character" />
           </div>
         )}
 
