@@ -349,7 +349,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f4f1ec' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f4f1ec' }}>
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: '#fff', borderBottom: '1px solid #e5ded4' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
           <button onClick={onBack} style={toolButton} aria-label="Volver a la historia">←</button>

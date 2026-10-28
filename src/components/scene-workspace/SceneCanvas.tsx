@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ReactFlow, Background, Controls, MiniMap, Panel, useReactFlow,
+  ReactFlow, Background, Controls, Panel, useReactFlow,
   type Node, type Edge, type Connection, type NodeTypes, type EdgeTypes, type OnConnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -146,6 +146,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
       onEdgesDelete={(removed) => removed.filter((r) => !isVirtual(r.id)).forEach((r) => onEdgeDelete(Number(r.id)))}
       fitView
       fitViewOptions={FIT}
+      proOptions={{ hideAttribution: true }}
       minZoom={0.2}
     >
       <FitWhenNodesAppear count={rfNodes.length} />
@@ -153,8 +154,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
         <TidyButton nodes={nodes} edges={edges} onNodeMove={onNodeMove} onDone={() => setOutputMoved(null)} />
       </Panel>
       <Background />
-      <Controls />
-      <MiniMap pannable zoomable />
+      <Controls showInteractive={false} />
     </ReactFlow>
   );
 }
