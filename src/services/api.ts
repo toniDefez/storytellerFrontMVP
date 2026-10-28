@@ -2,8 +2,11 @@ import { ApiError, newRequestId, reportClientError } from './telemetry'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
-/** Dirección del backend, para los comandos que el usuario ejecuta en su equipo. */
-export const apiUrl = () => API_URL
+/**
+ * Dirección completa del backend, la que se escribe en la app del generador.
+ * Desplegada, VITE_API_URL puede ser relativa (/api): se resuelve contra esta página.
+ */
+export const apiUrl = () => new URL(API_URL, window.location.href).href.replace(/\/+$/, '')
 
 function getToken(): string {
   return localStorage.getItem('token') || ''
