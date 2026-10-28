@@ -12,7 +12,7 @@ import { DirectionNode } from './DirectionNode';
 import { FlowEdge, ScopeEdge } from './FlowEdge';
 import { OutputNode, type OutputNodeData } from './OutputNode';
 import { AttachmentEdge } from './AttachmentEdge';
-import type { SceneNode, SceneNodeEdge, SceneEdgeKind } from '../../services/api';
+import type { SceneNode, SceneNodeEdge, SceneEdgeKind, CharacterCarry } from '../../services/api';
 
 interface SceneCanvasProps {
   nodes: SceneNode[];
@@ -25,6 +25,8 @@ interface SceneCanvasProps {
   /** Salidas que la última generación no logró mostrar en la prosa. */
   unmetOutcomes?: string[];
   charNameByID: Record<number, string>;
+  /** De dónde viene cada personaje (por character_id). */
+  carryByCharID?: Record<number, CharacterCarry>;
   locationByID: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
   /** La escena como nodo de salida (como en ComfyUI); sin ella no se dibuja. */
   output?: OutputNodeData;
@@ -74,7 +76,7 @@ const edgeTypes: EdgeTypes = {
 };
 
 export function SceneCanvas(props: SceneCanvasProps) {
-  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, locationByID, unmetOutcomes, output } = props;
+  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, carryByCharID, locationByID, unmetOutcomes, output } = props;
 
   // La Escena va a la derecha de los eventos; si la mueves, se queda donde la
   // dejes mientras estés en el taller (no se guarda: no es un nodo del backend).
@@ -92,11 +94,11 @@ export function SceneCanvas(props: SceneCanvasProps) {
       id: String(n.id),
       type: n.node_kind,
       position: { x: n.canvas_x, y: n.canvas_y },
-      data: nodeData(n, charNameByID, locationByID, onMomentEdit, onNarratorEdit, edges, unmetOutcomes ?? []) as Record<string, unknown>,
+      data: nodeData(n, charNameByID, carryByCharID ?? {}, locationByID, onMomentEdit, onNarratorEdit, edges, unmetOutcomes ?? []) as Record<string, unknown>,
     }));
     if (!output) return real;
     return [...real, { id: OUTPUT_ID, type: 'sceneOutput', position: outputPos, deletable: false, data: output }];
-  }, [nodes, edges, charNameByID, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes, output, outputPos]);
+  }, [nodes, edges, charNameByID, carryByCharID, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes, output, outputPos]);
 
   const rfEdges = useMemo<Edge[]>(() => {
     const real: Edge[] = edges.map((e) => ({
@@ -210,6 +212,7 @@ function resolveEdgeKind(fromKind: string, toKind: string): SceneEdgeKind | null
 function nodeData(
   n: SceneNode,
   charNameByID: Record<number, string>,
+  carryByCharID: Record<number, CharacterCarry>,
   locByID: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>,
   onMomentEdit: (id: number, patch: { description?: string; outcomes?: string[] }) => void,
   onNarratorEdit: (id: number, patch: Partial<{ pov: string; style: string; distance: string; reliability: string }>) => void,
@@ -218,7 +221,10 @@ function nodeData(
 ): Record<string, unknown> {
   switch (n.node_kind) {
     case 'character':
-      return { name: n.character_id ? (charNameByID[n.character_id] ?? '?') : '?' };
+      return {
+        name: n.character_id ? (charNameByID[n.character_id] ?? '?') : '?',
+        carry: n.character_id ? carryByCharID[n.character_id] : undefined,
+      };
     case 'location':
       return n.location_node_id ? (locByID[n.location_node_id] ?? { name: '?' }) : { name: '?' };
     case 'moment': {

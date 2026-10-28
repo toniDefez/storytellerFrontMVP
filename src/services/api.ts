@@ -1164,6 +1164,31 @@ export function listSceneNodes(sceneId: number): Promise<SceneNode[]> {
   return request<SceneNode[]>(`/scene/node/list/${sceneId}`)
 }
 
+/** De dónde viene un personaje: su última aparición siguiendo los enlaces
+ *  hacia atrás. Sin from_scene_id, sale por primera vez en la historia. */
+export interface CharacterCarry {
+  character_id: number
+  name: string
+  from_scene_id?: number
+  from_scene_title?: string
+  place?: string
+  last_moment?: string
+  outcomes?: string[]
+  /** Lo que le quedó de apariciones anteriores (la mano perdida sigue perdida). */
+  earlier?: string[]
+}
+
+/** Lo que una escena recibe de las anteriores; es lo mismo que recibe el escritor. */
+export interface SceneCarry {
+  characters: CharacterCarry[]
+  /** La escena anterior, cuando ningún personaje de esta salía en ella. */
+  before?: string
+}
+
+export function getSceneCarry(sceneId: number): Promise<SceneCarry> {
+  return request<SceneCarry>(`/scene/carry/${sceneId}`)
+}
+
 export function createSceneNodeEdge(
   sceneId: number,
   fromId: number,

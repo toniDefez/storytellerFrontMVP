@@ -3,8 +3,8 @@ import {
   listSceneNodes, listSceneNodeEdges, createSceneNode, updateSceneNode, deleteSceneNode,
   updateSceneNodePosition, deleteSceneNodeEdge, createSceneNodeEdge,
   generateScene, listSceneOutputs, revertSceneOutput, getGenerationProgress,
-  getWritingPlan, saveSceneProse,
-  type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput,
+  getWritingPlan, saveSceneProse, getSceneCarry,
+  type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry,
 } from '../../services/api';
 import { SceneCanvas } from './SceneCanvas';
 import { ScenePalette } from './ScenePalette';
@@ -75,6 +75,27 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   }, [sceneId, currentVersion]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  // De dónde viene cada personaje. Se vuelve a pedir al cambiar el reparto:
+  // al añadir a Irene, su nodo dice enseguida que viene de la pesadilla.
+  const [carry, setCarry] = useState<SceneCarry | null>(null);
+  const castKey = useMemo(
+    () => nodes.filter((n) => n.node_kind === 'character').map((n) => n.character_id).sort().join(','),
+    [nodes],
+  );
+  useEffect(() => {
+    let alive = true;
+    getSceneCarry(sceneId).then((c) => { if (alive) setCarry(c); }).catch((err) => console.error(err));
+    return () => { alive = false; };
+  }, [sceneId, castKey]);
+  const carryByCharID = useMemo(
+    () => Object.fromEntries((carry?.characters ?? []).map((c) => [c.character_id, c])),
+    [carry],
+  );
+  const comesFrom = useMemo(() => {
+    const titles = [...new Set((carry?.characters ?? []).filter((c) => c.from_scene_id).map((c) => c.from_scene_title || 'escena sin título'))];
+    return titles.length ? `Viene de ${titles.map((t) => `«${t}»`).join(', ')}` : '';
+  }, [carry]);
 
   const handleConnect = useCallback(async (fromId: number, toId: number, kind: SceneEdgeKind) => {
     try {
@@ -149,7 +170,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
       const created = await createSceneNode(sceneId, {
         node_kind: 'direction',
         description: '',
-        canvas_x: -320,
+        canvas_x: -500,
         canvas_y: 40 + nodes.filter((n) => n.node_kind === 'direction').length * 150,
       });
       setNodes((prev) => [...prev, created]);
@@ -162,8 +183,9 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     const created = await createSceneNode(sceneId, {
       node_kind: 'character',
       character_id: characterId,
-      canvas_x: -160,
-      canvas_y: 120 + nodes.filter((n) => n.node_kind === 'character').length * 100,
+      canvas_x: -220,
+      // El nodo trae de dónde viene el personaje: cabe con 230 px entre uno y otro.
+      canvas_y: 120 + nodes.filter((n) => n.node_kind === 'character').length * 230,
     });
     setNodes((prev) => [...prev, created]);
   }, [sceneId, nodes]);
@@ -358,6 +380,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
             <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {sceneTitle || 'Escena'}
             </h1>
+            {comesFrom && <span style={{ fontSize: 13, color: '#9a3412' }}>{comesFrom}</span>}
           </div>
         </div>
         <ScenePalette
@@ -384,6 +407,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           onEdgeDelete={handleEdgeDelete}
           unmetOutcomes={unmetOutcomes}
           charNameByID={charMap}
+          carryByCharID={carryByCharID}
           locationByID={locMap}
           output={outputData}
         />
