@@ -7,6 +7,7 @@ import {
   type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry, type NarratorNodeConfig, type StoryRelationship,
 } from '../../services/api';
 import { SceneCanvas } from './SceneCanvas';
+import type { ScenePlace } from './ContainerLocationNode';
 import { ScenePalette } from './ScenePalette';
 import { SceneProseView } from './SceneProseView';
 import { SceneVersionDropdown } from './SceneVersionDropdown';
@@ -29,7 +30,9 @@ interface SceneWorkspaceProps {
   sceneId: number;
   onBack: () => void;
   charNameByID?: Record<number, string>;
-  locationByID?: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
+  locationByID?: Record<number, ScenePlace>;
+  /** Crea un lugar en el mundo de la historia y devuelve su id. */
+  onCreateLocation?: (name: string) => Promise<number>;
   /** Relaciones de la historia: sugieren cómo ve quien narra a los demás. */
   relationships?: StoryRelationship[];
   /** Para copiar la hoja de esta escena del plan de escritura de la historia. */
@@ -38,7 +41,7 @@ interface SceneWorkspaceProps {
   sceneTitle?: string;
 }
 
-export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBack, charNameByID, locationByID, relationships }: SceneWorkspaceProps) {
+export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBack, charNameByID, locationByID, onCreateLocation, relationships }: SceneWorkspaceProps) {
   const charMap = useMemo(() => charNameByID ?? {}, [charNameByID]);
   const locMap = useMemo(() => locationByID ?? {}, [locationByID]);
   const castOptions = useMemo(
@@ -402,6 +405,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           onAddDirection={handleAddDirection}
           onAddCharacter={handleAddCharacter}
           onAddLocation={handleAddLocation}
+          onCreateLocation={onCreateLocation}
           castOptions={castOptions}
           locationOptions={locationOptions}
           onGenerate={handleGenerate}

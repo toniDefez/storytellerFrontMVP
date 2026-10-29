@@ -11,12 +11,8 @@ import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { MoreHorizontal, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
 import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
 import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
-import { LocationGraphCanvas } from '@/components/world-graph/LocationGraphCanvas'
-import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
+import { PlacesPanel } from '@/components/places/PlacesPanel'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
-import { useFactions } from '@/hooks/useFactions'
-import { useRegions } from '@/hooks/useRegions'
-import { generateFactions, generateGeography } from '@/services/factionApi'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
 import { StoryPanel } from '@/components/story-setup/StoryPanel'
@@ -54,7 +50,6 @@ export default function WorldDetailPage() {
   const [isExpanding, setIsExpanding] = useState(false)
   const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'stories'>('causal')
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
-  const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
   const graph = useWorldGraph()
 
   const refreshWorldDetail = useCallback(() => {
@@ -64,17 +59,12 @@ export default function WorldDetailPage() {
   }, [id])
 
   const {
-    nodes: locationNodes, edges: locationEdges,
-    selected: locationSelected, setSelected: setLocationSelected,
+    nodes: locationNodes,
     generating: locationGenerating,
     generatingProgress: locationGeneratingProgress,
     error: locationError,
-    expandingNodeId: locationExpandingNodeId,
-    enrichingNodeId: locationEnrichingNodeId,
     loadGraph: loadLocationGraph, generate: generateLocations,
-    expandNode: expandLocationNode, enrichNode: enrichLocationNode,
-    moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
-    editEdge, removeEdge,
+    addNode: addLocationNode, editNode: editLocationNode, removeNode,
   } = useLocationGraph(Number(id))
 
   // El hook guardaba el error y nadie lo enseñaba: generar localizaciones
@@ -82,40 +72,6 @@ export default function WorldDetailPage() {
   useEffect(() => {
     if (locationError) toast.error(`Localizaciones: ${locationError}`)
   }, [locationError])
-
-  const _wid = Number(id)
-  const worldIdNum = Number.isNaN(_wid) ? null : _wid
-  const { factions, reload: reloadFactions } = useFactions(worldIdNum)
-  const { regions, reload: reloadRegions } = useRegions(worldIdNum)
-
-  // El mapa tarda unos segundos (el modelo propone la intención y los
-  // nombres): tiene su propio estado y avisa al terminar o al fallar. Antes
-  // el botón no daba ninguna señal y el error solo iba a la consola.
-  const [geographyGenerating, setGeographyGenerating] = useState(false)
-  const handleGenerateGeography = useCallback(async () => {
-    if (worldIdNum == null) return
-    setGeographyGenerating(true)
-    try {
-      const res = await generateGeography(worldIdNum)
-      // El mapa nuevo recoloca las localizaciones sobre el terreno.
-      await Promise.all([reloadRegions(), reloadFactions(), loadLocationGraph()])
-      toast.success(`Mapa físico generado: ${res.regions?.length ?? 0} regiones`)
-    } catch (e) {
-      notifyError('No se pudo generar el mapa')(e)
-    } finally {
-      setGeographyGenerating(false)
-    }
-  }, [worldIdNum, reloadRegions, reloadFactions])
-
-  const handleGenerateFactions = useCallback(async () => {
-    if (worldIdNum == null) return
-    try {
-      await generateFactions(worldIdNum)
-      await reloadFactions()
-    } catch (e) {
-      notifyError('No se pudieron generar las facciones')(e)
-    }
-  }, [worldIdNum, reloadFactions])
 
   const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
     const wid = Number(id)
@@ -385,51 +341,32 @@ export default function WorldDetailPage() {
             </div>
           </div>
 
-          {/* Locations canvas */}
+          {/* Lugares como fichas. El lienzo del mapa (terreno, facciones,
+              conexiones) queda aparcado: nada de eso llegaba a la escena. */}
           <div
             style={{
               position: 'absolute', inset: 0,
               display: graphView === 'locations' ? 'block' : 'none',
             }}
           >
-            <LocationGraphCanvas
-              worldId={Number(id)}
-              locationNodes={locationNodes}
-              regions={regions}
-              factions={factions}
-              locationEdges={locationEdges}
-              selected={locationSelected}
-              visible={graphView === 'locations'}
-              onSelectNode={node => setLocationSelected(node ? { type: 'node', item: node } : null)}
-              onSelectEdge={edge => setLocationSelected(edge ? { type: 'edge', item: edge } : null)}
-              onMoveNode={moveNode}
-              onConnect={(src, tgt) => setPendingConn({ src, tgt })}
-              // El lugar se crea donde se hizo clic; el lienzo lo selecciona después.
-              onCreatePlace={({ name, x, y, parentId }) => addLocationNode({
+            <PlacesPanel
+              places={locationNodes}
+              onCreate={name => addLocationNode({
                 world_id: Number(id),
-                parent_id: parentId ?? null,
+                parent_id: null,
                 name,
                 node_type: 'settlement',
                 description: '',
                 properties: {},
-                canvas_x: x,
-                canvas_y: y,
+                canvas_x: 0,
+                canvas_y: 0,
               })}
               // Solo lo que cambió: enviar properties: {} a ciegas borraba datos.
-              onUpdatePlace={editLocationNode}
-              onDeletePlace={removeNode}
-              onUpdateEdge={editEdge}
-              onDeleteEdge={removeEdge}
-              onGenerate={generateLocations}
-              onAddRegions={handleGenerateGeography}
-              onGenerateFactions={handleGenerateFactions}
-              generating={locationGenerating}
-              generatingProgress={locationGeneratingProgress}
-              generatingMap={geographyGenerating}
-              onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
-              expandingNodeId={locationExpandingNodeId}
-              onEnrichWithAI={node => enrichLocationNode(Number(id), node.id)}
-              enrichingNodeId={locationEnrichingNodeId}
+              onUpdate={editLocationNode}
+              onDelete={removeNode}
+              onSuggest={generateLocations}
+              suggesting={locationGenerating}
+              suggestingProgress={locationGeneratingProgress}
             />
           </div>
 
@@ -465,26 +402,6 @@ export default function WorldDetailPage() {
         </div>
       </div>
 
-      {/* EdgeFormDialog */}
-      <EdgeFormDialog
-        open={pendingConn !== null}
-        onConfirm={(edgeType, effort, bidirectional) => {
-          if (pendingConn && id) {
-            addEdge({
-              world_id: Number(id),
-              source_node_id: pendingConn.src,
-              target_node_id: pendingConn.tgt,
-              edge_type: edgeType,
-              effort,
-              dramatic_charge: 'medium',
-              bidirectional,
-              note: '',
-            })
-          }
-          setPendingConn(null)
-        }}
-        onCancel={() => setPendingConn(null)}
-      />
     </div>
   )
 }

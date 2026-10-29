@@ -5,7 +5,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { ContainerCharacterNode } from './ContainerCharacterNode';
-import { ContainerLocationNode } from './ContainerLocationNode';
+import { ContainerLocationNode, type ScenePlace } from './ContainerLocationNode';
 import { MomentNode } from './MomentNode';
 import { NarratorNode } from './NarratorNode';
 import { DirectionNode } from './DirectionNode';
@@ -29,7 +29,7 @@ interface SceneCanvasProps {
   charNameByID: Record<number, string>;
   /** De dónde viene cada personaje (por character_id). */
   carryByCharID?: Record<number, CharacterCarry>;
-  locationByID: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
+  locationByID: Record<number, ScenePlace>;
   /** La escena como nodo de salida (como en ComfyUI); sin ella no se dibuja. */
   output?: OutputNodeData;
 }
@@ -220,7 +220,7 @@ function nodeData(
   n: SceneNode,
   charNameByID: Record<number, string>,
   carryByCharID: Record<number, CharacterCarry>,
-  locByID: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>,
+  locByID: Record<number, ScenePlace>,
   onMomentEdit: (id: number, patch: { description?: string; outcomes?: string[] }) => void,
   onNarratorEdit: (id: number, patch: Partial<NarratorNodeConfig>) => void,
   edges: SceneNodeEdge[],
@@ -234,7 +234,7 @@ function nodeData(
         carry: n.character_id ? carryByCharID[n.character_id] : undefined,
       };
     case 'location':
-      return n.location_node_id ? (locByID[n.location_node_id] ?? { name: '?' }) : { name: '?' };
+      return n.location_node_id ? { ...(locByID[n.location_node_id] ?? { name: '?' }) } : { name: '?' };
     case 'moment': {
       const incoming = edges.filter((e) => e.to_node_id === n.id && e.edge_kind === 'attachment');
       return {

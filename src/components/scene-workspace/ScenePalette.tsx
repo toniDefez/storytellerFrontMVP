@@ -1,3 +1,7 @@
+import { useState } from 'react';
+import i18n from '@/i18n';
+import { notifyPlaceError } from '../world-graph/placeErrors';
+
 interface PaletteOption {
   id: number;
   name: string;
@@ -9,6 +13,8 @@ interface ScenePaletteProps {
   onAddDirection: () => void;
   onAddCharacter: (characterId: number) => void;
   onAddLocation: (locationNodeId: number) => void;
+  /** Crea un lugar en el mundo y devuelve su id; sin él no se ofrece «Nuevo lugar…». */
+  onCreateLocation?: (name: string) => Promise<number>;
   castOptions: PaletteOption[];
   locationOptions: PaletteOption[];
   onGenerate: () => void;
@@ -40,17 +46,80 @@ function AddPicker({ label, options, onPick }: { label: string; options: Palette
   );
 }
 
+const NEW_PLACE = -1;
+
+// Elegir un lugar del mundo o crear uno nuevo sin salir de la escena: el
+// lugar nace donde hace falta. Enter crea y lo pone en la escena; Esc cancela.
+function LocationPicker({ options, onPick, onCreate }: {
+  options: PaletteOption[];
+  onPick: (id: number) => void;
+  onCreate?: (name: string) => Promise<number>;
+}) {
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    const value = name.trim();
+    if (!value || busy || !onCreate) return;
+    setBusy(true);
+    try {
+      onPick(await onCreate(value));
+      setNaming(false);
+      setName('');
+    } catch (err) {
+      notifyPlaceError(i18n.t, err, 'location.map.createError');
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (naming) {
+    return (
+      <input
+        autoFocus
+        value={name}
+        readOnly={busy}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); void submit(); }
+          if (e.key === 'Escape') { e.preventDefault(); setNaming(false); setName(''); }
+        }}
+        onBlur={() => { if (!name.trim() && !busy) setNaming(false); }}
+        placeholder="Nombre del lugar · Enter"
+        aria-label="Nombre del lugar nuevo"
+        style={{ ...control, cursor: 'text', width: 220 }}
+      />
+    );
+  }
+  return (
+    <select
+      aria-label="Añadir lugar"
+      value=""
+      disabled={options.length === 0 && !onCreate}
+      onChange={(e) => {
+        const v = Number(e.target.value);
+        if (v === NEW_PLACE) setNaming(true);
+        else if (v) onPick(v);
+      }}
+      style={control}
+    >
+      <option value="">+ Lugar</option>
+      {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+      {onCreate && <option value={NEW_PLACE}>Nuevo lugar…</option>}
+    </select>
+  );
+}
+
 // La barra del taller, como la de ComfyUI: añadir nodos y, a la derecha, la
 // acción que ejecuta el grafo. El progreso se ve en el nodo de salida.
 export function ScenePalette({
-  onAddMoment, onAddNarrator, onAddDirection, onAddCharacter, onAddLocation,
+  onAddMoment, onAddNarrator, onAddDirection, onAddCharacter, onAddLocation, onCreateLocation,
   castOptions, locationOptions, onGenerate, generating, generateLabel = "Escribir escena",
 }: ScenePaletteProps) {
   return (
     <div role="toolbar" aria-label="Taller de escena" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
       <button onClick={onAddMoment} style={control}>+ Evento</button>
       <AddPicker label="Personaje" options={castOptions} onPick={onAddCharacter} />
-      <AddPicker label="Lugar" options={locationOptions} onPick={onAddLocation} />
+      <LocationPicker options={locationOptions} onPick={onAddLocation} onCreate={onCreateLocation} />
       <button onClick={onAddNarrator} style={control}>+ Narrador</button>
       <button onClick={onAddDirection} style={control} title="Cómo quieres que se escriba: suelta vale para toda la escena; conectada a un evento, solo para él">+ Indicación</button>
       <button

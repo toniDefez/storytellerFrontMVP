@@ -783,6 +783,24 @@
       "deleteTitle": "¿Eliminar «{{name}}»?",
       "deleteBody": "También se perderán sus conexiones con otros lugares.",
       "deleteConfirm": "Eliminar"
+    },
+    "places": {
+      "add": "Nuevo lugar",
+      "empty": "Sin lugares aún",
+      "emptyHint": "Crea los sitios donde pasan tus escenas, o deja que la IA proponga algunos a partir del mundo.",
+      "suggest": "Sugerir lugares desde el mundo",
+      "select": "Selecciona un lugar",
+      "things": "Qué hay aquí",
+      "thingsPlaceholder": "p. ej. el pozo seco · Enter",
+      "thingsMore": "Añadir otra cosa · Enter",
+      "thingsHint": "Cosas que se pueden ver, tocar o coger. La escena las usa cuando un momento necesita algo; con 2 o 3 basta.",
+      "removeThing": "Quitar «{{thing}}»",
+      "rule": "Aquí siempre…",
+      "rulePlaceholder": "p. ej. nadie entra armado",
+      "ruleHint": "Se cumple en todas las escenas que pasan en este lugar.",
+      "notes": "Notas",
+      "notesPlaceholder": "Para ti: qué es este sitio y por qué importa a la historia…",
+      "deleteBody": "Las escenas que pasaban aquí se quedan sin lugar."
     }
   }
 }

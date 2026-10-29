@@ -37,6 +37,7 @@ import {
   deleteFact,
   getStoryGraph,
   getLocationGraph,
+  createLocationNode,
   createScene,
   createSceneEdge,
   updateScenePosition,
@@ -56,6 +57,7 @@ import { InicioNode, type InicioNodeData } from './InicioNode'
 import { SceneNode, type SceneNodeData } from './SceneNode'
 import { StoryGraphPanel, type PanelMode } from './StoryGraphPanel'
 import { SceneWorkspace } from '@/components/scene-workspace/SceneWorkspace'
+import type { ScenePlace } from '@/components/scene-workspace/ContainerLocationNode'
 import { StoryReader } from './StoryReader'
 import { writingPlanMarkdown, copyOrDownload } from '@/lib/writingPlan'
 import { notifyError } from '@/lib/notifyError'
@@ -218,7 +220,8 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
   // reparto de la historia y las localizaciones del mundo. Sin estos mapas los
   // nodos salían como "?" y no había forma de añadirlos a la escena.
   const [workspaceCharNames, setWorkspaceCharNames] = useState<Record<number, string>>({})
-  const [workspaceLocations, setWorkspaceLocations] = useState<Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>>({})
+  const [workspaceLocations, setWorkspaceLocations] = useState<Record<number, ScenePlace>>({})
+  const [workspaceWorldId, setWorkspaceWorldId] = useState<number | null>(null)
 
   useEffect(() => {
     if (enteredSceneId == null) return
@@ -228,15 +231,29 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         const graph = await getLocationGraph(d.story.world_id)
         if (cancelled) return
         setWorkspaceCharNames(Object.fromEntries((d.characters ?? []).map(c => [c.character_id, c.name])))
+        setWorkspaceWorldId(d.story.world_id)
         setWorkspaceLocations(Object.fromEntries((graph.nodes ?? []).map(n => [n.id, {
           name: n.name,
           nodeType: n.node_type,
-          narrativeFunction: n.narrative_function,
+          props: n.properties?.props,
+          rule: n.properties?.rule,
         }])))
       })
       .catch(err => toast.error(err instanceof Error ? err.message : 'Error al cargar el reparto de la escena.'))
     return () => { cancelled = true }
   }, [enteredSceneId, storyBrief.id])
+
+  // Un lugar nuevo nace donde se necesita: en la escena. Se crea en el mundo
+  // de la historia y queda a mano en la paleta.
+  const createWorkspaceLocation = useCallback(async (name: string) => {
+    if (workspaceWorldId == null) throw new Error('La historia aún no ha cargado su mundo.')
+    const created = await createLocationNode({
+      world_id: workspaceWorldId, parent_id: null, name, node_type: 'settlement',
+      description: '', properties: {}, canvas_x: 0, canvas_y: 0,
+    })
+    setWorkspaceLocations(prev => ({ ...prev, [created.id]: { name: created.name, nodeType: created.node_type } }))
+    return created.id
+  }, [workspaceWorldId])
 
   /* ── Load scene graph ─── */
   const loadGraph = useCallback(async () => {
@@ -528,6 +545,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         sceneTitle={String(nodes.find((n) => n.id === `scene-${enteredSceneId}`)?.data?.title ?? '')}
         charNameByID={workspaceCharNames}
         locationByID={workspaceLocations}
+        onCreateLocation={createWorkspaceLocation}
         relationships={relationships}
         onBack={() => {
           setEnteredSceneId(null)

@@ -517,6 +517,10 @@ export interface LocationNodeProperties {
   emplazamiento?: string
   /** Dónde la colocó el mapa por última vez; si el autor la mueve, el mapa la respeta. */
   map_pos?: [number, number]
+  /** Ficha del lugar: cosas que hay ahí y que una escena puede usar. */
+  props?: string[]
+  /** Lo que siempre se cumple ahí, en una línea ("nadie entra armado"). */
+  rule?: string
 }
 
 export interface LocationNode {

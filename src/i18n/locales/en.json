@@ -783,6 +783,24 @@
       "deleteTitle": "Delete “{{name}}”?",
       "deleteBody": "Its connections to other places will be lost too.",
       "deleteConfirm": "Delete"
+    },
+    "places": {
+      "add": "New place",
+      "empty": "No places yet",
+      "emptyHint": "Create the places where your scenes happen, or let the AI suggest some from the world.",
+      "suggest": "Suggest places from the world",
+      "select": "Select a place",
+      "things": "What's here",
+      "thingsPlaceholder": "e.g. the dry well · Enter",
+      "thingsMore": "Add another thing · Enter",
+      "thingsHint": "Things you can see, touch or take. The scene uses them when a moment needs something; 2 or 3 are enough.",
+      "removeThing": "Remove “{{thing}}”",
+      "rule": "Here, always…",
+      "rulePlaceholder": "e.g. nobody comes in armed",
+      "ruleHint": "Holds in every scene that happens in this place.",
+      "notes": "Notes",
+      "notesPlaceholder": "For you: what this place is and why it matters to the story…",
+      "deleteBody": "Scenes that happened here will be left without a place."
     }
   }
 }
