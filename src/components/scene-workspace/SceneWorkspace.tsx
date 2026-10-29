@@ -212,8 +212,8 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     const created = await createSceneNode(sceneId, {
       node_kind: 'location',
       location_node_id: locationNodeId,
-      canvas_x: 80,
-      canvas_y: -80,
+      canvas_x: -220,
+      canvas_y: -60, // encima de la columna de personajes (empieza en 120): no tapa los eventos
     });
     await Promise.all(previous.map((n) => deleteSceneNode(n.id)));
     setNodes((prev) => [...prev.filter((n) => n.node_kind !== 'location'), created]);
