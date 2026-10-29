@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   listSceneNodes, listSceneNodeEdges, createSceneNode, updateSceneNode, deleteSceneNode,
   updateSceneNodePosition, deleteSceneNodeEdge, createSceneNodeEdge,
@@ -113,10 +113,16 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   // El estado vivo de cada presente al entrar. Lo mismo que recibe el escritor;
   // el autor lo corrige desde el nodo y la corrección vale desde esta escena.
   const [states, setStates] = useState<CharacterState[]>([]);
-  const refreshState = useCallback(() => getSceneState(sceneId).then(setStates).catch((err) => console.error(err)), [sceneId]);
+  // Cada carga lleva su número: una respuesta lenta no pisa a una más nueva.
+  const stateLoad = useRef(0);
+  const refreshState = useCallback(() => {
+    const n = ++stateLoad.current;
+    return getSceneState(sceneId).then((s) => { if (n === stateLoad.current) setStates(s); }).catch((err) => console.error(err));
+  }, [sceneId]);
   useEffect(() => { void refreshState(); }, [refreshState, castKey]);
   const stateByCharID = useMemo(() => Object.fromEntries(states.map((s) => [s.character_id, s])), [states]);
   const stateActions = useMemo(() => ({
+    sceneId,
     add: async (characterId: number, list: StateList, text: string) => {
       try { await addStateChange(sceneId, { character_id: characterId, list, op: 'add', text }); await refreshState(); }
       catch (err) { toast.error(`No se pudo guardar el estado: ${describeError(err, 'error desconocido')}`); }
@@ -271,7 +277,9 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
       setCurrentVersion(res.version);
       // Tras escribir, el modelo propone cómo queda cada uno; se ve en la
       // escena siguiente, donde el autor lo tacha o corrige.
-      proposeSceneState(sceneId).catch((err) => console.error('estado:', err));
+      setProgress('proponiendo cómo queda cada personaje…');
+      try { await proposeSceneState(sceneId); }
+      catch (err) { toast.error(`La escena está escrita, pero no se pudo proponer el estado: ${describeError(err, 'error desconocido')}`); }
     } catch (err) {
       toast.error(`No se pudo generar la escena: ${describeError(err, 'error desconocido')}`);
     } finally {

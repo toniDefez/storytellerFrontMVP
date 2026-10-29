@@ -9,6 +9,8 @@ import type { CharacterState, StateLine, StateList } from '../../services/api';
 // añade, y lo que toca vale para todas las escenas que vienen después.
 
 export interface StateActions {
+  /** La escena del taller: solo sus propias líneas se borran; las de antes se tachan desde aquí. */
+  sceneId: number;
   add: (characterId: number, list: StateList, text: string) => Promise<void>;
   remove: (characterId: number, list: StateList, text: string) => Promise<void>;
   /** Borra una corrección del autor (una línea suya, no una propuesta). */
@@ -51,8 +53,8 @@ function StateList({ title, list, lines, characterId, actions }: {
             <button
               type="button"
               aria-label={`Quitar «${l.text}»`}
-              title={l.origin === 'autor' ? 'Quitar lo que añadiste' : 'Tachar: deja de ser verdad desde esta escena'}
-              onClick={() => { void (l.origin === 'autor' && l.id ? actions.undo(l.id) : actions.remove(characterId, list, l.text)); }}
+              title={l.origin === 'autor' && l.scene_id === actions.sceneId ? 'Quitar lo que añadiste' : 'Tachar: deja de ser verdad desde esta escena'}
+              onClick={() => { void (l.origin === 'autor' && l.id && l.scene_id === actions.sceneId ? actions.undo(l.id) : actions.remove(characterId, list, l.text)); }}
               style={xButton}
             >×</button>
           )}
