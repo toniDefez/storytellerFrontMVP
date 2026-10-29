@@ -8,8 +8,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { LocationNode, LocationNodePatch } from '@/services/api'
-import { nodeTypeLabel } from '@/components/world-graph/locationLabels'
-import { NODE_TYPES, NODE_TYPE_ICONS } from '@/components/world-graph/placeIcons'
 import { notifyPlaceError } from '@/components/world-graph/placeErrors'
 import { InlineText } from './InlineText'
 
@@ -18,7 +16,6 @@ export const MAX_THINGS = 4
 
 const PILL = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors'
 const PILL_ON = 'border-entity-location/40 bg-entity-location/10 text-entity-location'
-const PILL_OFF = 'border-border text-muted-foreground hover:border-entity-location/40 hover:text-foreground'
 
 interface Props {
   places: LocationNode[]
@@ -34,7 +31,11 @@ interface Props {
 }
 
 /**
- * Los lugares como fichas (2026-10-29). El mapa sumó capas —grafo, terreno,
+ * Los lugares como fichas (2026-10-29). Revisión con UX, diseño de juegos y
+ * narratología: el tipo no llega a la prosa y era lo más visible, así que se
+ * fue; lo que pesa es la regla, y solo cuando un paso la roza (3 de 3 frente a
+ * 0 de 5 en el banco); las cosas casi solo cambian el sustantivo.
+ * El mapa sumó capas —grafo, terreno,
  * facciones, función narrativa— y la escena solo recibía el nombre. Un lugar
  * es lo que la escena puede usar: su nombre, las cosas que hay ahí y lo que
  * siempre se cumple. Misma forma que Personajes: lista a la izquierda y ficha.
@@ -113,8 +114,9 @@ export function PlacesPanel({ places, onCreate, onUpdate, onDelete, onSuggest, s
 }
 
 function PlaceRow({ place, selected, onClick }: { place: LocationNode; selected: boolean; onClick: () => void }) {
-  const Icon = NODE_TYPE_ICONS[place.node_type] ?? MapPin
+  const { t } = useTranslation()
   const things = place.properties?.props ?? []
+  const rule = place.properties?.rule?.trim()
   return (
     <button
       type="button"
@@ -124,13 +126,17 @@ function PlaceRow({ place, selected, onClick }: { place: LocationNode; selected:
         selected ? 'bg-entity-location/10' : 'hover:bg-accent/60'
       }`}
     >
-      <Icon className={`mt-1 size-4 shrink-0 ${selected ? 'text-entity-location' : 'text-muted-foreground'}`} aria-hidden />
+      <MapPin className={`mt-1 size-4 shrink-0 ${selected ? 'text-entity-location' : 'text-muted-foreground'}`} aria-hidden />
       <span className="min-w-0">
         <span className={`block truncate font-display text-[15px] ${selected ? 'text-entity-location' : 'text-foreground'}`}>
           {place.name}
         </span>
-        {things.length > 0 && (
+        {rule ? (
+          <span className="block truncate text-xs italic text-muted-foreground">{rule}</span>
+        ) : things.length > 0 ? (
           <span className="block truncate text-xs text-muted-foreground">{things.join(' · ')}</span>
+        ) : (
+          <span className="block truncate text-xs italic text-muted-foreground/60">{t('location.places.emptyRow')}</span>
         )}
       </span>
     </button>
@@ -205,34 +211,6 @@ function PlaceSheet({ place, onUpdate, onDelete, onClose }: {
         </button>
       </div>
 
-      <section className="space-y-2">
-        <h4 className="text-sm text-muted-foreground">{t('location.map.type')}</h4>
-        <div className="flex flex-wrap gap-1.5">
-          {NODE_TYPES.map(type => {
-            const Icon = NODE_TYPE_ICONS[type]
-            const on = place.node_type === type
-            return (
-              <button
-                key={type}
-                type="button"
-                aria-pressed={on}
-                onClick={() => { if (!on) save({ node_type: type }) }}
-                className={`${PILL} ${on ? PILL_ON : PILL_OFF}`}
-              >
-                <Icon className="size-3.5" />
-                {nodeTypeLabel(type)}
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      <section className="space-y-2">
-        <h4 className="text-sm text-muted-foreground">{t('location.places.things')}</h4>
-        <ThingsEditor things={things} onChange={props => save({ properties: { props } })} />
-        <p className="text-xs text-muted-foreground/80">{t('location.places.thingsHint')}</p>
-      </section>
-
       <section className="space-y-1">
         <h4 className="text-sm text-muted-foreground">{t('location.places.rule')}</h4>
         <InlineText
@@ -240,9 +218,16 @@ function PlaceSheet({ place, onUpdate, onDelete, onClose }: {
           label={t('location.places.rule')}
           placeholder={t('location.places.rulePlaceholder')}
           onCommit={rule => save({ properties: { rule } })}
+          boxed
           className="text-sm"
         />
         <p className="text-xs text-muted-foreground/80">{t('location.places.ruleHint')}</p>
+      </section>
+
+      <section className="space-y-2">
+        <h4 className="text-sm text-muted-foreground">{t('location.places.things')}</h4>
+        <ThingsEditor things={things} onChange={props => save({ properties: { props } })} />
+        <p className="text-xs text-muted-foreground/80">{t('location.places.thingsHint')}</p>
       </section>
 
       <section className="space-y-1">
@@ -253,6 +238,7 @@ function PlaceSheet({ place, onUpdate, onDelete, onClose }: {
           label={t('location.places.notes')}
           placeholder={t('location.places.notesPlaceholder')}
           onCommit={description => save({ description })}
+          boxed
           className="text-sm leading-relaxed"
         />
       </section>
@@ -261,7 +247,7 @@ function PlaceSheet({ place, onUpdate, onDelete, onClose }: {
         variant="link"
         size="sm"
         onClick={() => setConfirmDelete(true)}
-        className="gap-1.5 px-0 text-destructive hover:text-destructive"
+        className="gap-1.5 px-0 text-muted-foreground hover:text-destructive"
       >
         <Trash2 className="size-3.5" /> {t('location.map.delete')}
       </Button>

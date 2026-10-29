@@ -793,12 +793,13 @@
       "things": "What's here",
       "thingsPlaceholder": "e.g. the dry well · Enter",
       "thingsMore": "Add another thing · Enter",
-      "thingsHint": "Things you can see, touch or take. The scene uses them when a moment needs something; 2 or 3 are enough.",
+      "thingsHint": "Things you can see, touch or take. 2 or 3 are enough.",
       "removeThing": "Remove “{{thing}}”",
       "rule": "Here, always…",
-      "rulePlaceholder": "e.g. nobody comes in armed",
-      "ruleHint": "Holds in every scene that happens in this place.",
-      "notes": "Notes",
+      "rulePlaceholder": "e.g. if you're left here, you're alone",
+      "ruleHint": "What this place costs whoever is in it. It weighs on the scene when a moment brushes against it: someone leaving, coming in armed, shouting.",
+      "notes": "Notes · just for you, they don't reach the scene",
+      "emptyRow": "Nothing yet · add what holds here",
       "notesPlaceholder": "For you: what this place is and why it matters to the story…",
       "deleteBody": "Scenes that happened here will be left without a place."
     }

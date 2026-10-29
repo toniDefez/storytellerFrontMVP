@@ -793,12 +793,13 @@
       "things": "Qué hay aquí",
       "thingsPlaceholder": "p. ej. el pozo seco · Enter",
       "thingsMore": "Añadir otra cosa · Enter",
-      "thingsHint": "Cosas que se pueden ver, tocar o coger. La escena las usa cuando un momento necesita algo; con 2 o 3 basta.",
+      "thingsHint": "Cosas que se pueden ver, tocar o coger. Con 2 o 3 basta.",
       "removeThing": "Quitar «{{thing}}»",
       "rule": "Aquí siempre…",
-      "rulePlaceholder": "p. ej. nadie entra armado",
-      "ruleHint": "Se cumple en todas las escenas que pasan en este lugar.",
-      "notes": "Notas",
+      "rulePlaceholder": "p. ej. si te dejan aquí, estás solo",
+      "ruleHint": "Lo que este sitio le cobra a quien está en él. Pesa en la escena cuando algún momento la roza: quien se va, quien entra armado, quien grita.",
+      "notes": "Notas · solo para ti, no llegan a la escena",
+      "emptyRow": "Nada aún · añade qué rige aquí",
       "notesPlaceholder": "Para ti: qué es este sitio y por qué importa a la historia…",
       "deleteBody": "Las escenas que pasaban aquí se quedan sin lugar."
     }

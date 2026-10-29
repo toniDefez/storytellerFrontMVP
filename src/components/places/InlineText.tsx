@@ -10,12 +10,14 @@ import { Textarea } from '@/components/ui/textarea'
  * sincronicen estado. Esc descarta; Enter (en una línea) guarda.
  */
 export function InlineText({
-  value, onCommit, multiline, required, className, placeholder, label,
+  value, onCommit, multiline, required, boxed, className, placeholder, label,
 }: {
   value: string
   onCommit: (next: string) => void
   multiline?: boolean
   required?: boolean
+  /** Con borde siempre: que se vea que es un campo y no texto fijo. */
+  boxed?: boolean
   className?: string
   placeholder?: string
   label: string
@@ -48,7 +50,7 @@ export function InlineText({
     onBlur: commit,
     onKeyDown,
   }
-  const quiet = 'border-transparent shadow-none hover:border-input focus-visible:border-ring -mx-2 px-2'
+  const quiet = boxed ? 'shadow-none' : 'border-transparent shadow-none hover:border-input focus-visible:border-ring -mx-2 px-2'
   return multiline
     ? <Textarea {...common} rows={3} className={`${quiet} min-h-0 resize-none ${className ?? ''}`} />
     : <Input {...common} className={`${quiet} ${className ?? ''}`} />

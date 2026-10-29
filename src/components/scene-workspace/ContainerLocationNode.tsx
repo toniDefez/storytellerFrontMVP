@@ -1,5 +1,4 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
-import { nodeTypeLabel } from '../world-graph/locationLabels';
 import { NodeCard } from './NodeCard';
 import { NODE_COLORS } from './nodeColors';
 
@@ -21,9 +20,8 @@ export function ContainerLocationNode({ data, selected }: NodeProps<Node<Contain
   return (
     <NodeCard label="Lugar" color={NODE_COLORS.location} width={240} selected={selected}>
       <div style={{ fontSize: 16, fontWeight: 600 }}>{data.name}</div>
-      {data.nodeType && <div style={{ fontSize: 13, color: '#5f5868' }}>{nodeTypeLabel(data.nodeType)}</div>}
-      {things.length > 0 && <div style={{ fontSize: 13, color: '#5f5868', marginTop: 4 }}>Hay: {things.join(' · ')}</div>}
-      {data.rule && <div style={{ fontSize: 13, color: '#5f5868', fontStyle: 'italic', marginTop: 2 }}>Aquí siempre: {data.rule}</div>}
+      {data.rule && <div style={{ fontSize: 13, color: '#5f5868', fontStyle: 'italic', marginTop: 4 }}>Aquí siempre: {data.rule}</div>}
+      {things.length > 0 && <div style={{ fontSize: 13, color: '#5f5868', marginTop: 2 }}>Hay: {things.join(' · ')}</div>}
       {/* El lugar es de toda la escena: su cable va siempre a la Escena. */}
       <Handle type="source" position={Position.Right} id="attach" style={{ background: NODE_COLORS.location, width: 12, height: 12 }} isConnectable={false} />
     </NodeCard>
