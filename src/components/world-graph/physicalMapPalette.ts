@@ -91,26 +91,8 @@ export const Z_INDEX = {
   label: 15,         // place names, above the terrain they name
   civic: 20,         // settlement, ruin, structure, wilderness, landmark, passage
   selected: 25,      // any selected node
-  // Vertex handles sit above everything. This slot was reserved at 5 for
-  // symmetry with the terrain layers, but a handle must be grabbable: at 5 it
-  // would render beneath the very river (10) it edits, and beneath any civic
-  // node (20) that happens to overlap it.
-  vertex: 30,
   /** @deprecated kept so older call sites keep compiling; use `sea`/`lake`. */
   seaLake: 0,
-} as const
-
-// ────────────────────────────────────────────────────────────────────────────
-// Vertex handles (Slice A — manual geometry editing)
-// ────────────────────────────────────────────────────────────────────────────
-
-/** Radius in canvas px. Node boxes are 2r; positions are offset by r to center. */
-export const VERTEX_HANDLE_RADIUS = 5
-
-export const VERTEX_HANDLE = {
-  fill: '#ffffff',
-  stroke: '#14b8a6',   // teal — same accent used for selection elsewhere
-  strokeWidth: 2,
 } as const
 
 /**

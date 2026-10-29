@@ -55,7 +55,6 @@ export default function WorldDetailPage() {
   const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'stories'>('causal')
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
   const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
-  const [confirmRegen, setConfirmRegen] = useState(false)
   const graph = useWorldGraph()
 
   const refreshWorldDetail = useCallback(() => {
@@ -274,7 +273,7 @@ export default function WorldDetailPage() {
               onClick={() => setGraphView('locations')}
               className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
                 graphView === 'locations'
-                  ? 'bg-[#14b8a6]/10 text-[#0f766e]'
+                  ? 'bg-entity-location/10 text-entity-location'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
@@ -405,33 +404,25 @@ export default function WorldDetailPage() {
               onSelectEdge={edge => setLocationSelected(edge ? { type: 'edge', item: edge } : null)}
               onMoveNode={moveNode}
               onConnect={(src, tgt) => setPendingConn({ src, tgt })}
-              onAddNode={async (input, parentId) => {
-                await addLocationNode({
-                  world_id: Number(id),
-                  parent_id: parentId,
-                  name: input.name,
-                  node_type: input.node_type,
-                  description: input.description,
-                  properties: {},
-                  canvas_x: 200 + Math.random() * 800,
-                  canvas_y: 100 + Math.random() * 600,
-                })
-              }}
-              onEditNode={async (nodeId, input) => {
-                await editLocationNode(nodeId, {
-                  name: input.name,
-                  node_type: input.node_type,
-                  description: input.description,
-                  properties: {},
-                })
-              }}
-              onDeleteNode={removeNode}
+              // El lugar se crea donde se hizo clic; el lienzo lo selecciona después.
+              onCreatePlace={({ name, x, y, parentId }) => addLocationNode({
+                world_id: Number(id),
+                parent_id: parentId ?? null,
+                name,
+                node_type: 'settlement',
+                description: '',
+                properties: {},
+                canvas_x: x,
+                canvas_y: y,
+              })}
+              // Solo lo que cambió: enviar properties: {} a ciegas borraba datos.
+              onUpdatePlace={editLocationNode}
+              onDeletePlace={removeNode}
               onUpdateEdge={editEdge}
               onDeleteEdge={removeEdge}
-              onGenerate={() => (locationNodes.length > 0 ? setConfirmRegen(true) : generateLocations())}
+              onGenerate={generateLocations}
               onAddRegions={handleGenerateGeography}
               onGenerateFactions={handleGenerateFactions}
-              onRegionsChanged={reloadRegions}
               generating={locationGenerating}
               generatingProgress={locationGeneratingProgress}
               generatingMap={geographyGenerating}
@@ -494,33 +485,6 @@ export default function WorldDetailPage() {
         }}
         onCancel={() => setPendingConn(null)}
       />
-
-      {/* Regenerate confirmation */}
-      {confirmRegen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-background border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-semibold text-base mb-2">¿Regenerar las localizaciones?</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Se sustituirán las {locationNodes.length} localizaciones actuales por otras nuevas
-              generadas desde el grafo causal. El mapa físico no cambia.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setConfirmRegen(false)}
-                className="text-sm px-3 py-1.5 rounded-lg border border-border hover:bg-accent"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { setConfirmRegen(false); generateLocations() }}
-                className="text-sm px-3 py-1.5 rounded-lg bg-[#14b8a6] text-white hover:bg-[#0f766e]"
-              >
-                Regenerar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

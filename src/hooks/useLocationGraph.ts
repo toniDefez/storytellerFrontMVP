@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { LocationNode, LocationEdge } from '@/services/api'
+import type { LocationNode, LocationEdge, LocationNodePatch } from '@/services/api'
 import {
   getLocationGraph, createLocationNode, updateLocationNode,
   updateLocationNodePosition, deleteLocationNode,
@@ -112,14 +112,23 @@ export function useLocationGraph(worldId: number | null) {
   }, [selected])
 
   const addNode = useCallback(async (node: Omit<LocationNode, 'id'>) => {
-    const created = await createLocationNode(node)
+    const raw = await createLocationNode(node)
+    const created: LocationNode = { ...raw, properties: raw.properties ?? {} }
     setNodes(prev => [...prev, created])
     return created
   }, [])
 
-  const editNode = useCallback(async (id: number, data: Pick<LocationNode, 'name' | 'node_type' | 'description' | 'properties'>) => {
-    await updateLocationNode(id, data)
-    setNodes(prev => prev.map(n => n.id === id ? { ...n, ...data } : n))
+  // Solo lo que cambia: el backend conserva el resto.
+  const editNode = useCallback(async (id: number, patch: LocationNodePatch) => {
+    await updateLocationNode(id, patch)
+    setNodes(prev => prev.map(n => {
+      if (n.id !== id) return n
+      const { properties, narrative_function, ...rest } = patch
+      const next: LocationNode = { ...n, ...rest }
+      if (narrative_function !== undefined) next.narrative_function = narrative_function || undefined
+      if (properties) next.properties = { ...n.properties, ...properties }
+      return next
+    }))
   }, [])
 
   const moveNode = useCallback(async (id: number, x: number, y: number) => {

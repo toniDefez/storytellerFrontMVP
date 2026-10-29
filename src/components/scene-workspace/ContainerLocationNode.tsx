@@ -17,7 +17,7 @@ export function ContainerLocationNode({ data, selected }: NodeProps<Node<Contain
       <div style={{ fontSize: 16, fontWeight: 600 }}>{data.name}</div>
       {detail && <div style={{ fontSize: 13, color: '#5f5868' }}>{detail}</div>}
       {/* El lugar es de toda la escena: su cable va siempre a la Escena. */}
-      <Handle type="source" position={Position.Right} id="attach" style={{ background: '#4f46e5', width: 12, height: 12 }} isConnectable={false} />
+      <Handle type="source" position={Position.Right} id="attach" style={{ background: NODE_COLORS.location, width: 12, height: 12 }} isConnectable={false} />
     </NodeCard>
   );
 }

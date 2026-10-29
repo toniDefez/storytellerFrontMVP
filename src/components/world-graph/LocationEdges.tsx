@@ -23,8 +23,8 @@ const EFFORT_LABEL: Record<LocationEffort, string> = {
 }
 
 const EFFORT_COLOR: Record<LocationEffort, string> = {
-  easy: '#0f766e',
-  moderate: '#0e7490',
+  easy: '#3f6b4a',
+  moderate: '#6b5a48',
   difficult: '#92400e',
 }
 
@@ -67,7 +67,7 @@ function FloatingLocationEdge({
         <EdgeLabelRenderer>
           <div
             style={{ transform: `translate(-50%,-50%) translate(${labelX}px,${labelY}px)` }}
-            className="absolute text-[10px] bg-background border border-border rounded px-1.5 py-0.5 pointer-events-none"
+            className="absolute text-xs bg-background border border-border rounded px-1.5 py-0.5 pointer-events-none"
           >
             {d.note}
           </div>
@@ -80,7 +80,7 @@ function FloatingLocationEdge({
               transform: `translate(-50%,-50%) translate(${labelX}px,${labelY + 14}px)`,
               color: EFFORT_COLOR[effort],
             }}
-            className="absolute text-[9px] font-semibold pointer-events-none bg-background/80 px-1 rounded"
+            className="absolute text-[11px] font-medium pointer-events-none bg-background/80 px-1 rounded"
           >
             {EFFORT_LABEL[effort]}
           </div>
@@ -93,7 +93,7 @@ function FloatingLocationEdge({
 export const WaterwayEdge = memo((props: EdgeProps) => (
   <FloatingLocationEdge
     {...props}
-    style={{ stroke: '#14b8a6', strokeDasharray: '8,5' }}
+    style={{ stroke: '#3b7ea1', strokeDasharray: '8,5' }}
   />
 ))
 
@@ -107,13 +107,13 @@ export const WildernessEdge = memo((props: EdgeProps) => (
 export const RoadEdge = memo((props: EdgeProps) => (
   <FloatingLocationEdge
     {...props}
-    style={{ stroke: '#14b8a6' }}
+    style={{ stroke: 'var(--color-entity-location)' }}
   />
 ))
 
 export const HierarchyEdge = memo((props: EdgeProps) => (
   <FloatingLocationEdge
     {...props}
-    style={{ stroke: '#d97706', strokeDasharray: '3,5', strokeWidth: 1.5, opacity: 0.7 }}
+    style={{ stroke: 'var(--color-entity-location-muted)', strokeDasharray: '3,5', strokeWidth: 1.5, opacity: 0.7 }}
   />
 ))

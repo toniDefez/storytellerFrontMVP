@@ -559,7 +559,18 @@ export function createLocationNode(node: Omit<LocationNode, 'id'>) {
   return request<LocationNode>('/location/nodes', { method: 'POST', body: JSON.stringify(node) })
 }
 
-export function updateLocationNode(id: number, data: Pick<LocationNode, 'name' | 'node_type' | 'description' | 'properties'>) {
+/**
+ * Cambios de un lugar: solo se envía lo que cambia. El backend fusiona
+ * `properties` clave a clave y conserva lo que no venga, así que editar el
+ * nombre ya no borra la función narrativa ni el emplazamiento.
+ */
+export type LocationNodePatch = Partial<Pick<LocationNode, 'name' | 'node_type' | 'description'>> & {
+  /** '' la quita. */
+  narrative_function?: NarrativeFunction | ''
+  properties?: Partial<LocationNodeProperties>
+}
+
+export function updateLocationNode(id: number, data: LocationNodePatch) {
   return request<void>(`/location/nodes/update?id=${id}`, { method: 'PUT', body: JSON.stringify(data) })
 }
 
