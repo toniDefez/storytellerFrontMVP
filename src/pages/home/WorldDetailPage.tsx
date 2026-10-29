@@ -59,12 +59,13 @@ export default function WorldDetailPage() {
   }, [id])
 
   const {
-    nodes: locationNodes,
+    nodes: locationNodes, edges: locationEdges,
     generating: locationGenerating,
     generatingProgress: locationGeneratingProgress,
     error: locationError,
     loadGraph: loadLocationGraph, generate: generateLocations,
     addNode: addLocationNode, editNode: editLocationNode, removeNode,
+    addEdge, editEdge, removeEdge,
   } = useLocationGraph(Number(id))
 
   // El hook guardaba el error y nadie lo enseñaba: generar localizaciones
@@ -351,6 +352,19 @@ export default function WorldDetailPage() {
           >
             <PlacesPanel
               places={locationNodes}
+              routes={locationEdges}
+              // Un camino vale en los dos sentidos; tipo y esfuerzo quedan por
+              // defecto: lo que cuenta es a cuánto está, en palabras.
+              onConnect={(a, b, distance) => addEdge({
+                world_id: Number(id), source_node_id: a, target_node_id: b,
+                edge_type: 'road', effort: 'moderate', dramatic_charge: 'medium',
+                bidirectional: true, note: distance,
+              })}
+              onSetDistance={(route, distance) => editEdge(route.id, {
+                edge_type: route.edge_type, effort: route.effort, dramatic_charge: route.dramatic_charge,
+                bidirectional: route.bidirectional, note: distance,
+              })}
+              onDisconnect={removeEdge}
               onCreate={name => addLocationNode({
                 world_id: Number(id),
                 parent_id: null,

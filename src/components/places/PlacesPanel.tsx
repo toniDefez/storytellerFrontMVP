@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { LocationNode, LocationNodePatch } from '@/services/api'
+import type { LocationEdge, LocationNode, LocationNodePatch } from '@/services/api'
 import { notifyPlaceError } from '@/components/world-graph/placeErrors'
 import { InlineText } from './InlineText'
 
@@ -19,6 +19,11 @@ const PILL_ON = 'border-entity-location/40 bg-entity-location/10 text-entity-loc
 
 interface Props {
   places: LocationNode[]
+  /** Caminos entre lugares; `note` guarda a cuánto están («medio día a pie»). */
+  routes: LocationEdge[]
+  onConnect: (a: number, b: number, distance: string) => Promise<unknown>
+  onSetDistance: (route: LocationEdge, distance: string) => Promise<void>
+  onDisconnect: (id: number) => Promise<void>
   /** Devuelve el lugar creado; si falla, lanza (nombre repetido → 409). */
   onCreate: (name: string) => Promise<LocationNode>
   /** Guarda solo lo que cambia. */
@@ -40,7 +45,7 @@ interface Props {
  * es lo que la escena puede usar: su nombre, las cosas que hay ahí y lo que
  * siempre se cumple. Misma forma que Personajes: lista a la izquierda y ficha.
  */
-export function PlacesPanel({ places, onCreate, onUpdate, onDelete, onSuggest, suggesting, suggestingProgress }: Props) {
+export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDisconnect, onCreate, onUpdate, onDelete, onSuggest, suggesting, suggestingProgress }: Props) {
   const { t } = useTranslation()
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [naming, setNaming] = useState(false)
@@ -98,6 +103,11 @@ export function PlacesPanel({ places, onCreate, onUpdate, onDelete, onSuggest, s
           <PlaceSheet
             key={selected.id}
             place={selected}
+            places={places}
+            routes={routes}
+            onConnect={onConnect}
+            onSetDistance={onSetDistance}
+            onDisconnect={onDisconnect}
             onUpdate={onUpdate}
             onDelete={async id => { await onDelete(id); setSelectedId(null) }}
             onClose={() => setSelectedId(null)}
@@ -177,8 +187,13 @@ function NewPlaceRow({ onSubmit, onCancel }: { onSubmit: (name: string) => Promi
   )
 }
 
-function PlaceSheet({ place, onUpdate, onDelete, onClose }: {
+function PlaceSheet({ place, places, routes, onConnect, onSetDistance, onDisconnect, onUpdate, onDelete, onClose }: {
   place: LocationNode
+  places: LocationNode[]
+  routes: LocationEdge[]
+  onConnect: Props['onConnect']
+  onSetDistance: Props['onSetDistance']
+  onDisconnect: Props['onDisconnect']
   onUpdate: (id: number, patch: LocationNodePatch) => Promise<void>
   onDelete: (id: number) => Promise<void>
   onClose: () => void
@@ -230,6 +245,15 @@ function PlaceSheet({ place, onUpdate, onDelete, onClose }: {
         <p className="text-xs text-muted-foreground/80">{t('location.places.thingsHint')}</p>
       </section>
 
+      <Routes
+        place={place}
+        places={places}
+        routes={routes}
+        onConnect={onConnect}
+        onSetDistance={onSetDistance}
+        onDisconnect={onDisconnect}
+      />
+
       <section className="space-y-1">
         <h4 className="text-sm text-muted-foreground">{t('location.places.notes')}</h4>
         <InlineText
@@ -270,6 +294,102 @@ function PlaceSheet({ place, onUpdate, onDelete, onClose }: {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+/**
+ * Los caminos de un lugar: con qué otros lugares se conecta y a cuánto están,
+ * en palabras de novelista («al lado», «dos días a caballo»). Un camino vale
+ * en los dos sentidos. Sin caminos los lugares quedan aislados (Toni,
+ * 2026-10-29); la distancia es lo que la continuidad necesita para saber si
+ * alguien puede llegar de una escena a otra.
+ */
+function Routes({ place, places, routes, onConnect, onSetDistance, onDisconnect }: {
+  place: LocationNode
+  places: LocationNode[]
+  routes: LocationEdge[]
+  onConnect: Props['onConnect']
+  onSetDistance: Props['onSetDistance']
+  onDisconnect: Props['onDisconnect']
+}) {
+  const { t } = useTranslation()
+  const [target, setTarget] = useState('')
+  const [distance, setDistance] = useState('')
+  const byId = new Map(places.map(p => [p.id, p]))
+  const mine = routes
+    .filter(r => r.source_node_id === place.id || r.target_node_id === place.id)
+    .map(r => ({ route: r, other: byId.get(r.source_node_id === place.id ? r.target_node_id : r.source_node_id) }))
+    .filter((x): x is { route: LocationEdge; other: LocationNode } => !!x.other)
+    .sort((a, b) => a.other.name.localeCompare(b.other.name))
+  const linked = new Set(mine.map(x => x.other.id))
+  const candidates = places.filter(p => p.id !== place.id && !linked.has(p.id)).sort((a, b) => a.name.localeCompare(b.name))
+
+  const add = async () => {
+    if (!target) return
+    try {
+      await onConnect(place.id, Number(target), distance.trim())
+      setTarget('')
+      setDistance('')
+    } catch (err) {
+      notifyPlaceError(t, err, 'location.map.saveError')
+    }
+  }
+
+  return (
+    <section className="space-y-2">
+      <h4 className="text-sm text-muted-foreground">{t('location.places.routes')}</h4>
+      {mine.length > 0 && (
+        <ul className="space-y-1.5">
+          {mine.map(({ route, other }) => (
+            <li key={route.id} className="flex items-center gap-2">
+              <span className="w-40 shrink-0 truncate font-display text-[15px]">{other.name}</span>
+              <InlineText
+                value={route.note ?? ''}
+                label={t('location.places.distanceTo', { name: other.name })}
+                placeholder={t('location.places.distancePlaceholder')}
+                onCommit={d => { onSetDistance(route, d).catch(err => notifyPlaceError(t, err, 'location.map.saveError')) }}
+                boxed
+                className="h-8 flex-1 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => { onDisconnect(route.id).catch(err => notifyPlaceError(t, err, 'location.map.saveError')) }}
+                aria-label={t('location.places.disconnect', { name: other.name })}
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
+              >
+                <X className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {candidates.length > 0 && (
+        <div className="flex items-center gap-2">
+          <select
+            value={target}
+            onChange={e => setTarget(e.target.value)}
+            aria-label={t('location.places.connectTo')}
+            className="h-8 w-40 shrink-0 rounded-md border border-input bg-transparent px-2 text-sm"
+          >
+            <option value="">{t('location.places.connectTo')}</option>
+            {candidates.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <Input
+            value={distance}
+            onChange={e => setDistance(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void add() } }}
+            disabled={!target}
+            placeholder={t('location.places.distancePlaceholder')}
+            aria-label={t('location.places.distance')}
+            className="h-8 flex-1 text-sm"
+          />
+          <Button variant="outline" size="sm" onClick={() => void add()} disabled={!target} className="h-8">
+            {t('location.places.connect')}
+          </Button>
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground/80">{t('location.places.routesHint')}</p>
+    </section>
   )
 }
 
