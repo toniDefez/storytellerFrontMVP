@@ -4,6 +4,7 @@ import {
   updateSceneNodePosition, deleteSceneNodeEdge, createSceneNodeEdge,
   generateScene, listSceneOutputs, revertSceneOutput, getGenerationProgress,
   getWritingPlan, saveSceneProse, getSceneCarry,
+  getSceneState, addStateChange, deleteStateChange, proposeSceneState, type CharacterState, type StateList,
   type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry, type NarratorNodeConfig, type StoryRelationship,
 } from '../../services/api';
 import { SceneCanvas } from './SceneCanvas';
@@ -108,6 +109,27 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     () => Object.fromEntries((carry?.characters ?? []).map((c) => [c.character_id, c])),
     [carry],
   );
+
+  // El estado vivo de cada presente al entrar. Lo mismo que recibe el escritor;
+  // el autor lo corrige desde el nodo y la corrección vale desde esta escena.
+  const [states, setStates] = useState<CharacterState[]>([]);
+  const refreshState = useCallback(() => getSceneState(sceneId).then(setStates).catch((err) => console.error(err)), [sceneId]);
+  useEffect(() => { void refreshState(); }, [refreshState, castKey]);
+  const stateByCharID = useMemo(() => Object.fromEntries(states.map((s) => [s.character_id, s])), [states]);
+  const stateActions = useMemo(() => ({
+    add: async (characterId: number, list: StateList, text: string) => {
+      try { await addStateChange(sceneId, { character_id: characterId, list, op: 'add', text }); await refreshState(); }
+      catch (err) { toast.error(`No se pudo guardar el estado: ${describeError(err, 'error desconocido')}`); }
+    },
+    remove: async (characterId: number, list: StateList, text: string) => {
+      try { await addStateChange(sceneId, { character_id: characterId, list, op: 'remove', text }); await refreshState(); }
+      catch (err) { toast.error(`No se pudo tachar: ${describeError(err, 'error desconocido')}`); }
+    },
+    undo: async (changeId: number) => {
+      try { await deleteStateChange(sceneId, changeId); await refreshState(); }
+      catch (err) { toast.error(`No se pudo quitar: ${describeError(err, 'error desconocido')}`); }
+    },
+  }), [sceneId, refreshState]);
   const comesFrom = useMemo(() => {
     const titles = [...new Set((carry?.characters ?? []).filter((c) => c.from_scene_id).map((c) => c.from_scene_title || 'escena sin título'))];
     return titles.length ? `Viene de ${titles.map((t) => `«${t}»`).join(', ')}` : '';
@@ -247,6 +269,9 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
       const fresh = await listSceneOutputs(sceneId);
       setOutputs(fresh);
       setCurrentVersion(res.version);
+      // Tras escribir, el modelo propone cómo queda cada uno; se ve en la
+      // escena siguiente, donde el autor lo tacha o corrige.
+      proposeSceneState(sceneId).catch((err) => console.error('estado:', err));
     } catch (err) {
       toast.error(`No se pudo generar la escena: ${describeError(err, 'error desconocido')}`);
     } finally {
@@ -425,6 +450,8 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           unmetOutcomes={unmetOutcomes}
           charNameByID={charMap}
           carryByCharID={carryByCharID}
+          stateByCharID={stateByCharID}
+          stateActions={stateActions}
           viewHints={viewHints}
           locationByID={locMap}
           output={outputData}

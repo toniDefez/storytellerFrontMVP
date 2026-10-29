@@ -1209,6 +1209,58 @@ export function getSceneCarry(sceneId: number): Promise<SceneCarry> {
   return request<SceneCarry>(`/scene/carry/${sceneId}`)
 }
 
+// ─── Estado vivo ────────────────────────────────────────────────────────────
+// Cómo está y qué sabe cada personaje al entrar en la escena. Se guarda como
+// cambios (añadir o quitar una línea) atados a la escena; lo del autor manda
+// sobre las reglas y sobre lo que propone el modelo.
+
+export type StateList = 'estado' | 'sabe'
+export type StateOrigin = 'autor' | 'regla' | 'propuesta'
+
+export interface StateLine {
+  id?: number
+  text: string
+  item?: string
+  origin: StateOrigin
+  scene_id: number
+}
+
+export interface CharacterState {
+  character_id: number
+  name: string
+  estado: StateLine[]
+  sabe: StateLine[]
+  dead: boolean
+}
+
+export interface SceneStateChange {
+  id: number
+  scene_id: number
+  character_id: number
+  list: StateList
+  op: 'add' | 'remove'
+  text: string
+  item?: string
+  origin: StateOrigin
+}
+
+export function getSceneState(sceneId: number): Promise<CharacterState[]> {
+  return request<CharacterState[]>(`/scene/state/${sceneId}`)
+}
+
+export function addStateChange(sceneId: number, body: { character_id: number; list: StateList; op: 'add' | 'remove'; text: string; item?: string }): Promise<SceneStateChange> {
+  return request<SceneStateChange>(`/scene/state/${sceneId}`, { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function deleteStateChange(sceneId: number, id: number): Promise<void> {
+  return request<void>(`/scene/state/change/delete/${sceneId}/${id}`, { method: 'POST' })
+}
+
+/** El modelo propone cómo queda cada presente tras la escena; devuelve el estado de después. */
+export function proposeSceneState(sceneId: number): Promise<CharacterState[]> {
+  return request<CharacterState[]>(`/scene/state/propose/${sceneId}`, { method: 'POST' })
+}
+
 export function createSceneNodeEdge(
   sceneId: number,
   fromId: number,

@@ -1,7 +1,8 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { NodeCard } from './NodeCard';
 import { NODE_COLORS } from './nodeColors';
-import type { CharacterCarry } from '../../services/api';
+import type { CharacterCarry, CharacterState } from '../../services/api';
+import { StateBlock, type StateActions } from './StateBlock';
 
 export interface ContainerCharacterData extends Record<string, unknown> {
   name: string;
@@ -10,6 +11,9 @@ export interface ContainerCharacterData extends Record<string, unknown> {
   soulSummary?: string;
   /** De dónde viene: lo mismo que recibe el escritor. Sin cargar, undefined. */
   carry?: CharacterCarry;
+  /** Cómo está y qué sabe al entrar en la escena; el autor lo corrige aquí. */
+  state?: CharacterState;
+  stateActions?: StateActions;
 }
 
 export function ContainerCharacterNode({ data, selected }: NodeProps<Node<ContainerCharacterData>>) {
@@ -18,6 +22,7 @@ export function ContainerCharacterNode({ data, selected }: NodeProps<Node<Contai
       <div style={{ fontSize: 16, fontWeight: 600 }}>{data.name}</div>
       {data.speechPattern && <div style={{ fontSize: 13, color: '#5f5868', fontStyle: 'italic' }}>{data.speechPattern}</div>}
       {data.carry && <CarryBlock carry={data.carry} />}
+      {data.state && <StateBlock state={data.state} inCast actions={data.stateActions} />}
       <Handle type="source" position={Position.Right} id="attach" style={{ background: '#c2410c', width: 12, height: 12 }} />
     </NodeCard>
   );
@@ -38,11 +43,6 @@ function CarryBlock({ carry }: { carry: CharacterCarry }) {
       {(carry.outcomes ?? []).map((o) => (
         <div key={o} style={{ fontSize: 13, fontWeight: 600 }}>→ {o}</div>
       ))}
-      {(carry.earlier ?? []).length > 0 && (
-        <div style={{ marginTop: 4, fontSize: 12, color: '#5f5868' }}>
-          Antes: {(carry.earlier ?? []).join(' · ')}
-        </div>
-      )}
     </div>
   );
 }
