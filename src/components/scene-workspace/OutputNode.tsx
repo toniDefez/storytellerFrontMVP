@@ -22,6 +22,9 @@ export interface OutputNodeData extends Record<string, unknown> {
   format: SceneFormat;
   onFormatChange: (format: SceneFormat) => void;
   onCopy: () => void;
+  /** Llegadas propuestas que el autor no ha aceptado: se ignoran al generar, nunca bloquean. */
+  pendingArrivals: number;
+  onGenerate: () => void;
 }
 
 const words = (text: string) => (text.trim() ? text.trim().split(/\s+/).length : 0);
@@ -54,6 +57,14 @@ export function OutputNode({ data }: NodeProps<Node<OutputNodeData>>) {
       {data.generating && (
         <div role="status" aria-live="polite" style={{ padding: '8px 16px', background: '#f4f0fb', borderBottom: '1px solid #e9e2f7', fontSize: 13, color: '#4c1d95' }}>
           {data.live ? 'Escribiendo en directo' : 'Preparando'} · {data.progress || 'esperando al generador'}. Al terminar se guarda la versión revisada.
+        </div>
+      )}
+      {!data.generating && data.pendingArrivals > 0 && (
+        <div className="nodrag" style={{ padding: '8px 16px', background: '#fffbeb', borderBottom: '1px solid #fde68a', fontSize: 13, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {data.pendingArrivals === 1 ? '1 llegada sin aceptar' : `${data.pendingArrivals} llegadas sin aceptar`} ·
+          <button type="button" onClick={data.onGenerate} style={{ border: 'none', background: 'transparent', color: '#92400e', textDecoration: 'underline', cursor: 'pointer', fontSize: 13, padding: 0 }}>
+            Generar igualmente
+          </button>
         </div>
       )}
       {!data.generating && data.unmet.length > 0 && (

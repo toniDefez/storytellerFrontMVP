@@ -5,9 +5,10 @@ import {
   generateScene, listSceneOutputs, revertSceneOutput, getGenerationProgress,
   getWritingPlan, saveSceneProse, getSceneCarry,
   getSceneState, addStateChange, deleteStateChange, proposeSceneState, type CharacterState, type StateList,
+  getSceneArrivals, proposeSceneArrivals, acceptArrival, dismissArrival, regenerateArrival, reproposeArrival, type Arrival,
   type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry, type NarratorNodeConfig, type StoryRelationship,
 } from '../../services/api';
-import { SceneCanvas } from './SceneCanvas';
+import { SceneCanvas, type ArrivalActions } from './SceneCanvas';
 import type { ScenePlace } from './ContainerLocationNode';
 import { ScenePalette } from './ScenePalette';
 import { SceneProseView } from './SceneProseView';
@@ -136,6 +137,57 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
       catch (err) { toast.error(`No se pudo quitar: ${describeError(err, 'error desconocido')}`); }
     },
   }), [sceneId, refreshState]);
+  // Las llegadas (La llegada, 2026-10-30): quién entra por un camino del mapa.
+  // Leer es inmediato y sin modelo; si alguna está por redactar, se pide la
+  // redacción aparte y el fantasma sale como «calculando» mientras tanto.
+  // Sin toasts salvo error: la llegada es una propuesta, no un aviso.
+  const [arrivals, setArrivals] = useState<Arrival[]>([]);
+  const arrivalLoad = useRef(0);
+  const refreshArrivals = useCallback(async () => {
+    const n = ++arrivalLoad.current;
+    try {
+      const first = await getSceneArrivals(sceneId);
+      if (n !== arrivalLoad.current) return;
+      setArrivals(first);
+      if (first.some((a) => a.pending)) {
+        const written = await proposeSceneArrivals(sceneId);
+        if (n === arrivalLoad.current) setArrivals(written);
+      }
+    } catch (err) { console.error(err); }
+  }, [sceneId]);
+  useEffect(() => { void refreshArrivals(); }, [refreshArrivals, castKey]);
+  const [busyArrival, setBusyArrival] = useState<number | null>(null);
+  const arrivalActions = useMemo<ArrivalActions>(() => {
+    const run = async (characterId: number, what: string, fn: () => Promise<void>) => {
+      setBusyArrival(characterId);
+      try { await fn(); }
+      catch (err) { toast.error(`${what}: ${describeError(err, 'error desconocido')}`); }
+      finally { setBusyArrival(null); }
+    };
+    return {
+      accept: (characterId, edit, pos) => run(characterId, 'No se pudo aceptar la llegada', async () => {
+        await acceptArrival(sceneId, characterId, { ...edit, canvas_x: pos?.x, canvas_y: pos?.y });
+        await refresh();
+        await refreshArrivals();
+      }),
+      dismiss: (characterId) => run(characterId, 'No se pudo descartar la llegada', async () => {
+        await dismissArrival(sceneId, characterId);
+        await refreshArrivals();
+        await refreshState();
+      }),
+      again: (characterId) => run(characterId, 'No se pudo pedir otra llegada', async () => {
+        await regenerateArrival(sceneId, characterId);
+        await refreshArrivals();
+      }),
+      repropose: (characterId) => run(characterId, 'No se pudo proponer la llegada', async () => {
+        await reproposeArrival(sceneId, characterId);
+        await refreshArrivals();
+        await refreshState();
+      }),
+    };
+  }, [sceneId, refresh, refreshArrivals, refreshState]);
+  const pendingArrivals = useMemo(() => arrivals.filter((a) => a.status === 'propuesta' && (a.step !== '' || a.pending)).length, [arrivals]);
+
   const comesFrom = useMemo(() => {
     const titles = [...new Set((carry?.characters ?? []).filter((c) => c.from_scene_id).map((c) => c.from_scene_title || 'escena sin título'))];
     return titles.length ? `Viene de ${titles.map((t) => `«${t}»`).join(', ')}` : '';
@@ -375,7 +427,9 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     format,
     onFormatChange: handleFormatChange,
     onCopy: handleCopyOutput,
-  }), [generating, liveDraft, currentProse, progress, unmetOutcomes, formatOutputs, currentVersion, handleVersionSelect, format, handleFormatChange, handleCopyOutput]);
+    pendingArrivals,
+    onGenerate: handleGenerate,
+  }), [generating, liveDraft, currentProse, progress, unmetOutcomes, formatOutputs, currentVersion, handleVersionSelect, format, handleFormatChange, handleCopyOutput, pendingArrivals, handleGenerate]);
 
   // Ampliar para leer, o pegar una prosa escrita fuera: un panel a la derecha
   // sobre el lienzo, que sigue a la vista.
@@ -463,6 +517,9 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           viewHints={viewHints}
           locationByID={locMap}
           output={outputData}
+          arrivals={arrivals}
+          arrivalActions={arrivalActions}
+          busyArrival={busyArrival}
         />
         {drawer}
       </div>

@@ -51,8 +51,6 @@ interface SceneCanvasProps {
   arrivalActions?: ArrivalActions;
   /** Personaje cuya llegada tiene una acción en curso. */
   busyArrival?: number | null;
-  /** Con «1 llegada» pulsado en un personaje, el lienzo se centra en su fantasma. */
-  focusArrival?: { characterId: number; n: number } | null;
 }
 
 const OUTPUT_ID = 'output';
@@ -126,7 +124,12 @@ const edgeTypes: EdgeTypes = {
 };
 
 export function SceneCanvas(props: SceneCanvasProps) {
-  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, carryByCharID, stateByCharID, stateActions, viewHints, locationByID, unmetOutcomes, output, arrivals, arrivalActions, busyArrival, focusArrival } = props;
+  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, carryByCharID, stateByCharID, stateActions, viewHints, locationByID, unmetOutcomes, output, arrivals, arrivalActions, busyArrival } = props;
+
+  // Con «1 llegada» pulsado en un personaje, el lienzo se centra en su fantasma.
+  const [focusArrival, setFocusArrival] = useState<{ characterId: number; n: number } | null>(null);
+  const onFocusArrival = useCallback((characterId: number) => setFocusArrival((f) => ({ characterId, n: (f?.n ?? 0) + 1 })), []);
+  const arrivalByCharID = useMemo(() => Object.fromEntries((arrivals ?? []).map((a) => [a.character_id, a])) as Record<number, Arrival>, [arrivals]);
 
   // Los fantasmas van antes del primer evento, apilados; si los mueves se
   // quedan donde los dejes y esa posición es la del momento al aceptar.
@@ -135,7 +138,9 @@ export function SceneCanvas(props: SceneCanvasProps) {
   const ghostPositions = useMemo(() => {
     const first = firstMoment(nodes, edges);
     const base = first ? { x: first.canvas_x, y: first.canvas_y } : { x: 340, y: 0 };
-    return Object.fromEntries(ghosts.map((a, i) => [a.character_id, ghostMoved[a.character_id] ?? { x: base.x, y: base.y - 200 - 180 * i }])) as Record<number, { x: number; y: number }>;
+    // Un fantasma mide unos 220 px: va 260 por encima del primer evento y, si
+    // hay varios, cada uno 240 más arriba.
+    return Object.fromEntries(ghosts.map((a, i) => [a.character_id, ghostMoved[a.character_id] ?? { x: base.x, y: base.y - 260 - 240 * i }])) as Record<number, { x: number; y: number }>;
   }, [ghosts, ghostMoved, nodes, edges]);
   const ghostActions = useMemo<ArrivalNodeActions | undefined>(() => arrivalActions && {
     accept: (cid, edit) => arrivalActions.accept(cid, edit, ghostPositions[cid]),
@@ -170,7 +175,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
     const cast = nodes
       .filter((n) => n.node_kind === 'character' && n.character_id)
       .map((n) => ({ id: n.character_id as number, name: charNameByID[n.character_id as number] ?? '?' }));
-    const scene = { cast, viewHints: viewHints ?? {} };
+    const scene = { cast, viewHints: viewHints ?? {}, arrivalByCharID, onFocusArrival, onRepropose: arrivalActions?.repropose };
     const real: Node[] = nodes.map((n) => ({
       id: String(n.id),
       type: n.node_kind,
@@ -183,7 +188,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
     }));
     if (!output) return [...real, ...ghostNodes];
     return [...real, ...ghostNodes, { id: OUTPUT_ID, type: 'sceneOutput', position: outputPos, deletable: false, data: output }];
-  }, [nodes, edges, charNameByID, carryByCharID, stateByCharID, stateActions, viewHints, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes, output, outputPos, ghosts, ghostPositions, ghostActions, busyArrival]);
+  }, [nodes, edges, charNameByID, carryByCharID, stateByCharID, stateActions, viewHints, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes, output, outputPos, ghosts, ghostPositions, ghostActions, busyArrival, arrivalByCharID, onFocusArrival, arrivalActions]);
 
   const rfEdges = useMemo<Edge[]>(() => {
     const real: Edge[] = edges.map((e) => ({
@@ -324,7 +329,13 @@ function nodeData(
   onNarratorEdit: (id: number, patch: Partial<NarratorNodeConfig>) => void,
   edges: SceneNodeEdge[],
   unmetOutcomes: string[],
-  scene: { cast: { id: number; name: string }[]; viewHints: Record<string, string> },
+  scene: {
+    cast: { id: number; name: string }[];
+    viewHints: Record<string, string>;
+    arrivalByCharID: Record<number, Arrival>;
+    onFocusArrival: (characterId: number) => void;
+    onRepropose?: (characterId: number) => Promise<void>;
+  },
 ): Record<string, unknown> {
   switch (n.node_kind) {
     case 'character':
@@ -333,6 +344,9 @@ function nodeData(
         carry: n.character_id ? carryByCharID[n.character_id] : undefined,
         state: n.character_id ? stateByCharID[n.character_id] : undefined,
         stateActions,
+        arrival: n.character_id ? scene.arrivalByCharID[n.character_id] : undefined,
+        onFocusArrival: scene.onFocusArrival,
+        onRepropose: scene.onRepropose,
       };
     case 'location':
       return n.location_node_id ? { ...(locByID[n.location_node_id] ?? { name: '?' }) } : { name: '?' };
