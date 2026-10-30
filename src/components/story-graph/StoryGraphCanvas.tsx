@@ -56,6 +56,8 @@ import type {
 import { InicioNode, type InicioNodeData } from './InicioNode'
 import { SceneNode, type SceneNodeData } from './SceneNode'
 import { StoryGraphPanel, type PanelMode } from './StoryGraphPanel'
+import { StorySceneList } from './StorySceneList'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { SceneWorkspace } from '@/components/scene-workspace/SceneWorkspace'
 import type { ScenePlace } from '@/components/scene-workspace/ContainerLocationNode'
 import { StoryReader } from './StoryReader'
@@ -149,6 +151,9 @@ interface Props {
 /* ── Main component ─────────────────────────────────────────────── */
 
 export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }: Props) {
+  // Móvil: el mismo estado y los mismos datos, pero en vez del lienzo se pinta
+  // la lista de escenas en orden de lectura (StorySceneList).
+  const isMobile = useIsMobile()
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelMode, setPanelMode] = useState<PanelMode>('inicio')
   const [selectedSceneId, setSelectedSceneId] = useState<number | undefined>()
@@ -205,7 +210,8 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
 
   /* ── Load story detail (for INICIO panel) ─── */
   useEffect(() => {
-    if (!panelOpen || panelMode !== 'inicio') return
+    // En móvil la portada enseña el reparto, así que el detalle se carga ya.
+    if (!isMobile && (!panelOpen || panelMode !== 'inicio')) return
     if (detail?.story.id === storyBrief.id) return
 
     setLoadingDetail(true)
@@ -213,7 +219,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
       .then(setDetail)
       .catch(err => toast.error(err instanceof Error ? err.message : 'Error al cargar la historia.'))
       .finally(() => setLoadingDetail(false))
-  }, [panelOpen, panelMode, storyBrief.id, detail?.story.id])
+  }, [panelOpen, panelMode, storyBrief.id, detail?.story.id, isMobile])
 
   /* ── Cast and places for the scene workspace ─── */
   // El workspace pinta personajes y lugares por id, y su paleta ofrece el
@@ -558,6 +564,24 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
   return (
     <div className="flex h-full w-full overflow-hidden">
       {/* ── Canvas ─────────────────────────────────────────────── */}
+      {isMobile ? (
+        <div className="flex-1 min-w-0 h-full relative">
+          <StorySceneList
+            storyTitle={storyBrief.title}
+            castNames={(detail?.characters ?? []).map(c => c.name)}
+            nodes={nodes}
+            edges={edges}
+            loading={loadingDetail || graphLoading}
+            copyingPlan={copyingPlan}
+            onOpenInicio={openInicioPanel}
+            onEnterScene={sceneId => { setEnteredSceneId(sceneId); setPanelOpen(false); onSceneEntered?.(true) }}
+            onSceneDetail={sceneId => { setSelectedSceneId(sceneId); setPanelMode('scene'); setPanelOpen(true) }}
+            onRead={() => { setReading(true); onSceneEntered?.(true) }}
+            onCopyPlan={handleCopyPlan}
+            onCreateScene={handleOpenCreateDialog}
+          />
+        </div>
+      ) : (
       <div className="flex-1 min-w-0 h-full relative" onDoubleClick={handleCanvasDoubleClick}>
         <div className="absolute top-3 right-3 z-20 flex gap-2" onDoubleClick={e => e.stopPropagation()}>
           <button
@@ -627,6 +651,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
           <Plus className="w-5 h-5" />
         </button>
       </div>
+      )}
 
       {/* ── Right panel ────────────────────────────────────────── */}
       <StoryGraphPanel

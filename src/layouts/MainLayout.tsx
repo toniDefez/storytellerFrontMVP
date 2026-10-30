@@ -184,7 +184,7 @@ export default function MainLayout() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-bold text-sm text-white tracking-tight">StoryTeller</span>
+          <span className="font-display italic text-[#e8d5c8] text-base tracking-tight">StoryTeller</span>
         </div>
 
         {/* Page content */}

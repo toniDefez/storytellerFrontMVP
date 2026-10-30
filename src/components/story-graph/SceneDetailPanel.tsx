@@ -193,7 +193,7 @@ export function SceneDetailPanel({ sceneId, storyCharacters, onDelete, onTitleCh
           {scene.location_name ? (
             <span className="text-stone-700">{scene.location_name}</span>
           ) : (
-            <span className="italic text-xs">Sin locación asignada (próximamente)</span>
+            <span className="italic text-xs">El lugar se elige en el taller</span>
           )}
         </div>
       </div>
@@ -254,17 +254,16 @@ export function SceneDetailPanel({ sceneId, storyCharacters, onDelete, onTitleCh
 
       <Separator />
 
-      {/* Delete */}
-      <Button
-        variant="destructive"
-        size="sm"
+      {/* Borrar: una acción rara no puede ser el botón más grande del panel. */}
+      <button
+        type="button"
         onClick={handleDelete}
         disabled={deleting}
-        className="w-full"
+        className="self-start inline-flex items-center gap-1.5 min-h-11 text-sm text-muted-foreground hover:text-destructive disabled:opacity-60"
       >
-        <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+        <Trash2 className="w-3.5 h-3.5" />
         {deleting ? 'Eliminando…' : 'Eliminar escena'}
-      </Button>
+      </button>
     </div>
   )
 }

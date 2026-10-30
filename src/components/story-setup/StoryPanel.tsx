@@ -79,7 +79,8 @@ export function StoryPanel({ worldId, stories: initialStories, characters, onSto
                            bg-white/90 border border-stone-200 rounded-lg shadow-sm
                            px-3 py-1.5 text-sm text-muted-foreground
                            hover:text-foreground
-                           transition-colors"
+                           transition-colors
+                           max-md:static max-md:bg-transparent max-md:border-0 max-md:shadow-none max-md:min-h-11 max-md:pl-4"
                 aria-label="Volver al catálogo"
               >
                 ← Historias
