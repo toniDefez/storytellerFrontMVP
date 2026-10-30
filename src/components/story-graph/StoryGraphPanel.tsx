@@ -61,6 +61,7 @@ interface Props {
   // Callbacks – scene
   onSceneDelete: () => void
   onSceneTitleChange: () => void
+  onSceneOpen?: () => void
 }
 
 export function StoryGraphPanel({
@@ -85,6 +86,7 @@ export function StoryGraphPanel({
   onNarratorChange,
   onSceneDelete,
   onSceneTitleChange,
+  onSceneOpen,
 }: Props) {
   const isScene = selectedMode === 'scene' && selectedSceneId != null
 
@@ -134,6 +136,7 @@ export function StoryGraphPanel({
                 storyCharacters={storyCharacters}
                 onDelete={onSceneDelete}
                 onTitleChange={onSceneTitleChange}
+                onOpenWorkshop={onSceneOpen}
               />
             ) : (
               <>

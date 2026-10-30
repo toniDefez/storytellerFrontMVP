@@ -433,7 +433,7 @@ function LinkedView({
             </AnimatePresence>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Clock className="h-3.5 w-3.5 text-muted-foreground" />

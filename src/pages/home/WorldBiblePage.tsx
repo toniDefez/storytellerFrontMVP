@@ -153,7 +153,7 @@ export default function WorldBiblePage() {
         <div className={`bg-gradient-to-br ${gradient} px-10 py-16 text-center relative`}>
           <div className="absolute inset-0 bg-black/10" />
           <div className="relative z-10">
-            <h1 className="text-5xl font-bold text-white font-[var(--font-display)] leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-5xl font-bold text-white font-[var(--font-display)] leading-tight tracking-tight">
               {world.name}
             </h1>
             {world.premise && (
@@ -231,7 +231,7 @@ export default function WorldBiblePage() {
                 )}
 
                 {character.voice_register && (
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-foreground/70 font-[var(--font-display)]">
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-foreground/70 font-[var(--font-display)]">
                     {VOICE_REGISTER_FIELDS.map(({ key, label }) => {
                       const value = character.voice_register?.[key]
                       if (!value) return null

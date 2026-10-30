@@ -61,7 +61,7 @@ export function StoryCatalog({ worldId, stories, onStorySelect, onStoryCreated }
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-10 py-8">
+    <div className="max-w-5xl mx-auto px-4 md:px-10 py-5 md:py-8">
       {/* ── Header ───────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-display text-3xl italic text-foreground/80">Historias</h1>
@@ -84,7 +84,7 @@ export function StoryCatalog({ worldId, stories, onStorySelect, onStoryCreated }
         </div>
       ) : (
         /* ── Grid ──────────────────────────────────────────────────── */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {stories.map((story, index) => (
             <StoryCatalogCard
               key={story.id}

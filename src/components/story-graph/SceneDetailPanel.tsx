@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Trash2, UserPlus, X, MapPin } from 'lucide-react'
+import { Trash2, UserPlus, X, MapPin, PenLine } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +20,8 @@ interface Props {
   storyCharacters: StoryCharacter[] // full story roster
   onDelete: () => void
   onTitleChange?: () => void // signal canvas to reload
+  /** Entrar en el taller de la escena con un toque (el doble clic del lienzo no existe en móvil). */
+  onOpenWorkshop?: () => void
 }
 
 function statusLabel(status: string): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
@@ -33,7 +35,7 @@ function statusLabel(status: string): { label: string; variant: 'default' | 'sec
   }
 }
 
-export function SceneDetailPanel({ sceneId, storyCharacters, onDelete, onTitleChange }: Props) {
+export function SceneDetailPanel({ sceneId, storyCharacters, onDelete, onTitleChange, onOpenWorkshop }: Props) {
   const [scene, setScene] = useState<StoryScene | null>(null)
   const [characters, setCharacters] = useState<SceneCharacter[]>([])
   const [loading, setLoading] = useState(true)
@@ -163,12 +165,20 @@ export function SceneDetailPanel({ sceneId, storyCharacters, onDelete, onTitleCh
         )}
       </div>
 
-      {/* Status */}
-      <div>
-        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
-          Estado
-        </p>
-        <Badge variant={statusVariant}>{statusText}</Badge>
+      {/* Status + abrir el taller (en móvil no hay doble clic) */}
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+            Estado
+          </p>
+          <Badge variant={statusVariant}>{statusText}</Badge>
+        </div>
+        {onOpenWorkshop && (
+          <Button size="sm" onClick={onOpenWorkshop} className="min-h-10 gap-1.5 bg-[#06b6d4] hover:bg-[#0891b2] text-white">
+            <PenLine className="w-4 h-4" />
+            Abrir taller
+          </Button>
+        )}
       </div>
 
       <Separator />

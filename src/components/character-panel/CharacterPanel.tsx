@@ -7,7 +7,7 @@ import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import { CharacterProfilePicker } from './CharacterProfilePicker'
-import { Users, Sparkles, Wand2, Loader2 } from 'lucide-react'
+import { Users, Sparkles, Wand2, Loader2, ChevronLeft } from 'lucide-react'
 import { notifyError } from '@/lib/notifyError'
 import { describeError } from '@/services/telemetry'
 import { useGenerationProgress } from '@/hooks/useGenerationProgress'
@@ -154,17 +154,33 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   }
 
   return (
-    <div className="grid grid-cols-[320px_1fr] h-full min-h-0">
-      <CharacterSidebar
-        worldPremise={worldPremise}
-        characters={characters}
-        selectedId={selectedId}
-        onSelect={handleSelect}
-        onNewCharacter={handleNewCharacter}
-        onDelete={handleDelete}
-      />
+    // Móvil: lista o ficha, nunca las dos; «← Personajes» devuelve a la lista.
+    <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] h-full min-h-0">
+      <div className={`h-full min-h-0 ${mode === 'empty' ? '' : 'hidden md:block'}`}>
+        <CharacterSidebar
+          worldPremise={worldPremise}
+          characters={characters}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          onNewCharacter={handleNewCharacter}
+          onDelete={handleDelete}
+        />
+      </div>
 
-      <div className="h-full overflow-hidden">
+      <div className={`h-full overflow-hidden flex flex-col ${mode === 'empty' ? 'hidden md:flex' : ''}`}>
+        {mode !== 'empty' && (
+          <div className="md:hidden shrink-0 border-b border-border/40 px-2 py-1">
+            <button
+              type="button"
+              onClick={() => { setMode('empty'); setSelectedId(null) }}
+              className="flex items-center gap-1.5 min-h-10 px-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Personajes
+            </button>
+          </div>
+        )}
+        <div className="flex-1 min-h-0 overflow-hidden">
         {mode === 'empty' && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Users className="w-12 h-12 text-muted-foreground/15 mb-3" />
@@ -275,6 +291,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         {mode === 'viewing' && selectedId && (
           <CharacterGraphPage key={selectedId} characterId={selectedId} worldId={worldId} onDelete={() => handleDelete(selectedId!)} />
         )}
+        </div>
       </div>
     </div>
   )

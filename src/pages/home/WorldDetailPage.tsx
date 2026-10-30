@@ -178,7 +178,9 @@ export default function WorldDetailPage() {
   const dotColor = inferDotColor(world)
 
   return (
-    <div>
+    // Móvil: la cabecera con el menú mide 45 px y la barra se parte en dos
+    // filas, así que la altura la reparte un flex en vez de un calc fijo.
+    <div className="flex flex-col h-[calc(100dvh-45px)] md:h-screen">
       <ConfirmModal
         open={showConfirmDelete}
         title={t('world.detail.deleteTitle')}
@@ -192,11 +194,10 @@ export default function WorldDetailPage() {
 
       {/* ── Slim toolbar 44px ─────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-0 px-4 border-b border-border/60 bg-background"
-        style={{ height: 44 }}
+        className="flex flex-wrap items-center gap-y-1 px-3 md:px-4 py-1.5 md:py-0 md:h-11 shrink-0 border-b border-border/60 bg-background"
       >
         {/* Left: world identity + tab switcher */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
           {/* World dot */}
           <div
             className="w-2 h-2 rounded-full shrink-0"
@@ -212,10 +213,10 @@ export default function WorldDetailPage() {
           </span>
 
           {/* Separator */}
-          <span className="text-border/60 text-xs shrink-0 mx-1">·</span>
+          <span className="hidden md:inline text-border/60 text-xs shrink-0 mx-1">·</span>
 
-          {/* Tab switcher */}
-          <div className="flex items-center gap-0 shrink-0">
+          {/* Tab switcher: en móvil, segunda fila a ancho completo */}
+          <div className="grid grid-cols-4 basis-full md:basis-auto md:flex items-center gap-0 shrink-0 [&>button]:min-h-10 md:[&>button]:min-h-0">
             <button
               onClick={() => setGraphView('causal')}
               className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
@@ -299,10 +300,7 @@ export default function WorldDetailPage() {
       </div>
 
       {/* ── Full-viewport graph ───────────────────────────────────────── */}
-      <div
-        className="overflow-hidden"
-        style={{ height: 'calc(100vh - 44px)' }}
-      >
+      <div className="overflow-hidden flex-1 min-h-0">
         <div className="relative h-full">
           {/* Causal canvas */}
           <div

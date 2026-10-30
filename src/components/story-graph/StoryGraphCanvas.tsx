@@ -651,6 +651,12 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         onNarratorChange={handleNarratorChange}
         onSceneDelete={handleSceneDelete}
         onSceneTitleChange={handleSceneTitleChange}
+        onSceneOpen={() => {
+          if (selectedSceneId == null) return
+          setEnteredSceneId(selectedSceneId)
+          setPanelOpen(false)
+          onSceneEntered?.(true)
+        }}
       />
 
       {/* ── Create scene dialog ──────────────────────────────────── */}

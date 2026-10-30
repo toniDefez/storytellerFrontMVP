@@ -65,8 +65,9 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-[320px_1fr]">
-      <div className="flex h-full min-h-0 flex-col border-r border-border/40">
+    // Móvil: lista o ficha, nunca las dos (maestro-detalle apilado).
+    <div className="grid h-full min-h-0 grid-cols-1 md:grid-cols-[320px_1fr]">
+      <div className={`h-full min-h-0 flex-col border-r border-border/40 ${selected ? 'hidden md:flex' : 'flex'}`}>
         <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3">
           {sorted.length === 0 && !naming ? (
             <div className="flex flex-col items-center px-6 py-16 text-center">
@@ -98,7 +99,7 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
         </div>
       </div>
 
-      <div className="h-full overflow-y-auto">
+      <div className={`h-full overflow-y-auto ${selected ? '' : 'hidden md:block'}`}>
         {selected ? (
           <PlaceSheet
             key={selected.id}

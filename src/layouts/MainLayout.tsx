@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Globe, Settings, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const NAV_ITEM_DEFS = [
   { to: '/worlds', labelKey: 'nav.worlds', Icon: Globe },
@@ -113,6 +114,10 @@ export default function MainLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // Móvil (2026-10-31): el margen del contenido lo escribe Framer como estilo
+  // inline, así que ninguna clase `md:` lo anulaba y toda la app nacía 240 px
+  // a la derecha de la pantalla. Aquí decide el hook; el resto no se toca.
+  const isMobile = useIsMobile()
   const prefersReducedMotion = useReducedMotion()
   const sidebarSpring = prefersReducedMotion
     ? { duration: 0 }
@@ -134,7 +139,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background overflow-x-hidden">
       {/* Skip navigation link */}
       <a
         href="#main-content"
@@ -164,8 +169,8 @@ export default function MainLayout() {
       <motion.main
         id="main-content"
         aria-label={t('a11y.mainContent')}
-        className="flex-1 min-h-screen vellum-texture"
-        animate={{ marginLeft: collapsed ? 48 : 240 }}
+        className="flex-1 min-w-0 min-h-screen vellum-texture"
+        animate={{ marginLeft: isMobile ? 0 : collapsed ? 48 : 240 }}
         transition={sidebarSpring}
         onAnimationComplete={() => window.dispatchEvent(new Event('resize'))}
       >
@@ -188,7 +193,7 @@ export default function MainLayout() {
           return (
             <motion.div
               key={location.pathname}
-              className={isWorldDetail ? '' : 'p-6 md:p-8'}
+              className={isWorldDetail ? '' : 'p-4 md:p-8'}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}

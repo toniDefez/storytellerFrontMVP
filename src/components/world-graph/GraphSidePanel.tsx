@@ -52,7 +52,7 @@ export function GraphSidePanel({
   }
 
   return (
-    <div className="w-[280px] shrink-0 border-l border-border flex flex-col bg-card overflow-hidden">
+    <div className="hidden md:flex w-[280px] shrink-0 border-l border-border flex-col bg-card overflow-hidden">
       {/* Tab bar */}
       <div className="flex border-b border-border shrink-0">
         <button
