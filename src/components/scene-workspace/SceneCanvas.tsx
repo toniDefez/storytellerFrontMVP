@@ -151,8 +151,10 @@ export function SceneCanvas(props: SceneCanvasProps) {
   const [selectedGhost, setSelectedGhost] = useState<number | null>(null);
   const onKeyDownCapture = useCallback((e: React.KeyboardEvent) => {
     if (selectedGhost == null || !ghostActions) return;
-    const tag = (e.target as HTMLElement).tagName;
-    if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+    // Solo con el foco en el propio nodo: sobre un botón, un desplegable o
+    // un texto, Enter y Supr hacen lo suyo.
+    const target = e.target as HTMLElement;
+    if (target.closest('button, select, textarea, input, [contenteditable]') || !target.closest('.react-flow__node')) return;
     const a = ghosts.find((g) => g.character_id === selectedGhost);
     if (!a) return;
     if (e.key === 'Enter' && !a.pending && a.step) { e.preventDefault(); void ghostActions.accept(a.character_id); }

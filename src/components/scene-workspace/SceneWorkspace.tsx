@@ -84,11 +84,13 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   // El formato de la salida: cada uno con sus versiones, sin mezclarse.
   const [format, setFormat] = useState<SceneFormat>('prose');
 
+  // nodesLoaded: el reparto real ya está; antes no se piden las llegadas.
+  const [nodesLoaded, setNodesLoaded] = useState(false);
   const refresh = useCallback(async () => {
     const [n, e, o] = await Promise.all([
       listSceneNodes(sceneId), listSceneNodeEdges(sceneId), listSceneOutputs(sceneId),
     ]);
-    setNodes(n); setEdges(e); setOutputs(o);
+    setNodes(n); setEdges(e); setOutputs(o); setNodesLoaded(true);
     if (o.length && currentVersion === null) setCurrentVersion((o.find((x) => x.current) ?? o[0]).version);
   }, [sceneId, currentVersion]);
 
@@ -143,19 +145,32 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   // Sin toasts salvo error: la llegada es una propuesta, no un aviso.
   const [arrivals, setArrivals] = useState<Arrival[]>([]);
   const arrivalLoad = useRef(0);
+  // Una sola redacción en vuelo por escena: dos a la vez serían dos llamadas
+  // al modelo por llegada.
+  const proposing = useRef(false);
   const refreshArrivals = useCallback(async () => {
     const n = ++arrivalLoad.current;
+    let first: Arrival[];
     try {
-      const first = await getSceneArrivals(sceneId);
-      if (n !== arrivalLoad.current) return;
-      setArrivals(first);
-      if (first.some((a) => a.pending)) {
-        const written = await proposeSceneArrivals(sceneId);
-        if (n === arrivalLoad.current) setArrivals(written);
-      }
-    } catch (err) { console.error(err); }
+      first = await getSceneArrivals(sceneId);
+    } catch (err) { console.error(err); return; }
+    if (n !== arrivalLoad.current) return;
+    setArrivals(first);
+    if (!first.some((a) => a.pending) || proposing.current) return;
+    proposing.current = true;
+    try {
+      const written = await proposeSceneArrivals(sceneId);
+      if (n === arrivalLoad.current) setArrivals(written);
+    } catch (err) {
+      // Sin generador el fantasma no se queda en «calculando…» para siempre:
+      // el autor puede editarlo o descartarlo; al reabrir se vuelve a pedir.
+      toast.error(`No se pudo redactar la llegada: ${describeError(err, 'error desconocido')}`);
+      if (n === arrivalLoad.current) setArrivals(first.map((a) => (a.pending ? { ...a, pending: false, warning: 'el generador no respondió' } : a)));
+    } finally { proposing.current = false; }
   }, [sceneId]);
-  useEffect(() => { void refreshArrivals(); }, [refreshArrivals, castKey]);
+  // Se piden cuando los nodos ya están cargados: antes, el reparto vacío y
+  // el reparto real disparaban dos lecturas seguidas.
+  useEffect(() => { if (nodesLoaded) void refreshArrivals(); }, [refreshArrivals, castKey, nodesLoaded]);
   const [busyArrival, setBusyArrival] = useState<number | null>(null);
   const arrivalActions = useMemo<ArrivalActions>(() => {
     const run = async (characterId: number, what: string, fn: () => Promise<void>) => {

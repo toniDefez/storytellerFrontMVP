@@ -70,7 +70,8 @@ function ArrivalBadge({ arrival, onFocus, onRepropose }: {
       </button>
     );
   }
-  if (arrival.status === 'descartada') {
+  // Descartada, o aceptada y el autor borró el momento: se puede pedir otra vez.
+  if (arrival.status === 'descartada' || (arrival.status === 'aceptada' && arrival.moment_node_id == null)) {
     return (
       <button type="button" className="nodrag" onClick={() => void onRepropose?.(arrival.character_id)} style={{ ...badge, borderStyle: 'solid' }}
         title={`Volver a proponer la llegada desde ${arrival.from}`}>
