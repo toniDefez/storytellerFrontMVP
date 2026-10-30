@@ -1215,7 +1215,8 @@ export function getSceneCarry(sceneId: number): Promise<SceneCarry> {
 // sobre las reglas y sobre lo que propone el modelo.
 
 export type StateList = 'estado' | 'sabe'
-export type StateOrigin = 'autor' | 'regla' | 'propuesta'
+/** llegada: lo que cuesta el camino por el que entra el personaje; vale al entrar, como lo del autor. */
+export type StateOrigin = 'autor' | 'regla' | 'propuesta' | 'llegada'
 
 export interface StateLine {
   id?: number
@@ -1259,6 +1260,71 @@ export function deleteStateChange(sceneId: number, id: number): Promise<void> {
 /** El modelo propone cómo queda cada presente tras la escena; devuelve el estado de después. */
 export function proposeSceneState(sceneId: number): Promise<CharacterState[]> {
   return request<CharacterState[]>(`/scene/state/propose/${sceneId}`, { method: 'POST' })
+}
+
+// ─── La llegada ─────────────────────────────────────────────────────────────
+// Cuando un personaje entra en la escena viniendo de otro lugar por un camino
+// del mapa, el backend calcula qué le cuesta el umbral y lo propone como un
+// nodo fantasma: un paso que el autor acepta, edita o descarta. Leer nunca
+// llama al modelo; redactar (propose) es otra petición.
+
+export type ArrivalStatus = 'propuesta' | 'aceptada' | 'descartada'
+
+export interface ArrivalRoute {
+  edge_type: string
+  effort: string
+  dramatic_charge: string
+  note: string
+}
+
+export interface Arrival {
+  character_id: number
+  name: string
+  status: ArrivalStatus
+  origin_scene_id: number
+  from: string
+  to: string
+  /** Sin camino en el mapa, no hay ruta: fantasma mínimo con aviso. */
+  route?: ArrivalRoute
+  step: string
+  outcomes: string[]
+  warning?: string
+  /** El paso aún no está redactado: el taller lo muestra como «calculando». */
+  pending: boolean
+  moment_node_id?: number | null
+  state_line_id?: number | null
+}
+
+export function getSceneArrivals(sceneId: number): Promise<Arrival[]> {
+  return request<Arrival[]>(`/scene/arrivals/${sceneId}`)
+}
+
+/** Redacta las llegadas pendientes (una llamada al modelo por llegada). */
+export function proposeSceneArrivals(sceneId: number): Promise<Arrival[]> {
+  return request<Arrival[]>(`/scene/arrivals/propose/${sceneId}`, { method: 'POST' })
+}
+
+/** Convierte el fantasma en un momento real; con edit, usa el texto editado y la posición del fantasma. */
+export function acceptArrival(
+  sceneId: number,
+  characterId: number,
+  edit?: { step?: string; outcomes?: string[]; canvas_x?: number; canvas_y?: number },
+): Promise<SceneNode> {
+  return request<SceneNode>(`/scene/arrival/accept/${sceneId}/${characterId}`, { method: 'POST', body: JSON.stringify(edit ?? {}) })
+}
+
+export function dismissArrival(sceneId: number, characterId: number): Promise<void> {
+  return request<void>(`/scene/arrival/dismiss/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+/** «Otra»: vuelve a redactar solo esa llegada. */
+export function regenerateArrival(sceneId: number, characterId: number): Promise<Arrival> {
+  return request<Arrival>(`/scene/arrival/again/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+/** «Proponer llegada»: la descartada vuelve a proponerse. */
+export function reproposeArrival(sceneId: number, characterId: number): Promise<void> {
+  return request<void>(`/scene/arrival/repropose/${sceneId}/${characterId}`, { method: 'POST' })
 }
 
 export function createSceneNodeEdge(

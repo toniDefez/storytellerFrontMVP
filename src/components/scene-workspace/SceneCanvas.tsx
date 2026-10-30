@@ -12,8 +12,18 @@ import { DirectionNode } from './DirectionNode';
 import { FlowEdge, ScopeEdge } from './FlowEdge';
 import { OutputNode, type OutputNodeData } from './OutputNode';
 import { AttachmentEdge } from './AttachmentEdge';
-import type { SceneNode, SceneNodeEdge, SceneEdgeKind, CharacterCarry, CharacterState, NarratorNodeConfig } from '../../services/api';
+import { ArrivalNode, type ArrivalNodeActions } from './ArrivalNode';
+import { GhostFlowEdge, GhostAttachmentEdge } from './GhostEdge';
+import type { SceneNode, SceneNodeEdge, SceneEdgeKind, CharacterCarry, CharacterState, NarratorNodeConfig, Arrival } from '../../services/api';
 import type { StateActions } from './StateBlock';
+
+/** Las acciones sobre un fantasma; la posición es la que tiene en el lienzo al aceptar. */
+export interface ArrivalActions {
+  accept: (characterId: number, edit?: { step: string; outcomes: string[] }, pos?: { x: number; y: number }) => Promise<void>;
+  dismiss: (characterId: number) => Promise<void>;
+  again: (characterId: number) => Promise<void>;
+  repropose: (characterId: number) => Promise<void>;
+}
 
 interface SceneCanvasProps {
   nodes: SceneNode[];
@@ -36,10 +46,41 @@ interface SceneCanvasProps {
   locationByID: Record<number, ScenePlace>;
   /** La escena como nodo de salida (como en ComfyUI); sin ella no se dibuja. */
   output?: OutputNodeData;
+  /** Las llegadas (La llegada): un fantasma por personaje que entra por un camino. */
+  arrivals?: Arrival[];
+  arrivalActions?: ArrivalActions;
+  /** Personaje cuya llegada tiene una acción en curso. */
+  busyArrival?: number | null;
+  /** Con «1 llegada» pulsado en un personaje, el lienzo se centra en su fantasma. */
+  focusArrival?: { characterId: number; n: number } | null;
 }
 
 const OUTPUT_ID = 'output';
-const isVirtual = (id: string) => id === OUTPUT_ID || id.startsWith('v-');
+const ghostID = (characterId: number) => `g-${characterId}`;
+const isVirtual = (id: string) => id === OUTPUT_ID || id.startsWith('v-') || id.startsWith('g-');
+
+/** Un fantasma se dibuja mientras está propuesto y tiene algo que enseñar. */
+function ghostVisible(a: Arrival): boolean {
+  return a.status === 'propuesta' && (a.pending || a.step !== '' || !!a.warning);
+}
+
+/** El primer evento en orden de lectura: sin flujo entrante y más arriba. */
+function firstMoment(nodes: SceneNode[], edges: SceneNodeEdge[]): SceneNode | undefined {
+  const hasPrev = new Set(edges.filter((e) => e.edge_kind === 'flow').map((e) => e.to_node_id));
+  const moments = nodes.filter((n) => n.node_kind === 'moment').sort((a, b) => a.canvas_y - b.canvas_y);
+  return moments.find((m) => !hasPrev.has(m.id)) ?? moments[0];
+}
+
+// Con «1 llegada» pulsado en un personaje, el lienzo se centra en su fantasma.
+function FocusNode({ target }: { target: { id: string; n: number } | null }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    if (!target) return;
+    const t = setTimeout(() => { void fitView({ nodes: [{ id: target.id }], duration: 250, maxZoom: 1 }); }, 50);
+    return () => clearTimeout(t);
+  }, [target, fitView]);
+  return null;
+}
 
 // Con zoom máximo 1: sobre un lienzo casi vacío, fitView acercaba tanto que
 // los nodos nuevos caían fuera de la vista, detrás del panel de prosa.
@@ -73,16 +114,45 @@ const nodeTypes: NodeTypes = {
   direction: DirectionNode as unknown as NodeTypes[string],
   // No "output": React Flow ya trae un tipo con ese nombre y le pone su marco.
   sceneOutput: OutputNode as unknown as NodeTypes[string],
+  arrival: ArrivalNode as unknown as NodeTypes[string],
 };
 
 const edgeTypes: EdgeTypes = {
   flow: FlowEdge,
   attachment: AttachmentEdge,
   scope: ScopeEdge,
+  ghostFlow: GhostFlowEdge,
+  ghostAttachment: GhostAttachmentEdge,
 };
 
 export function SceneCanvas(props: SceneCanvasProps) {
-  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, carryByCharID, stateByCharID, stateActions, viewHints, locationByID, unmetOutcomes, output } = props;
+  const { nodes, edges, onConnect, onNodeMove, onMomentEdit, onNarratorEdit, onEdgeDelete, charNameByID, carryByCharID, stateByCharID, stateActions, viewHints, locationByID, unmetOutcomes, output, arrivals, arrivalActions, busyArrival, focusArrival } = props;
+
+  // Los fantasmas van antes del primer evento, apilados; si los mueves se
+  // quedan donde los dejes y esa posición es la del momento al aceptar.
+  const [ghostMoved, setGhostMoved] = useState<Record<number, { x: number; y: number }>>({});
+  const ghosts = useMemo(() => (arrivals ?? []).filter(ghostVisible), [arrivals]);
+  const ghostPositions = useMemo(() => {
+    const first = firstMoment(nodes, edges);
+    const base = first ? { x: first.canvas_x, y: first.canvas_y } : { x: 340, y: 0 };
+    return Object.fromEntries(ghosts.map((a, i) => [a.character_id, ghostMoved[a.character_id] ?? { x: base.x, y: base.y - 200 - 180 * i }])) as Record<number, { x: number; y: number }>;
+  }, [ghosts, ghostMoved, nodes, edges]);
+  const ghostActions = useMemo<ArrivalNodeActions | undefined>(() => arrivalActions && {
+    accept: (cid, edit) => arrivalActions.accept(cid, edit, ghostPositions[cid]),
+    dismiss: arrivalActions.dismiss,
+    again: arrivalActions.again,
+  }, [arrivalActions, ghostPositions]);
+  // El fantasma seleccionado responde al teclado: Enter acepta, Supr descarta.
+  const [selectedGhost, setSelectedGhost] = useState<number | null>(null);
+  const onKeyDownCapture = useCallback((e: React.KeyboardEvent) => {
+    if (selectedGhost == null || !ghostActions) return;
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+    const a = ghosts.find((g) => g.character_id === selectedGhost);
+    if (!a) return;
+    if (e.key === 'Enter' && !a.pending && a.step) { e.preventDefault(); void ghostActions.accept(a.character_id); }
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); void ghostActions.dismiss(a.character_id); }
+  }, [selectedGhost, ghostActions, ghosts]);
 
   // La Escena va a la derecha de los eventos; si la mueves, se queda donde la
   // dejes mientras estés en el taller (no se guarda: no es un nodo del backend).
@@ -107,9 +177,13 @@ export function SceneCanvas(props: SceneCanvasProps) {
       position: { x: n.canvas_x, y: n.canvas_y },
       data: nodeData(n, charNameByID, carryByCharID ?? {}, stateByCharID ?? {}, stateActions, locationByID, onMomentEdit, onNarratorEdit, edges, unmetOutcomes ?? [], scene) as Record<string, unknown>,
     }));
-    if (!output) return real;
-    return [...real, { id: OUTPUT_ID, type: 'sceneOutput', position: outputPos, deletable: false, data: output }];
-  }, [nodes, edges, charNameByID, carryByCharID, stateByCharID, stateActions, viewHints, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes, output, outputPos]);
+    const ghostNodes: Node[] = ghosts.map((a) => ({
+      id: ghostID(a.character_id), type: 'arrival', position: ghostPositions[a.character_id], deletable: false, connectable: false,
+      data: { arrival: a, actions: ghostActions, busy: busyArrival === a.character_id } as Record<string, unknown>,
+    }));
+    if (!output) return [...real, ...ghostNodes];
+    return [...real, ...ghostNodes, { id: OUTPUT_ID, type: 'sceneOutput', position: outputPos, deletable: false, data: output }];
+  }, [nodes, edges, charNameByID, carryByCharID, stateByCharID, stateActions, viewHints, locationByID, onMomentEdit, onNarratorEdit, unmetOutcomes, output, outputPos, ghosts, ghostPositions, ghostActions, busyArrival]);
 
   const rfEdges = useMemo<Edge[]>(() => {
     const real: Edge[] = edges.map((e) => ({
@@ -118,6 +192,17 @@ export function SceneCanvas(props: SceneCanvasProps) {
       target: String(e.to_node_id),
       type: e.edge_kind,
     }));
+    // Las aristas punteadas de cada fantasma: flujo hacia el primer evento y
+    // attachment desde su personaje.
+    const first = firstMoment(nodes, edges);
+    const ghostEdges: Edge[] = ghosts.flatMap((a): Edge[] => {
+      const out: Edge[] = [];
+      if (first) out.push({ id: `gf-${a.character_id}`, source: ghostID(a.character_id), sourceHandle: 'flow-out', target: String(first.id), targetHandle: 'flow-in', type: 'ghostFlow', deletable: false, selectable: false });
+      const charNode = nodes.find((n) => n.node_kind === 'character' && n.character_id === a.character_id);
+      if (charNode) out.push({ id: `ga-${a.character_id}`, source: String(charNode.id), sourceHandle: 'attach', target: ghostID(a.character_id), targetHandle: 'attach-in', type: 'ghostAttachment', deletable: false, selectable: false });
+      return out;
+    });
+    real.push(...ghostEdges);
     if (!output) return real;
     // Los últimos eventos desembocan en la Escena; lo que no está conectado a
     // ningún evento (reparto, lugar, narrador) afecta a toda la escena.
@@ -133,7 +218,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
       return [];
     });
     return [...real, ...virtual];
-  }, [edges, nodes, output]);
+  }, [edges, nodes, output, ghosts]);
 
   const handleConnect: OnConnect = useCallback((c: Connection) => {
     if (!c.source || !c.target) return;
@@ -146,6 +231,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
   }, [nodes, onConnect]);
 
   return (
+    <div style={{ width: '100%', height: '100%' }} onKeyDownCapture={onKeyDownCapture}>
     <ReactFlow
       nodes={rfNodes}
       edges={rfEdges}
@@ -154,7 +240,12 @@ export function SceneCanvas(props: SceneCanvasProps) {
       onConnect={handleConnect}
       onNodeDragStop={(_, node) => {
         if (node.id === OUTPUT_ID) setOutputMoved(node.position);
+        else if (node.id.startsWith('g-')) setGhostMoved((m) => ({ ...m, [Number(node.id.slice(2))]: node.position }));
         else if (!isVirtual(node.id)) onNodeMove(Number(node.id), node.position.x, node.position.y);
+      }}
+      onSelectionChange={({ nodes: sel }) => {
+        const g = sel.find((n) => n.id.startsWith('g-'));
+        setSelectedGhost(g ? Number(g.id.slice(2)) : null);
       }}
       onEdgesDelete={(removed) => removed.filter((r) => !isVirtual(r.id)).forEach((r) => onEdgeDelete(Number(r.id)))}
       fitView
@@ -163,12 +254,14 @@ export function SceneCanvas(props: SceneCanvasProps) {
       minZoom={0.2}
     >
       <FitWhenNodesAppear count={rfNodes.length} />
+      <FocusNode target={focusArrival ? { id: ghostID(focusArrival.characterId), n: focusArrival.n } : null} />
       <Panel position="top-left">
         <TidyButton nodes={nodes} edges={edges} onNodeMove={onNodeMove} onDone={() => setOutputMoved(null)} />
       </Panel>
       <Background />
       <Controls showInteractive={false} />
     </ReactFlow>
+    </div>
   );
 }
 

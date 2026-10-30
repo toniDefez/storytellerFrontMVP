@@ -48,13 +48,14 @@ function StateList({ title, list, lines, characterId, actions }: {
       {lines.map((l) => (
         <div key={`${l.scene_id}-${l.text}`} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, fontSize: 13 }} className="nodrag">
           {l.origin === 'propuesta' && <span title="propuesto por el modelo" style={{ color: '#ea580c', lineHeight: '18px' }}>•</span>}
-          <span style={{ flex: 1, fontStyle: l.origin === 'propuesta' ? 'italic' : 'normal' }}>{l.text}</span>
+          {l.origin === 'llegada' && <span title="propuesto por el camino" style={{ color: '#ea580c', lineHeight: '18px' }}>•</span>}
+          <span style={{ flex: 1, fontStyle: l.origin === 'propuesta' || l.origin === 'llegada' ? 'italic' : 'normal' }}>{l.text}</span>
           {actions && (
             <button
               type="button"
               aria-label={`Quitar «${l.text}»`}
-              title={l.origin === 'autor' && l.scene_id === actions.sceneId ? 'Quitar lo que añadiste' : 'Tachar: deja de ser verdad desde esta escena'}
-              onClick={() => { void (l.origin === 'autor' && l.id && l.scene_id === actions.sceneId ? actions.undo(l.id) : actions.remove(characterId, list, l.text)); }}
+              title={own(l, actions.sceneId) ? (l.origin === 'llegada' ? 'Quitar lo que propone el camino' : 'Quitar lo que añadiste') : 'Tachar: deja de ser verdad desde esta escena'}
+              onClick={() => { void (own(l, actions.sceneId) && l.id ? actions.undo(l.id) : actions.remove(characterId, list, l.text)); }}
               style={xButton}
             >×</button>
           )}
@@ -73,6 +74,12 @@ function StateList({ title, list, lines, characterId, actions }: {
       )}
     </div>
   );
+}
+
+// Las líneas que nacieron en esta escena por el autor o por el camino se
+// quitan borrando la fila; las de antes se tachan desde aquí.
+function own(l: StateLine, sceneId: number): boolean {
+  return (l.origin === 'autor' || l.origin === 'llegada') && l.scene_id === sceneId;
 }
 
 const box = {
