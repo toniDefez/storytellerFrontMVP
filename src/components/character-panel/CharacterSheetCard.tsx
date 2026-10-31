@@ -92,7 +92,7 @@ export function CharacterSheetCard({ characterId, characterName, sheet, onChange
       <div className="flex flex-col gap-3.5">
         <div>
           <label className={label} style={labelStyle}>Quiere</label>
-          <textarea rows={2} value={draft.quiere} onChange={(e) => set('quiere', e.target.value)} placeholder="Verbo, objeto concreto, plazo o contra quién" className={field} />
+          <textarea rows={3} value={draft.quiere} onChange={(e) => set('quiere', e.target.value)} placeholder="Verbo, objeto concreto, plazo o contra quién" className={field} />
         </div>
         <div>
           <label className={label} style={labelStyle}>Cree</label>
@@ -112,10 +112,10 @@ export function CharacterSheetCard({ characterId, characterName, sheet, onChange
           <label className={label} style={labelStyle}>Cuando… hace…</label>
           {sigs.map((s, i) => (
             <div key={i} className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 items-baseline">
-              <span className="text-xs text-muted-foreground">Cuando</span>
-              <input value={s.si} onChange={(e) => setSig(i, 'si', e.target.value)} placeholder="situación observable" className={field} />
-              <span className="text-xs text-muted-foreground">hace</span>
-              <input value={s.hace} onChange={(e) => setSig(i, 'hace', e.target.value)} placeholder="conducta observable" className={field} />
+              <span className="text-xs text-muted-foreground pt-1.5">Cuando</span>
+              <textarea rows={2} value={s.si} onChange={(e) => setSig(i, 'si', e.target.value)} placeholder="situación observable" className={field} />
+              <span className="text-xs text-muted-foreground pt-1.5">hace</span>
+              <textarea rows={2} value={s.hace} onChange={(e) => setSig(i, 'hace', e.target.value)} placeholder="conducta observable" className={field} />
             </div>
           ))}
         </div>
