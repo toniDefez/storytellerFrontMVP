@@ -16,6 +16,18 @@ interface Props {
   onEdit: (node: WorldNode) => void
   onAddChild: (node: WorldNode) => void
   onCreateRoot: () => void
+  onDeleteWorld?: () => void
+}
+
+function DeleteWorldLink({ onClick }: { onClick?: () => void }) {
+  if (!onClick) return null
+  return (
+    <div className="mt-10 pt-4 border-t border-border/60 px-3">
+      <button type="button" onClick={onClick} className="min-h-11 text-sm text-muted-foreground underline underline-offset-4 decoration-border">
+        Borrar este mundo…
+      </button>
+    </div>
+  )
 }
 
 function depthFirst(nodes: WorldNode[]): { node: WorldNode; depth: number }[] {
@@ -41,21 +53,24 @@ function depthFirst(nodes: WorldNode[]): { node: WorldNode; depth: number }[] {
   return out
 }
 
-export function WorldNodeList({ nodes, selectedId, canCreate, onSelect, onEdit, onAddChild, onCreateRoot }: Props) {
+export function WorldNodeList({ nodes, selectedId, canCreate, onSelect, onEdit, onAddChild, onCreateRoot, onDeleteWorld }: Props) {
   const rows = useMemo(() => depthFirst(nodes), [nodes])
 
   if (nodes.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center bg-background p-8 text-center">
-        <div className="space-y-2">
-          <p className="font-display text-xl italic text-foreground/60">El mundo aún no tiene raíz</p>
-          <p className="text-sm text-muted-foreground">La raíz es la premisa de la que cuelga todo lo demás. Pídesela al chat o escríbela tú.</p>
-          {canCreate && (
-            <button type="button" onClick={onCreateRoot} className="min-h-11 px-4 text-sm text-primary underline underline-offset-4">
-              Escribir la raíz
-            </button>
-          )}
+      <div className="flex h-full flex-col bg-background">
+        <div className="flex flex-1 items-center justify-center p-8 text-center">
+          <div className="space-y-2">
+            <p className="font-display text-xl italic text-foreground/60">El mundo aún no tiene raíz</p>
+            <p className="text-sm text-muted-foreground">La raíz es la premisa de la que cuelga todo lo demás. Pídesela al chat o escríbela tú.</p>
+            {canCreate && (
+              <button type="button" onClick={onCreateRoot} className="min-h-11 px-4 text-sm text-primary underline underline-offset-4">
+                Escribir la raíz
+              </button>
+            )}
+          </div>
         </div>
+        <div className="pb-28"><DeleteWorldLink onClick={onDeleteWorld} /></div>
       </div>
     )
   }
@@ -95,6 +110,7 @@ export function WorldNodeList({ nodes, selectedId, canCreate, onSelect, onEdit, 
           </li>
         )
       })}
+      <li><DeleteWorldLink onClick={onDeleteWorld} /></li>
     </ol>
   )
 }

@@ -251,7 +251,8 @@ export default function WorldDetailPage() {
           </div>
         </div>
 
-        {/* Right: ··· menu */}
+        {/* Right: ··· menu (solo escritorio; en el móvil borrar está al final de la pestaña Mundo) */}
+        <div className="hidden md:block">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -272,6 +273,7 @@ export default function WorldDetailPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       {/* ── Full-viewport graph ───────────────────────────────────────── */}
@@ -288,6 +290,7 @@ export default function WorldDetailPage() {
               <CausalTreeCanvas
                 nodes={graph.nodes}
                 worldId={Number(id)}
+                onDeleteWorld={() => setShowConfirmDelete(true)}
                 selectedNode={graph.selectedNode}
                 onSelectNode={graph.selectNode}
                 onAddNode={handleAddNode}

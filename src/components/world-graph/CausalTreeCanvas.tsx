@@ -60,6 +60,8 @@ interface CausalTreeCanvasProps {
   onExpand: () => Promise<void>
   onDeleteSubtree: () => Promise<{ count: number; labels: string[] }>
   onDeleteConfirmed: () => Promise<void>
+  /** Móvil: «Borrar este mundo…» al final de la lista, en vez de un menú. */
+  onDeleteWorld?: () => void
 }
 
 function buildFlowGraph(
@@ -117,6 +119,7 @@ export function CausalTreeCanvas({
   onExpand,
   onDeleteSubtree,
   onDeleteConfirmed,
+  onDeleteWorld,
 }: CausalTreeCanvasProps) {
   const { t } = useTranslation()
   const selectedNodeId = selectedNode?.id
@@ -295,6 +298,7 @@ export function CausalTreeCanvas({
                 onEdit={node => openEditForm(node, mobileAnchor)}
                 onAddChild={node => openCreateForm(node, mobileAnchor)}
                 onCreateRoot={() => openCreateForm(null, mobileAnchor)}
+                onDeleteWorld={onDeleteWorld}
               />
               <button
                 type="button"
