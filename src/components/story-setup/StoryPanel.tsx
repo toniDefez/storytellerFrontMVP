@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronLeft } from 'lucide-react'
 import type { StoryBrief, CharacterBrief } from '@/services/api'
 import { StoryGraphCanvas } from '@/components/story-graph/StoryGraphCanvas'
 import { StoryCatalog } from '@/components/story-catalog/StoryCatalog'
@@ -80,10 +81,11 @@ export function StoryPanel({ worldId, stories: initialStories, characters, onSto
                            px-3 py-1.5 text-sm text-muted-foreground
                            hover:text-foreground
                            transition-colors
-                           max-md:static max-md:bg-transparent max-md:border-0 max-md:shadow-none max-md:min-h-11 max-md:pl-4"
+                           max-md:static max-md:bg-transparent max-md:border-0 max-md:shadow-none max-md:min-h-10 max-md:px-4 max-md:flex max-md:items-center max-md:gap-1.5 max-md:border-b max-md:border-border/40 max-md:rounded-none max-md:w-full"
                 aria-label="Volver al catálogo"
               >
-                ← Historias
+                <ChevronLeft className="w-4 h-4 md:hidden" aria-hidden="true" />
+                <span className="hidden md:inline">← </span>Historias
               </button>
             )}
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, MapPin, Plus, Sparkles, Trash2, X } from 'lucide-react'
+import { ChevronLeft, Loader2, MapPin, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -218,7 +218,14 @@ function PlaceSheet({ place, places, routes, onConnect, onSetDistance, onDisconn
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-7 px-8 py-8">
+    <div className="mx-auto max-w-xl space-y-7 px-4 py-5 md:px-8 md:py-8">
+      {/* Móvil: la misma fila de vuelta que en Personajes; la × queda para el escritorio. */}
+      <div className="md:hidden -mx-4 -mt-5 mb-2 border-b border-border/40 px-2 py-1">
+        <button type="button" onClick={onClose} className="flex items-center gap-1.5 min-h-10 px-2 text-sm text-muted-foreground">
+          <ChevronLeft className="w-4 h-4" />
+          {t('location.places.title', { defaultValue: 'Lugares' })}
+        </button>
+      </div>
       <div className="flex items-start gap-2">
         <InlineText
           value={place.name}
@@ -231,7 +238,7 @@ function PlaceSheet({ place, places, routes, onConnect, onSetDistance, onDisconn
           type="button"
           onClick={onClose}
           aria-label={t('location.map.close')}
-          className="mt-1.5 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="hidden md:inline-flex mt-1.5 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <X className="size-4" />
         </button>

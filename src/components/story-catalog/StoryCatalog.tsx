@@ -61,9 +61,9 @@ export function StoryCatalog({ worldId, stories, onStorySelect, onStoryCreated }
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 md:px-10 py-5 md:py-8">
-      {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-5xl mx-auto px-4 md:px-10 py-5 md:py-8 pb-24 md:pb-8">
+      {/* ── Header (en móvil la pestaña ya dice «Historias» y el botón va abajo, como en Lugares y Personajes) ── */}
+      <div className="hidden md:flex items-center justify-between mb-8">
         <h1 className="font-display text-3xl italic text-foreground/80">Historias</h1>
         <Button
           onClick={() => setDialogOpen(true)}
@@ -98,7 +98,7 @@ export function StoryCatalog({ worldId, stories, onStorySelect, onStoryCreated }
           <motion.button
             onClick={() => setDialogOpen(true)}
             className="aspect-[3/4] rounded-sm border-2 border-dashed border-cyan-400/20
-                       flex flex-col items-center justify-center gap-3
+                       hidden md:flex flex-col items-center justify-center gap-3
                        text-[#0e7490]/40 hover:text-[#0e7490]/70
                        transition-colors duration-200 cursor-pointer
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06b6d4]/60"
@@ -110,6 +110,18 @@ export function StoryCatalog({ worldId, stories, onStorySelect, onStoryCreated }
           </motion.button>
         </div>
       )}
+
+      {/* Móvil: la misma acción fija abajo que en Lugares y Personajes. */}
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-10 px-4 py-3 bg-gradient-to-t from-background via-background to-transparent pb-[max(12px,env(safe-area-inset-bottom))]">
+        <button
+          type="button"
+          onClick={() => setDialogOpen(true)}
+          className="w-full min-h-12 flex items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-[#06b6d4]/30 text-[#0e7490] text-sm font-medium bg-background"
+        >
+          <Plus className="w-4 h-4" />
+          Nueva historia
+        </button>
+      </div>
 
       {/* ── Create Story Dialog ──────────────────────────────────────── */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>

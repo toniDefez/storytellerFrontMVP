@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Network, MessageCircle, Sparkles, Trash2, X, Mic } from 'lucide-react'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { VoiceTab } from './VoiceTab'
 import { VoiceBadge } from './VoiceBadge'
 import { useCharacterGraph } from './useCharacterGraph'
@@ -27,10 +28,17 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     voiceExamples, premise, speechPattern, generatingExamples,
     loadGraph, removeNode, editNode, moveNode,
     updateVoice, saveExamples, generateExamples, sendMessage, generateNodes, clearChat,
-    toggleMode, setSelectedNodeId,
+    toggleMode, setSelectedNodeId, setMode,
     addFromCatalog, addFromContextual, regenerateSynthesis,
     regenerateSoul,
   } = useCharacterGraph(characterId)
+  // Móvil (2026-10-31): el lienzo de nodos no se recorre con el dedo; la
+  // ficha abre en la vista de texto (Voz). Flujo sigue ahí por si se quiere.
+  const isMobile = useIsMobile()
+  useEffect(() => {
+    if (isMobile) setMode('voice')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile, characterId])
 
   const [selectedNode, setSelectedNode] = useState<CharacterNode | undefined>()
   // null: aún sin tocar, se propone la premisa con la que se creó el
