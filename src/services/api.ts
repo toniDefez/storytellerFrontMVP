@@ -1,6 +1,12 @@
 import { ApiError, newRequestId, reportClientError } from './telemetry'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const CONFIGURED_API = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Abierta desde otro equipo (el móvil en la misma red) con la API configurada
+// en localhost, «localhost» sería el móvil: se usa /api, que Vite reenvía al
+// backend desde el mismo origen (vite.config.ts).
+const API_URL = typeof window !== 'undefined' && /\/\/localhost[:/]/.test(CONFIGURED_API) && !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+  ? '/api'
+  : CONFIGURED_API
 
 /**
  * Dirección completa del backend, la que se escribe en la app del generador.
