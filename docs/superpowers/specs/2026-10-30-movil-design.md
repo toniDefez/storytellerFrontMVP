@@ -10,3 +10,9 @@ Veredicto sobre la primera versión de las listas móviles: parecían generadas 
 - **Panel de escena:** «Eliminar escena» pasa de botón rojo a enlace; el copy «(próximamente)» del lugar se sustituye por «El lugar se elige en el taller». Esto cambia también en escritorio, a propósito.
 
 Pendiente de la crítica: la lista de mundos (tarjetas idénticas con degradado morado, ya en escritorio) y el detalle de escena, que en móvil sigue siendo una ficha casi vacía hasta que el corte 3 lleve su contenido al taller. Capturas de después en `storyteller-mcp/runs/2026-10-30-movil/mobile-corte2/`.
+
+## Estado 2026-10-31: los tres cortes hechos
+
+Los tres cortes están en `feat/deploy` de la web (commits 9be62d8, 94f9655 y el del corte 3). Maqueta del taller: https://claude.ai/artifact/A65mSffRZyYBhVpeTgKKEn. Capturas del corte 3 en `storyteller-mcp/runs/2026-10-30-movil/mobile-corte3/`; el banco `shots.mjs` recorre 19 pasos en móvil (todos pasan) y 14 en escritorio, comparados píxel a píxel con la referencia.
+
+Queda para cuando Toni lo use de verdad desde su móvil contra el servidor: «Insertar después» en la hoja del evento (hoy un evento nuevo va siempre al final), los ajustes finos del narrador (solo en escritorio), la lista de mundos, y lo que él encuentre.

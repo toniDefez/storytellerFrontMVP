@@ -66,7 +66,12 @@ for (const name of which) {
   await step('historia', async () => { await page.getByRole('button', { name: story.title }).click(); await page.waitForTimeout(2500); });
   await step('escena-panel', async () => { await page.waitForTimeout(2500); const rf = page.locator('.react-flow__node', { hasText: 'Paso del Sangriento' }); if (await rf.count()) await rf.first().dispatchEvent('click'); else await page.getByRole('button', { name: /^Detalle de/ }).first().click(); await page.waitForTimeout(1500); });
   await step('escena-taller', async () => { await page.getByRole('button', { name: 'Abrir taller' }).click(); await page.waitForTimeout(3000); });
-  await step('escena-prosa', async () => { await page.getByRole('button', { name: /prosa|leer|texto/i }).first().click(); await page.waitForTimeout(1200); }, true);
+  await step('taller-evento', async () => { await page.locator('button', { hasText: 'Evento' }).first().click(); await page.waitForTimeout(1200); });
+  await page.keyboard.press('Escape'); await page.waitForTimeout(700);
+  await step('taller-escena', async () => { await page.locator('button', { hasText: 'tocar para abrir' }).first().click(); await page.waitForTimeout(1200); });
+  await page.keyboard.press('Escape'); await page.waitForTimeout(700);
+  await step('escena-prosa', async () => { await page.getByRole('button', { name: /prosa|leer historia/i }).first().click(); await page.waitForTimeout(1500); }, true);
+  await page.keyboard.press('Escape'); await page.waitForTimeout(700);
   await step('ajustes', () => go('/settings'), true);
   await step('ajustes-generador', () => go('/settings?tab=installation'), true);
   await step('crear-mundo', () => go('/worlds/create'), true);
