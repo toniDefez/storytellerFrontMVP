@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise } from '@/services/api'
+import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise, synthesizeDomain, regenerateCharacterSoul } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
@@ -34,6 +34,11 @@ interface Props {
 
 type Mode = 'empty' | 'new' | 'viewing'
 
+// Cómo se llama cada bloque mientras se resume, en minúscula y en orden de lectura.
+const DOMAIN_PHASE: Record<string, string> = {
+  origin: 'las creencias', fear: 'los miedos', drive: 'los deseos', bond: 'las grietas', mask: 'las máscaras',
+}
+
 export function CharacterPanel({ worldId, worldPremise, characterBriefs, onCharacterListChanged }: Props) {
   const { t } = useTranslation()
   const { progress, start: startProgress, stop: stopProgress } = useGenerationProgress()
@@ -43,6 +48,8 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   const [name, setName] = useState('')
   const [premise, setPremise] = useState('')
   const [generating, setGenerating] = useState(false)
+  // La fase del encadenado (nodos → bloques → alma), para quien espera.
+  const [phase, setPhase] = useState('')
   const [error, setError] = useState('')
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null)
   const [refining, setRefining] = useState(false)
@@ -116,8 +123,10 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
       // The archetype is a seed the derivation reinterprets for this premise,
       // not a replacement for it: both shape the character.
       const requestId = startProgress()
+      let generated: { nodes?: { domain: string }[] } | null = null
       try {
-        await generateCharacterNodes(result.id, premise.trim(), selectedProfileId ?? undefined, requestId)
+        setPhase('')
+        generated = await generateCharacterNodes(result.id, premise.trim(), selectedProfileId ?? undefined, requestId)
       } catch (err) {
         // Los nodos son los que fallan, no la creación: el personaje existe.
         toast.error(`El personaje se ha creado, pero no se pudieron generar sus nodos (${describeError(err, 'error desconocido')}). Puedes reintentarlo desde su ficha.`)
@@ -125,6 +134,23 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
       } finally {
         stopProgress()
       }
+
+      // Una sola intención («dame el personaje»), un solo botón (2026-10-31):
+      // tras los nodos, el resumen de cada bloque y el alma, en cadena. Si
+      // algo de esto falla, el personaje queda a medias pero usable, y desde
+      // la ficha se regenera lo que falte.
+      const domains = [...new Set((generated?.nodes ?? []).map(n => n.domain))]
+      for (const domain of domains) {
+        setPhase(`resumiendo ${DOMAIN_PHASE[domain] ?? domain}…`)
+        try { await synthesizeDomain(result.id, domain) }
+        catch (err) { toast.warning(`No se pudo resumir ${DOMAIN_PHASE[domain] ?? domain}: ${describeError(err, 'error desconocido')}`) }
+      }
+      if (domains.length > 0) {
+        setPhase('dando forma al alma…')
+        try { await regenerateCharacterSoul(result.id) }
+        catch (err) { toast.warning(`El personaje está, pero no se pudo generar su alma: ${describeError(err, 'error desconocido')}`) }
+      }
+      setPhase('')
 
       const newChar = await getCharacterById(result.id)
       setCharacters(prev => [...prev, newChar])
@@ -284,7 +310,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
 
         {mode === 'new' && generating && (
           <div className="flex items-center justify-center h-full">
-            <AIGeneratingIndicator label="Creando el personaje…" detail={progress} accent="character" />
+            <AIGeneratingIndicator label="Creando el personaje…" detail={phase || progress} accent="character" />
           </div>
         )}
 
