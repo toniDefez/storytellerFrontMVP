@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise } from '@/services/api'
+import { getCharacterById, createCharacterWithSheet, deleteCharacter, refineCharacterPremise } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
-import { CharacterProfilePicker } from './CharacterProfilePicker'
-import { Users, Sparkles, Wand2, Loader2 } from 'lucide-react'
+import { Users, Sparkles, Wand2, Loader2, ChevronLeft } from 'lucide-react'
+import { useUrlParam } from '@/hooks/useUrlParam'
 import { notifyError } from '@/lib/notifyError'
-import { describeError } from '@/services/telemetry'
-import { useGenerationProgress } from '@/hooks/useGenerationProgress'
 
 const UNNAMED = 'Personaje sin nombre'
 
@@ -36,15 +34,26 @@ type Mode = 'empty' | 'new' | 'viewing'
 
 export function CharacterPanel({ worldId, worldPremise, characterBriefs, onCharacterListChanged }: Props) {
   const { t } = useTranslation()
-  const { progress, start: startProgress, stop: stopProgress } = useGenerationProgress()
   const [mode, setMode] = useState<Mode>('empty')
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  // La ficha abierta (o «nuevo») va en la URL: «atrás» vuelve a la lista.
+  const [charParam, setCharParam] = useUrlParam('character')
+  useEffect(() => {
+    if (charParam === 'new') {
+      if (mode !== 'new') { setSelectedId(null); setMode('new') }
+    } else if (charParam) {
+      const id = Number(charParam)
+      if (selectedId !== id || mode !== 'viewing') { setSelectedId(id); setMode('viewing') }
+    } else if (mode !== 'empty') {
+      setMode('empty'); setSelectedId(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [charParam])
   const [characters, setCharacters] = useState<Character[]>([])
   const [name, setName] = useState('')
   const [premise, setPremise] = useState('')
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
-  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null)
   const [refining, setRefining] = useState(false)
 
   useEffect(() => {
@@ -60,6 +69,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   const handleSelect = (id: number) => {
     setSelectedId(id)
     setMode('viewing')
+    setCharParam(String(id))
   }
 
   const handleDelete = async (id: number) => {
@@ -81,8 +91,8 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     setName('')
     setPremise('')
     setError('')
-    setSelectedProfileId(null)
     setMode('new')
+    setCharParam('new')
   }
 
   const handleRefine = async () => {
@@ -102,45 +112,25 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     if (!premise.trim()) return
     setGenerating(true)
     setError('')
-    // Se crea en dos pasos: si falla el segundo, el personaje ya existe.
-    let createdId: number | null = null
+    // Un solo paso (2026-10-31): nombre y premisa, y el generador propone la
+    // ficha corta entera (quiere, cree, nunca, cuando-hace, por defecto). El
+    // autor la corrige en la vista. El grafo profundo y el alma quedan en
+    // «Profundizar», ya no son el camino. Si la ficha falla, el personaje
+    // existe igualmente y se le pide la ficha desde su vista.
     try {
       const taken = [...characterBriefs.map(b => b.name), ...characters.map(c => c.name)]
-      const result = await createCharacter({
+      const created = await createCharacterWithSheet({
         name: name.trim() || placeholderName(taken),
         world_id: worldId,
         premise: premise.trim(),
       })
-      createdId = result.id
-
-      // The archetype is a seed the derivation reinterprets for this premise,
-      // not a replacement for it: both shape the character.
-      const requestId = startProgress()
-      try {
-        await generateCharacterNodes(result.id, premise.trim(), selectedProfileId ?? undefined, requestId)
-      } catch (err) {
-        // Los nodos son los que fallan, no la creación: el personaje existe.
-        toast.error(`El personaje se ha creado, pero no se pudieron generar sus nodos (${describeError(err, 'error desconocido')}). Puedes reintentarlo desde su ficha.`)
-        throw err
-      } finally {
-        stopProgress()
-      }
-
-      const newChar = await getCharacterById(result.id)
-      setCharacters(prev => [...prev, newChar])
-      setSelectedId(result.id)
+      if (!created.sheet) toast.warning('El personaje se ha creado, pero el generador no dio la ficha. Pídesela desde su vista.')
+      setCharacters(prev => [...prev, created])
+      setSelectedId(created.id)
       setMode('viewing')
+      setCharParam(String(created.id), { replace: true })
       onCharacterListChanged()
     } catch (err) {
-      if (createdId !== null) {
-        // Antes el personaje a medias no aparecía en la lista y reintentar
-        // con el mismo nombre daba 409. Ahora se abre: su vista vacía
-        // permite volver a generar los nodos con la misma premisa.
-        onCharacterListChanged()
-        setSelectedId(createdId)
-        setMode('viewing')
-        return
-      }
       const message = err instanceof Error ? err.message : ''
       // El backend responde 409 si el nombre ya existe en el mundo: los nombres
       // identifican al personaje en el chat y en las escenas.
@@ -154,17 +144,33 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   }
 
   return (
-    <div className="grid grid-cols-[320px_1fr] h-full min-h-0">
-      <CharacterSidebar
-        worldPremise={worldPremise}
-        characters={characters}
-        selectedId={selectedId}
-        onSelect={handleSelect}
-        onNewCharacter={handleNewCharacter}
-        onDelete={handleDelete}
-      />
+    // Móvil: lista o ficha, nunca las dos; «← Personajes» devuelve a la lista.
+    <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] h-full min-h-0">
+      <div className={`h-full min-h-0 ${mode === 'empty' ? '' : 'hidden md:block'}`}>
+        <CharacterSidebar
+          worldPremise={worldPremise}
+          characters={characters}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          onNewCharacter={handleNewCharacter}
+          onDelete={handleDelete}
+        />
+      </div>
 
-      <div className="h-full overflow-hidden">
+      <div className={`h-full overflow-hidden flex flex-col ${mode === 'empty' ? 'hidden md:flex' : ''}`}>
+        {mode !== 'empty' && (
+          <div className="md:hidden shrink-0 border-b border-border/40 px-2 py-1">
+            <button
+              type="button"
+              onClick={() => { setMode('empty'); setSelectedId(null); setCharParam(null, { replace: true }) }}
+              className="flex items-center gap-1.5 min-h-10 px-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Personajes
+            </button>
+          </div>
+        )}
+        <div className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
         {mode === 'empty' && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Users className="w-12 h-12 text-muted-foreground/15 mb-3" />
@@ -173,7 +179,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         )}
 
         {mode === 'new' && !generating && (
-          <div className="flex flex-col items-center justify-center h-full px-8 max-w-xl mx-auto gap-6">
+          <div className="flex flex-col items-center justify-start md:justify-center min-h-full md:h-full px-4 md:px-8 py-6 md:py-0 pb-24 md:pb-0 max-w-xl mx-auto gap-6">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600/60">
               Nuevo personaje
             </p>
@@ -242,13 +248,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
               />
             </div>
 
-            {/* Profile picker */}
-            <div className="w-full">
-              <CharacterProfilePicker
-                selectedId={selectedProfileId}
-                onSelect={setSelectedProfileId}
-              />
-            </div>
+            <p className="w-full text-xs text-muted-foreground">Con esto el generador propone su ficha: qué quiere, qué cree, qué no haría nunca y cómo reacciona. Luego la corriges tú.</p>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
@@ -268,13 +268,14 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
 
         {mode === 'new' && generating && (
           <div className="flex items-center justify-center h-full">
-            <AIGeneratingIndicator label="Creando el personaje…" detail={progress} accent="character" />
+            <AIGeneratingIndicator label="Creando el personaje…" detail="proponiendo su ficha" accent="character" />
           </div>
         )}
 
         {mode === 'viewing' && selectedId && (
           <CharacterGraphPage key={selectedId} characterId={selectedId} worldId={worldId} onDelete={() => handleDelete(selectedId!)} />
         )}
+        </div>
       </div>
     </div>
   )

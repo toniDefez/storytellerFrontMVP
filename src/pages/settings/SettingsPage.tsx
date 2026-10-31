@@ -1,17 +1,18 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { PageBreadcrumb } from '@/components/PageBreadcrumb'
 import { PillSelect } from '@/components/PillSelect'
 import { useTheme } from '@/components/ThemeProvider'
 import { InstallationSection } from './InstallationSection'
-import { Globe, Palette } from 'lucide-react'
+import { Globe, LogOut, Palette } from 'lucide-react'
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const activeTab = searchParams.get('tab') || 'general'
 
   useEffect(() => {
@@ -109,6 +110,18 @@ export default function SettingsPage() {
           <InstallationSection />
         </TabsContent>
       </Tabs>
+
+      {/* En el móvil no hay menú lateral: salir vive aquí. */}
+      <div className="md:hidden mt-10 pt-4 border-t border-border/60">
+        <button
+          type="button"
+          onClick={() => { localStorage.removeItem('token'); navigate('/') }}
+          className="min-h-11 inline-flex items-center gap-2 text-sm text-muted-foreground"
+        >
+          <LogOut className="h-4 w-4" />
+          {t('nav.logout')}
+        </button>
+      </div>
     </div>
   )
 }

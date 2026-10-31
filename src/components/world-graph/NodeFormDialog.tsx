@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea'
 import type { WorldNode, NodeDomain, NodeRole, EdgeType, CandidateNode } from '@/services/api'
 import { expandNodeCandidates } from '@/services/api'
 import { DOMAIN_COLOR, DOMAIN_LABEL, ROLE_LABEL, EDGE_LABEL } from './treeLayout'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 export interface NodeFormInput {
   label: string
@@ -106,13 +108,12 @@ export function NodeFormDialog({
   }
 
   const isCreate = mode === 'create'
+  // Móvil (2026-10-31): el mismo formulario, en una hoja inferior en vez de
+  // la cajita anclada al nodo, que en el móvil quedaba como un modal suelto.
+  const isMobile = useIsMobile()
 
-  return (
-    <div
-      ref={dialogRef}
-      style={{ position: 'fixed', left, top, zIndex: 50, width: dialogW }}
-      className="bg-card border border-border rounded-xl shadow-xl overflow-hidden"
-    >
+  const content = (
+    <div className={isMobile ? 'flex flex-col [&_input]:text-base [&_textarea]:text-base [&_select]:text-base [&_button]:min-h-10' : 'contents'}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border bg-muted/30">
         <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[210px]">
@@ -297,6 +298,27 @@ export function NodeFormDialog({
           )}
         </div>
       </form>
+    </div>
+  )
+
+  if (isMobile) {
+    return (
+      <Sheet open onOpenChange={o => { if (!o) onClose() }}>
+        <SheetContent side="bottom" className="h-[90dvh] p-0 flex flex-col rounded-t-2xl overflow-y-auto [&>button]:hidden">
+          <SheetTitle className="sr-only">{isCreate ? t('graph.createRoot') : t('graph.editing')}</SheetTitle>
+          {content}
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  return (
+    <div
+      ref={dialogRef}
+      style={{ position: 'fixed', left, top, zIndex: 50, width: dialogW }}
+      className="bg-card border border-border rounded-xl shadow-xl overflow-hidden"
+    >
+      {content}
     </div>
   )
 }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ModelSelector, MODELS } from './ModelSelector'
 import { motion, AnimatePresence } from 'framer-motion'
 import { apiUrl, createPairingCode, revokeInstallation } from '../../services/api'
 import { useInstallation } from '../../hooks/useInstallation'
@@ -22,11 +21,10 @@ import {
   Check,
   Clock,
   Key,
-  Play,
+  Monitor,
   RefreshCw,
   Zap,
   Download,
-  Terminal,
   Trash2,
   AlertTriangle,
   Cpu,
@@ -229,50 +227,52 @@ function PairingCodeGenerator({
   )
 }
 
-function CopyableCommand({ command, children }: { command: string; children: React.ReactNode }) {
+/** La dirección que la app de escritorio pide junto al código: la de esta web. */
+function ServerAddress() {
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const handleCopy = () => {
-    navigator.clipboard.writeText(command)
+    navigator.clipboard.writeText(apiUrl())
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
   return (
-    <div>
-      <div className="bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto">
-        <span className="text-emerald-400">$</span> {children}
+    <div className="mt-3">
+      <p className="text-xs text-muted-foreground mb-1.5">{t('installation.serverLabel')}</p>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 min-w-0 truncate rounded-md bg-muted px-3 py-2 font-mono text-xs text-foreground ring-1 ring-border">
+          {apiUrl()}
+        </code>
+        <Button variant="outline" size="sm" onClick={handleCopy} className="h-8 gap-1.5 shrink-0">
+          {copied ? (
+            <span className="flex items-center gap-1.5 text-emerald-600">
+              <Check className="h-3.5 w-3.5" />{t('installation.tokenCopied')}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <Copy className="h-3.5 w-3.5" />{t('installation.tokenCopy')}
+            </span>
+          )}
+        </Button>
       </div>
-      <Button variant="outline" size="sm" onClick={handleCopy} className="w-full gap-1.5 mt-2">
-        {copied ? (
-          <span className="flex items-center gap-1.5 text-emerald-600">
-            <Check className="h-3.5 w-3.5" />{t('installation.commandCopied')}
-          </span>
-        ) : (
-          <span className="flex items-center gap-1.5">
-            <Copy className="h-3.5 w-3.5" />{t('installation.copyCommand')}
-          </span>
-        )}
-      </Button>
     </div>
   )
 }
 
-const IMAGE = 'ghcr.io/tonidefez/storyteller-generator'
-const pairCommandFor = (code: string) => `docker run --rm -v storyteller-generator:/config ${IMAGE} pair ${code} --server ${apiUrl()}`
+/**
+ * El instalador, descarga directa: vive en un repo público solo de releases (el
+ * código del generador es privado) y se llama siempre igual (nsis.artifactName).
+ */
+const APP_DOWNLOAD = 'https://github.com/toniDefez/storyteller-generator-releases/releases/latest/download/StoryTeller-Generador-Setup.exe'
 
-function SetupSteps({ pairing, setPairing, selectedModel }: { pairing: Pairing | null; setPairing: (p: Pairing | null) => void; selectedModel: string }) {
+function SetupSteps({ pairing, setPairing }: { pairing: Pairing | null; setPairing: (p: Pairing | null) => void }) {
   const { t } = useTranslation()
-
-  const codeBlock = "bg-zinc-900 text-zinc-100 p-3 rounded-md font-mono text-xs leading-relaxed ring-1 ring-zinc-800 overflow-x-auto"
-  const code = pairing?.code ?? '<código>'
-  const pairCommand = pairCommandFor(code)
-  const runCommand = `docker run -d --name storyteller-generator --restart unless-stopped -v storyteller-generator:/config -e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e OLLAMA_MODEL=${selectedModel} ${IMAGE}`
 
   const steps = [
     {
       icon: Download,
-      color: 'text-violet-500',
-      bg: 'bg-violet-500',
+      color: 'text-primary',
+      bg: 'bg-primary',
       title: t('installation.step1Title'),
       content: (
         <>
@@ -289,76 +289,33 @@ function SetupSteps({ pairing, setPairing, selectedModel }: { pairing: Pairing |
       ),
     },
     {
-      icon: Terminal,
-      color: 'text-sky-500',
-      bg: 'bg-sky-500',
+      icon: Monitor,
+      color: 'text-primary',
+      bg: 'bg-primary',
       title: t('installation.step2Title'),
       content: (
         <>
           <p className="text-sm text-muted-foreground mb-2">{t('installation.step2Desc')}</p>
-          <div className={codeBlock}>
-            <div className="mb-1">
-              <span className="text-emerald-400">$</span>{' '}
-              <span>ollama pull </span>
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={selectedModel}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  {selectedModel}
-                </motion.span>
-              </AnimatePresence>
-            </div>
-          </div>
+          <Button asChild size="sm" className="gap-1.5">
+            <a href={APP_DOWNLOAD} target="_blank" rel="noopener noreferrer">
+              <Download className="h-4 w-4" />
+              {t('installation.downloadApp')}
+            </a>
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">{t('installation.step2Hint')}</p>
         </>
       ),
     },
     {
       icon: Key,
-      color: 'text-amber-500',
-      bg: 'bg-amber-500',
+      color: 'text-primary',
+      bg: 'bg-primary',
       title: t('installation.step3Title'),
       content: (
         <>
           <p className="text-sm text-muted-foreground mb-3">{t('installation.step3Desc')}</p>
           <PairingCodeGenerator pairing={pairing} setPairing={setPairing} />
-        </>
-      ),
-    },
-    {
-      icon: Terminal,
-      color: 'text-sky-500',
-      bg: 'bg-sky-500',
-      title: t('installation.step4Title'),
-      content: (
-        <>
-          <p className="text-sm text-muted-foreground mb-2">{t('installation.step4Desc')}</p>
-          <CopyableCommand command={pairCommand}>
-            docker run --rm -v storyteller-generator:/config {IMAGE} pair{' '}
-            <span className={pairing ? 'text-emerald-400' : 'text-amber-300'}>{code}</span>{' '}
-            --server <span className="text-amber-300">{apiUrl()}</span>
-          </CopyableCommand>
-        </>
-      ),
-    },
-    {
-      icon: Play,
-      color: 'text-primary',
-      bg: 'bg-primary',
-      title: t('installation.step5Title'),
-      content: (
-        <>
-          <p className="text-sm text-muted-foreground mb-2">{t('installation.step5Desc')}</p>
-          <CopyableCommand command={runCommand}>
-            docker run -d --name storyteller-generator --restart unless-stopped -v storyteller-generator:/config{' '}
-            -e <span className="text-sky-400">OLLAMA_BASE_URL</span>=<span className="text-amber-300">http://host.docker.internal:11434</span>{' '}
-            -e <span className="text-sky-400">OLLAMA_MODEL</span>=<span className="text-amber-300">{selectedModel}</span>{' '}
-            {IMAGE}
-          </CopyableCommand>
-          <p className="text-xs text-muted-foreground mt-2">{t('installation.step4Hint')}</p>
+          <ServerAddress />
         </>
       ),
     },
@@ -476,7 +433,7 @@ function LinkedView({
             </AnimatePresence>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Clock className="h-3.5 w-3.5 text-muted-foreground" />
@@ -528,14 +485,7 @@ function LinkedView({
                     <div className="pt-3">
                       <p className="text-xs text-muted-foreground mb-3">{t('installation.relinkDesc')}</p>
                       <PairingCodeGenerator compact pairing={pairing} setPairing={setPairing} />
-                      {pairing && (
-                        <div className="mt-3">
-                          <p className="text-xs text-muted-foreground mb-2">{t('installation.step4Desc')}</p>
-                          <CopyableCommand command={pairCommandFor(pairing.code)}>
-                            docker run --rm -v storyteller-generator:/config {IMAGE} pair {pairing.code} --server {apiUrl()}
-                          </CopyableCommand>
-                        </div>
-                      )}
+                      {pairing && <ServerAddress />}
                     </div>
                   </motion.div>
                 )}
@@ -552,24 +502,12 @@ function LinkedView({
 
 export function InstallationSection() {
   const { t } = useTranslation()
-  const { installation, hasInstallation, loading, resetInstallation } = useInstallation()
-
   const [pairing, setPairing] = useState<Pairing | null>(null)
+  const { installation, hasInstallation, loading, resetInstallation } = useInstallation({ pairing: !!pairing })
+
   const [revoking, setRevoking] = useState(false)
   const [revokeError, setRevokeError] = useState('')
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false)
-
-  const STORAGE_KEY = 'storyteller_ollama_model'
-
-  const [selectedModel, setSelectedModel] = useState<string>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored && MODELS.some(m => m.tag === stored) ? stored : 'qwen2.5:7b'
-  })
-
-  const handleModelChange = (model: string) => {
-    setSelectedModel(model)
-    localStorage.setItem(STORAGE_KEY, model)
-  }
 
   const handleRevoke = async () => {
     setRevoking(true)
@@ -641,10 +579,7 @@ export function InstallationSection() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="mb-6">
-              <ModelSelector value={selectedModel} onChange={handleModelChange} />
-            </div>
-            <SetupSteps pairing={pairing} setPairing={setPairing} selectedModel={selectedModel} />
+            <SetupSteps pairing={pairing} setPairing={setPairing} />
           </CardContent>
         </Card>
       </motion.div>

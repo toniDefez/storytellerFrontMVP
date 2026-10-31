@@ -45,7 +45,7 @@ export function EdgeFormDialog({ open, onConfirm, onCancel }: Props) {
           <div className="flex gap-1.5">
             {EDGE_TYPES.map(t => (
               <button key={t.value} onClick={() => setEdgeType(t.value)}
-                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${edgeType === t.value ? 'bg-[#14b8a6] text-white border-[#14b8a6]' : 'border-border text-muted-foreground hover:border-[#14b8a6]/50'}`}>
+                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${edgeType === t.value ? 'border-entity-location/40 bg-entity-location/10 text-entity-location' : 'border-border text-muted-foreground hover:border-entity-location/40'}`}>
                 {t.label}
               </button>
             ))}
@@ -57,7 +57,7 @@ export function EdgeFormDialog({ open, onConfirm, onCancel }: Props) {
           <div className="flex gap-1.5">
             {EFFORTS.map(e => (
               <button key={e.value} onClick={() => setEffort(e.value)}
-                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${effort === e.value ? 'bg-[#14b8a6] text-white border-[#14b8a6]' : 'border-border text-muted-foreground hover:border-[#14b8a6]/50'}`}>
+                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${effort === e.value ? 'border-entity-location/40 bg-entity-location/10 text-entity-location' : 'border-border text-muted-foreground hover:border-entity-location/40'}`}>
                 {e.label}
               </button>
             ))}
@@ -71,7 +71,7 @@ export function EdgeFormDialog({ open, onConfirm, onCancel }: Props) {
 
         <div className="flex gap-2 justify-end pt-1">
           <Button variant="outline" size="sm" onClick={onCancel}>Cancelar</Button>
-          <Button size="sm" className="bg-[#14b8a6] hover:bg-[#0f766e]"
+          <Button size="sm"
             onClick={() => onConfirm(edgeType, effort, bidirectional)}>
             Añadir
           </Button>

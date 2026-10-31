@@ -1,4 +1,4 @@
-import type { LocationNode, LocationEdge } from '@/services/api'
+import type { LocationNode, LocationEdge, LocationNodePatch } from '@/services/api'
 import type { SelectedLocation } from '@/hooks/useLocationGraph'
 import { LocationNodeDetailPanel } from './LocationNodeDetailPanel'
 import { LocationEdgeDetailPanel } from './LocationEdgeDetailPanel'
@@ -7,7 +7,9 @@ interface Props {
   selected: SelectedLocation
   nodes: LocationNode[]
   edges: LocationEdge[]
-  onAddChildNode: (parentNode: LocationNode) => void
+  onUpdateNode: (id: number, patch: LocationNodePatch) => Promise<void>
+  onDeleteNode: (id: number) => Promise<void>
+  onAddInside: (parentNode: LocationNode) => void
   onExpandWithAI: (node: LocationNode) => void
   expandingNodeId: number | null
   onEnrichWithAI: (node: LocationNode) => void
@@ -18,7 +20,11 @@ interface Props {
   onClose: () => void
 }
 
-export function LocationSidePanel({ selected, nodes, edges, onAddChildNode, onExpandWithAI, expandingNodeId, onEnrichWithAI, enrichingNodeId, onSelectNode, onUpdateEdge, onDeleteEdge, onClose }: Props) {
+export function LocationSidePanel({
+  selected, nodes, edges, onUpdateNode, onDeleteNode, onAddInside,
+  onExpandWithAI, expandingNodeId, onEnrichWithAI, enrichingNodeId,
+  onSelectNode, onUpdateEdge, onDeleteEdge, onClose,
+}: Props) {
   if (!selected) return null
 
   if (selected.type === 'node') {
@@ -33,15 +39,19 @@ export function LocationSidePanel({ selected, nodes, edges, onAddChildNode, onEx
     return (
       <div className="h-full overflow-hidden">
         <LocationNodeDetailPanel
+          // Un lugar nuevo empieza con sus campos limpios, sin borradores del anterior.
+          key={node.id}
           node={node}
           connectedNodes={connectedNodes}
           childNodes={childNodes}
-          onAddChild={onAddChildNode}
+          onUpdate={onUpdateNode}
+          onDelete={onDeleteNode}
+          onAddInside={onAddInside}
           onExpandWithAI={onExpandWithAI}
           expandingNodeId={expandingNodeId}
           onEnrichWithAI={onEnrichWithAI}
           enrichingNodeId={enrichingNodeId}
-          onSelectChild={onSelectNode}
+          onSelectNode={onSelectNode}
           onClose={onClose}
         />
       </div>

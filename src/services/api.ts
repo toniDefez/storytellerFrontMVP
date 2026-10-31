@@ -1,9 +1,18 @@
 import { ApiError, newRequestId, reportClientError } from './telemetry'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const CONFIGURED_API = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Abierta desde otro equipo (el móvil en la misma red) con la API configurada
+// en localhost, «localhost» sería el móvil: se usa /api, que Vite reenvía al
+// backend desde el mismo origen (vite.config.ts).
+const API_URL = typeof window !== 'undefined' && /\/\/localhost[:/]/.test(CONFIGURED_API) && !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+  ? '/api'
+  : CONFIGURED_API
 
-/** Dirección del backend, para los comandos que el usuario ejecuta en su equipo. */
-export const apiUrl = () => API_URL
+/**
+ * Dirección completa del backend, la que se escribe en la app del generador.
+ * Desplegada, VITE_API_URL puede ser relativa (/api): se resuelve contra esta página.
+ */
+export const apiUrl = () => new URL(API_URL, window.location.href).href.replace(/\/+$/, '')
 
 function getToken(): string {
   return localStorage.getItem('token') || ''
@@ -290,6 +299,37 @@ export interface Character {
   premise?: string
   voice_register?: VoiceRegister
   speech_pattern?: string
+  sheet?: CharacterSheet | null
+}
+
+// --- La ficha corta (2026-10-31) ---
+// Seis campos redactados como acción. No va al escritor de prosa (medido:
+// solo caricatura); alimenta al asistente que propone pasos en el taller.
+
+export interface SheetSignature {
+  si: string
+  hace: string
+}
+
+export interface CharacterSheet {
+  quiere: string
+  cree: string
+  nunca: string
+  salvo: string
+  cuando: SheetSignature[]
+  por_defecto: string
+}
+
+export function createCharacterWithSheet(body: { world_id: number; name: string; premise: string }) {
+  return request<Character>('/character/create-with-sheet', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function generateCharacterSheet(id: number) {
+  return request<CharacterSheet>(`/character/sheet/generate?id=${id}`, { method: 'POST' })
+}
+
+export function updateCharacterSheet(id: number, sheet: CharacterSheet) {
+  return request<void>(`/character/sheet?id=${id}`, { method: 'POST', body: JSON.stringify(sheet) })
 }
 
 // --- Character Psychological Graph ---
@@ -514,6 +554,10 @@ export interface LocationNodeProperties {
   emplazamiento?: string
   /** Dónde la colocó el mapa por última vez; si el autor la mueve, el mapa la respeta. */
   map_pos?: [number, number]
+  /** Ficha del lugar: cosas que hay ahí y que una escena puede usar. */
+  props?: string[]
+  /** Lo que siempre se cumple ahí, en una línea ("nadie entra armado"). */
+  rule?: string
 }
 
 export interface LocationNode {
@@ -556,7 +600,18 @@ export function createLocationNode(node: Omit<LocationNode, 'id'>) {
   return request<LocationNode>('/location/nodes', { method: 'POST', body: JSON.stringify(node) })
 }
 
-export function updateLocationNode(id: number, data: Pick<LocationNode, 'name' | 'node_type' | 'description' | 'properties'>) {
+/**
+ * Cambios de un lugar: solo se envía lo que cambia. El backend fusiona
+ * `properties` clave a clave y conserva lo que no venga, así que editar el
+ * nombre ya no borra la función narrativa ni el emplazamiento.
+ */
+export type LocationNodePatch = Partial<Pick<LocationNode, 'name' | 'node_type' | 'description'>> & {
+  /** '' la quita. */
+  narrative_function?: NarrativeFunction | ''
+  properties?: Partial<LocationNodeProperties>
+}
+
+export function updateLocationNode(id: number, data: LocationNodePatch) {
   return request<void>(`/location/nodes/update?id=${id}`, { method: 'PUT', body: JSON.stringify(data) })
 }
 
@@ -640,10 +695,6 @@ export interface CharacterPremiseAnalysis {
   deseo: string
   conflicto: string
   stakes: string
-}
-
-export function getCharacterProfiles() {
-  return request<ProfileTemplateBrief[]>('/character/profiles')
 }
 
 export function refineCharacterPremise(premise: string) {
@@ -1189,6 +1240,176 @@ export interface SceneCarry {
 
 export function getSceneCarry(sceneId: number): Promise<SceneCarry> {
   return request<SceneCarry>(`/scene/carry/${sceneId}`)
+}
+
+// ─── Estado vivo ────────────────────────────────────────────────────────────
+// Cómo está y qué sabe cada personaje al entrar en la escena. Se guarda como
+// cambios (añadir o quitar una línea) atados a la escena; lo del autor manda
+// sobre las reglas y sobre lo que propone el modelo.
+
+export type StateList = 'estado' | 'sabe'
+/** llegada: lo que cuesta el camino por el que entra el personaje; vale al entrar, como lo del autor. */
+export type StateOrigin = 'autor' | 'regla' | 'propuesta' | 'llegada'
+
+export interface StateLine {
+  id?: number
+  text: string
+  item?: string
+  origin: StateOrigin
+  scene_id: number
+}
+
+export interface CharacterState {
+  character_id: number
+  name: string
+  estado: StateLine[]
+  sabe: StateLine[]
+  dead: boolean
+}
+
+export interface SceneStateChange {
+  id: number
+  scene_id: number
+  character_id: number
+  list: StateList
+  op: 'add' | 'remove'
+  text: string
+  item?: string
+  origin: StateOrigin
+}
+
+export function getSceneState(sceneId: number): Promise<CharacterState[]> {
+  return request<CharacterState[]>(`/scene/state/${sceneId}`)
+}
+
+export function addStateChange(sceneId: number, body: { character_id: number; list: StateList; op: 'add' | 'remove'; text: string; item?: string }): Promise<SceneStateChange> {
+  return request<SceneStateChange>(`/scene/state/${sceneId}`, { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function deleteStateChange(sceneId: number, id: number): Promise<void> {
+  return request<void>(`/scene/state/change/delete/${sceneId}/${id}`, { method: 'POST' })
+}
+
+/** El modelo propone cómo queda cada presente tras la escena; devuelve el estado de después. */
+export function proposeSceneState(sceneId: number): Promise<CharacterState[]> {
+  return request<CharacterState[]>(`/scene/state/propose/${sceneId}`, { method: 'POST' })
+}
+
+// ─── La llegada ─────────────────────────────────────────────────────────────
+// Cuando un personaje entra en la escena viniendo de otro lugar por un camino
+// del mapa, el backend calcula qué le cuesta el umbral y lo propone como un
+// nodo fantasma: un paso que el autor acepta, edita o descarta. Leer nunca
+// llama al modelo; redactar (propose) es otra petición.
+
+export type ArrivalStatus = 'propuesta' | 'aceptada' | 'descartada'
+
+export interface ArrivalRoute {
+  edge_type: string
+  effort: string
+  dramatic_charge: string
+  note: string
+}
+
+export interface Arrival {
+  character_id: number
+  name: string
+  status: ArrivalStatus
+  origin_scene_id: number
+  from: string
+  to: string
+  /** Sin camino en el mapa, no hay ruta: fantasma mínimo con aviso. */
+  route?: ArrivalRoute
+  step: string
+  outcomes: string[]
+  warning?: string
+  /** El paso aún no está redactado: el taller lo muestra como «calculando». */
+  pending: boolean
+  moment_node_id?: number | null
+  state_line_id?: number | null
+}
+
+export function getSceneArrivals(sceneId: number): Promise<Arrival[]> {
+  return request<Arrival[]>(`/scene/arrivals/${sceneId}`)
+}
+
+/** Redacta las llegadas pendientes (una llamada al modelo por llegada). */
+export function proposeSceneArrivals(sceneId: number): Promise<Arrival[]> {
+  return request<Arrival[]>(`/scene/arrivals/propose/${sceneId}`, { method: 'POST' })
+}
+
+/** Convierte el fantasma en un momento real; con edit, usa el texto editado y la posición del fantasma. */
+export function acceptArrival(
+  sceneId: number,
+  characterId: number,
+  edit?: { step?: string; outcomes?: string[]; canvas_x?: number; canvas_y?: number },
+): Promise<SceneNode> {
+  return request<SceneNode>(`/scene/arrival/accept/${sceneId}/${characterId}`, { method: 'POST', body: JSON.stringify(edit ?? {}) })
+}
+
+export function dismissArrival(sceneId: number, characterId: number): Promise<void> {
+  return request<void>(`/scene/arrival/dismiss/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+/** «Otra»: vuelve a redactar solo esa llegada. */
+export function regenerateArrival(sceneId: number, characterId: number): Promise<Arrival> {
+  return request<Arrival>(`/scene/arrival/again/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+/** «Proponer llegada»: la descartada vuelve a proponerse. */
+export function reproposeArrival(sceneId: number, characterId: number): Promise<void> {
+  return request<void>(`/scene/arrival/repropose/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+// --- Los ganchos (2026-10-31) ---
+// El reparto propone pasos cuando su ficha y su estado lo tocan; el autor
+// acepta (el paso se añade al final del flujo), edita o descarta. Proponer
+// llama al modelo (propuesta + showrunner); leer no.
+
+export type HookStatus = 'proposed' | 'accepted' | 'discarded'
+export type HookNovelty = 'known' | 'new' | ''
+
+export interface SceneHook {
+  id: number
+  scene_id: number
+  character_id: number
+  name: string
+  rule: string
+  step: string
+  outcomes: string[]
+  status: HookStatus
+  novelty?: HookNovelty | null
+  moment_node_id?: number | null
+}
+
+export const HOOK_RULE_LABEL: Record<string, string> = {
+  quiere_al_alcance: 'lo que quiere está al alcance',
+  creencia_desmentida: 'un hecho desmiente lo que cree',
+  limite_rozado: 'le tientan su límite',
+  firma_disparada: 'ocurre una de sus situaciones',
+  objeto_sin_coste: 'lleva algo que nadie toca',
+  viene_cargado: 'viene cargado',
+  deuda_pendiente: 'deuda pendiente',
+  secreto_asimetrico: 'sabe algo que el otro no',
+  testigo: 'fue testigo',
+  objeto_ajeno: 'lleva algo ajeno',
+  choque_quiere: 'choque de lo que quieren',
+  reencuentro: 'reencuentro',
+}
+
+export function getSceneHooks(sceneId: number): Promise<SceneHook[]> {
+  return request<SceneHook[]>(`/scene/hooks/${sceneId}`)
+}
+
+export function proposeSceneHooks(sceneId: number): Promise<SceneHook[]> {
+  return request<SceneHook[]>(`/scene/hooks/propose/${sceneId}`, { method: 'POST' })
+}
+
+export function acceptSceneHook(sceneId: number, hookId: number, edit?: { step?: string; outcomes?: string[]; novelty?: HookNovelty }): Promise<SceneNode> {
+  return request<SceneNode>(`/scene/hook/accept/${sceneId}/${hookId}`, { method: 'POST', body: JSON.stringify(edit ?? {}) })
+}
+
+export function discardSceneHook(sceneId: number, hookId: number, novelty?: HookNovelty): Promise<void> {
+  return request<void>(`/scene/hook/discard/${sceneId}/${hookId}`, { method: 'POST', body: JSON.stringify({ novelty: novelty ?? '' }) })
 }
 
 export function createSceneNodeEdge(

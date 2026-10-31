@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trash2, Save } from 'lucide-react'
+import { Trash2, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { LocationEdge, LocationEdgeType, LocationEffort, DramaticCharge } from '@/services/api'
 
@@ -47,8 +47,8 @@ export function LocationEdgeDetailPanel({ edge, sourceNode, targetNode, onUpdate
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b border-border/50">
-        <span className="text-xs uppercase tracking-widest text-[#14b8a6] font-semibold">Conexión</span>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none">×</button>
+        <span className="text-sm text-muted-foreground">Conexión</span>
+        <button onClick={onClose} aria-label="Cerrar" className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"><X className="size-4" /></button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -68,7 +68,7 @@ export function LocationEdgeDetailPanel({ edge, sourceNode, targetNode, onUpdate
                 <button
                   key={t}
                   onClick={() => setEdgeType(t)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${edgeType === t ? 'bg-[#14b8a6] text-white border-[#14b8a6]' : 'border-border text-muted-foreground hover:border-[#14b8a6]/50'}`}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${edgeType === t ? 'border-entity-location/40 bg-entity-location/10 text-entity-location' : 'border-border text-muted-foreground hover:border-entity-location/40'}`}
                 >
                   {EDGE_TYPE_LABELS[t]}
                 </button>
@@ -83,7 +83,7 @@ export function LocationEdgeDetailPanel({ edge, sourceNode, targetNode, onUpdate
                 <button
                   key={e}
                   onClick={() => setEffort(e)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${effort === e ? 'bg-[#14b8a6] text-white border-[#14b8a6]' : 'border-border text-muted-foreground hover:border-[#14b8a6]/50'}`}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${effort === e ? 'border-entity-location/40 bg-entity-location/10 text-entity-location' : 'border-border text-muted-foreground hover:border-entity-location/40'}`}
                 >
                   {EFFORT_LABELS[e]}
                 </button>
@@ -98,7 +98,7 @@ export function LocationEdgeDetailPanel({ edge, sourceNode, targetNode, onUpdate
                 <button
                   key={c}
                   onClick={() => setDramaticCharge(c)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${dramaticCharge === c ? 'bg-[#14b8a6] text-white border-[#14b8a6]' : 'border-border text-muted-foreground hover:border-[#14b8a6]/50'}`}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${dramaticCharge === c ? 'border-entity-location/40 bg-entity-location/10 text-entity-location' : 'border-border text-muted-foreground hover:border-entity-location/40'}`}
                 >
                   {DRAMATIC_CHARGE_LABELS[c]}
                 </button>
@@ -117,14 +117,14 @@ export function LocationEdgeDetailPanel({ edge, sourceNode, targetNode, onUpdate
               value={note}
               onChange={e => setNote(e.target.value)}
               placeholder="Este paso cierra en invierno..."
-              className="w-full text-xs border border-border rounded-lg px-2.5 py-1.5 bg-background focus:outline-none focus:border-[#14b8a6]"
+              className="w-full text-xs border border-border rounded-lg px-2.5 py-1.5 bg-background focus:outline-none focus:border-entity-location"
             />
           </div>
         </div>
       </div>
 
       <div className="p-4 border-t border-border/50 flex gap-2">
-        <Button size="sm" className="flex-1 gap-1.5 bg-[#14b8a6] hover:bg-[#0f766e]" onClick={handleSave} disabled={saving}>
+        <Button size="sm" className="flex-1 gap-1.5" onClick={handleSave} disabled={saving}>
           <Save className="w-3.5 h-3.5" /> {saving ? 'Guardando...' : 'Guardar'}
         </Button>
         <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(edge.id)}>

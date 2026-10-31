@@ -20,6 +20,10 @@ import { NodeFormDialog } from './NodeFormDialog'
 import type { NodeFormInput } from './NodeFormDialog'
 import { NodeContextMenu } from './NodeContextMenu'
 import { GraphSidePanel } from './GraphSidePanel'
+import { WorldNodeList } from './WorldNodeList'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { MessageSquare } from 'lucide-react'
 import type { ChatMessage } from '@/hooks/useWorldGraph'
 
 // NodeMouseHandler is not in @xyflow/react's public exports — define inline:
@@ -56,6 +60,8 @@ interface CausalTreeCanvasProps {
   onExpand: () => Promise<void>
   onDeleteSubtree: () => Promise<{ count: number; labels: string[] }>
   onDeleteConfirmed: () => Promise<void>
+  /** Móvil: «Borrar este mundo…» al final de la lista, en vez de un menú. */
+  onDeleteWorld?: () => void
 }
 
 function buildFlowGraph(
@@ -113,9 +119,15 @@ export function CausalTreeCanvas({
   onExpand,
   onDeleteSubtree,
   onDeleteConfirmed,
+  onDeleteWorld,
 }: CausalTreeCanvasProps) {
   const { t } = useTranslation()
   const selectedNodeId = selectedNode?.id
+  // Móvil: lista de tarjetas en vez de lienzo; el panel (chat y detalle del
+  // nodo) va en una hoja inferior que se abre al tocar un nodo o el botón Chat.
+  const isMobile = useIsMobile()
+  const [chatOpen, setChatOpen] = useState(false)
+  const mobileAnchor = { x: 0, y: 72 }
 
   const [ctxHintCount, setCtxHintCount] = useState(() =>
     parseInt(localStorage.getItem('graph_ctx_hint_count') ?? '0', 10)
@@ -252,11 +264,53 @@ export function CausalTreeCanvas({
     </ReactFlow>
   )
 
+  const sidePanel = (
+    <GraphSidePanel
+      selectedNode={selectedNode}
+      isExpanding={isExpanding}
+      chatHistory={chatHistory}
+      chatLoading={chatLoading}
+      onSendMessage={onSendMessage}
+      onClose={() => { onSelectNode(null); setChatOpen(false) }}
+      onEditNode={() => {
+        if (selectedNode) {
+          openEditForm(selectedNode, isMobile ? mobileAnchor : { x: window.innerWidth / 2 - 132, y: 80 })
+          setChatOpen(false)
+        }
+      }}
+      onExpand={onExpand}
+      onDeleteSubtree={onDeleteSubtree}
+      onDeleteConfirmed={onDeleteConfirmed}
+    />
+  )
+
   return (
     <GraphActionsContext.Provider value={graphActions}>
       <div className="flex h-full">
         <div className="flex-1 relative min-w-0">
-          {canvasContent}
+          {isMobile ? (
+            <>
+              <WorldNodeList
+                nodes={worldNodes}
+                selectedId={selectedNodeId}
+                canCreate={worldId != null}
+                onSelect={node => { onSelectNode(node); setChatOpen(node != null) }}
+                onEdit={node => openEditForm(node, mobileAnchor)}
+                onAddChild={node => openCreateForm(node, mobileAnchor)}
+                onCreateRoot={() => openCreateForm(null, mobileAnchor)}
+                onDeleteWorld={onDeleteWorld}
+              />
+              <button
+                type="button"
+                onClick={() => setChatOpen(true)}
+                className="fixed right-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-10 min-h-12 px-4 inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95"
+                aria-label="Abrir el chat del mundo"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Chat
+              </button>
+            </>
+          ) : canvasContent}
 
           {contextMenu && ctxNode && (
             <NodeContextMenu
@@ -292,25 +346,14 @@ export function CausalTreeCanvas({
           )}
         </div>
 
-        <GraphSidePanel
-          selectedNode={selectedNode}
-          isExpanding={isExpanding}
-          chatHistory={chatHistory}
-          chatLoading={chatLoading}
-          onSendMessage={onSendMessage}
-          onClose={() => onSelectNode(null)}
-          onEditNode={() => {
-            if (selectedNode) {
-              openEditForm(selectedNode, {
-                x: window.innerWidth / 2 - 132,
-                y: 80,
-              })
-            }
-          }}
-          onExpand={onExpand}
-          onDeleteSubtree={onDeleteSubtree}
-          onDeleteConfirmed={onDeleteConfirmed}
-        />
+        {isMobile ? (
+          <Sheet open={chatOpen} onOpenChange={o => { if (!o) { setChatOpen(false); onSelectNode(null) } }}>
+            <SheetContent side="bottom" className="h-[85dvh] p-0 flex flex-col rounded-t-2xl">
+              <SheetTitle className="sr-only">Chat y detalle del nodo</SheetTitle>
+              <div className="flex-1 min-h-0 flex">{sidePanel}</div>
+            </SheetContent>
+          </Sheet>
+        ) : sidePanel}
       </div>
     </GraphActionsContext.Provider>
   )

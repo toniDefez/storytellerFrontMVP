@@ -301,10 +301,7 @@ export default function CreateWorldPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              {/* ── Template picker ── */}
-              <SeedTemplatePicker selected={selectedSeed} onSelect={setSelectedSeed} />
-
-              {/* ── Premise textarea ── */}
+              {/* ── Premise textarea: lo importante, primero ── */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2.5">
                   <label
@@ -351,13 +348,13 @@ export default function CreateWorldPage() {
                         <>
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           <span className="italic" style={{ fontFamily: 'var(--font-display)', color: 'hsl(260 30% 58%)' }}>
-                            buscando inspiración...
+                            pensando…
                           </span>
                         </>
                       ) : (
                         <>
                           <Sparkles className="h-3.5 w-3.5" />
-                          <span>Sugerir ideas</span>
+                          <span>Proponme una</span>
                         </>
                       )}
                     </motion.button>
@@ -381,7 +378,7 @@ export default function CreateWorldPage() {
                     overflow: 'hidden',
                   }}
                   rows={2}
-                  placeholder="Un desierto donde gusanos gigantes producen una especia que expande la conciencia, y las grandes casas luchan por controlarla..."
+                  placeholder="Una frase: quién quiere qué, y qué se lo impide."
                   required
                 />
               </div>
@@ -440,6 +437,9 @@ export default function CreateWorldPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* ── Plantillas, como atajo ── */}
+              <SeedTemplatePicker selected={selectedSeed} onSelect={setSelectedSeed} />
 
               {/* ── Submit ── */}
               <div className="pt-2">
