@@ -180,7 +180,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
             </button>
           </div>
         )}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
         {mode === 'empty' && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Users className="w-12 h-12 text-muted-foreground/15 mb-3" />
@@ -189,7 +189,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         )}
 
         {mode === 'new' && !generating && (
-          <div className="flex flex-col items-center justify-center h-full px-8 max-w-xl mx-auto gap-6">
+          <div className="flex flex-col items-center justify-start md:justify-center min-h-full md:h-full px-4 md:px-8 py-6 md:py-0 pb-24 md:pb-0 max-w-xl mx-auto gap-6">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600/60">
               Nuevo personaje
             </p>
