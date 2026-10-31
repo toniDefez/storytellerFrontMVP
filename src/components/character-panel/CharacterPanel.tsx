@@ -8,6 +8,7 @@ import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphP
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
 import { CharacterProfilePicker } from './CharacterProfilePicker'
 import { Users, Sparkles, Wand2, Loader2, ChevronLeft } from 'lucide-react'
+import { useUrlParam } from '@/hooks/useUrlParam'
 import { notifyError } from '@/lib/notifyError'
 import { describeError } from '@/services/telemetry'
 import { useGenerationProgress } from '@/hooks/useGenerationProgress'
@@ -44,6 +45,19 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   const { progress, start: startProgress, stop: stopProgress } = useGenerationProgress()
   const [mode, setMode] = useState<Mode>('empty')
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  // La ficha abierta (o «nuevo») va en la URL: «atrás» vuelve a la lista.
+  const [charParam, setCharParam] = useUrlParam('character')
+  useEffect(() => {
+    if (charParam === 'new') {
+      if (mode !== 'new') { setSelectedId(null); setMode('new') }
+    } else if (charParam) {
+      const id = Number(charParam)
+      if (selectedId !== id || mode !== 'viewing') { setSelectedId(id); setMode('viewing') }
+    } else if (mode !== 'empty') {
+      setMode('empty'); setSelectedId(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [charParam])
   const [characters, setCharacters] = useState<Character[]>([])
   const [name, setName] = useState('')
   const [premise, setPremise] = useState('')
@@ -67,6 +81,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   const handleSelect = (id: number) => {
     setSelectedId(id)
     setMode('viewing')
+    setCharParam(String(id))
   }
 
   const handleDelete = async (id: number) => {
@@ -156,6 +171,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
       setCharacters(prev => [...prev, newChar])
       setSelectedId(result.id)
       setMode('viewing')
+      setCharParam(String(result.id), { replace: true })
       onCharacterListChanged()
     } catch (err) {
       if (createdId !== null) {
@@ -165,6 +181,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
         onCharacterListChanged()
         setSelectedId(createdId)
         setMode('viewing')
+        setCharParam(String(createdId), { replace: true })
         return
       }
       const message = err instanceof Error ? err.message : ''
@@ -198,7 +215,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
           <div className="md:hidden shrink-0 border-b border-border/40 px-2 py-1">
             <button
               type="button"
-              onClick={() => { setMode('empty'); setSelectedId(null) }}
+              onClick={() => { setMode('empty'); setSelectedId(null); setCharParam(null, { replace: true }) }}
               className="flex items-center gap-1.5 min-h-10 px-2 text-sm text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="w-4 h-4" />

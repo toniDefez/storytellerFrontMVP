@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft } from 'lucide-react'
+import { useUrlParam } from '@/hooks/useUrlParam'
 import type { StoryBrief, CharacterBrief } from '@/services/api'
 import { StoryGraphCanvas } from '@/components/story-graph/StoryGraphCanvas'
 import { StoryCatalog } from '@/components/story-catalog/StoryCatalog'
@@ -18,7 +19,10 @@ interface Props {
 
 export function StoryPanel({ worldId, stories: initialStories, characters, onStoryListChanged }: Props) {
   const [stories, setStories] = useState<StoryBrief[]>(initialStories)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  // La historia abierta va en la URL: «atrás» vuelve al catálogo.
+  const [storyParam, setStoryParam] = useUrlParam('story')
+  const selectedId = storyParam ? Number(storyParam) : null
+  const setSelectedId = (id: number | null) => setStoryParam(id == null ? null : String(id), { replace: id == null, clear: id == null ? ['scene', 'read'] : [] })
   const [sceneEntered, setSceneEntered] = useState(false)
 
   // Keep local list in sync when parent refreshes world detail

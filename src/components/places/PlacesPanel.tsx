@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, Loader2, MapPin, Plus, Sparkles, Trash2, X } from 'lucide-react'
+import { useUrlParam } from '@/hooks/useUrlParam'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -47,7 +48,10 @@ interface Props {
  */
 export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDisconnect, onCreate, onUpdate, onDelete, onSuggest, suggesting, suggestingProgress }: Props) {
   const { t } = useTranslation()
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  // La ficha abierta va en la URL: «atrás» vuelve a la lista.
+  const [placeParam, setPlaceParam] = useUrlParam('place')
+  const selectedId = placeParam ? Number(placeParam) : null
+  const setSelectedId = (id: number | null) => setPlaceParam(id == null ? null : String(id), { replace: id == null })
   const [naming, setNaming] = useState(false)
   const selected = places.find(p => p.id === selectedId) ?? null
   // A dónde lleva cada lugar, por nombre, para la lista.

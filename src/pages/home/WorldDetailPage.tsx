@@ -9,6 +9,7 @@ import ConfirmModal from '../../components/ConfirmModal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { MoreHorizontal, Trash2 } from 'lucide-react'
+import { useUrlParam } from '@/hooks/useUrlParam'
 import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
 import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
 import { PlacesPanel } from '@/components/places/PlacesPanel'
@@ -45,7 +46,11 @@ export default function WorldDetailPage() {
   const [error, setError] = useState('')
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
-  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'stories'>('causal')
+  // La pestaña vive en la URL: «atrás» vuelve a la pestaña anterior, no saca del mundo.
+  const [tabParam, setTabParam] = useUrlParam('tab')
+  const graphView = (tabParam ?? 'causal') as 'causal' | 'locations' | 'characters' | 'stories'
+  const setGraphView = (v: 'causal' | 'locations' | 'characters' | 'stories') =>
+    setTabParam(v === 'causal' ? null : v, { clear: ['place', 'character', 'story', 'scene', 'read'] })
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
   const graph = useWorldGraph()
 

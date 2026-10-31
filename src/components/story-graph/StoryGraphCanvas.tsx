@@ -58,6 +58,7 @@ import { SceneNode, type SceneNodeData } from './SceneNode'
 import { StoryGraphPanel, type PanelMode } from './StoryGraphPanel'
 import { StorySceneList } from './StorySceneList'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useUrlParam } from '@/hooks/useUrlParam'
 import { SceneWorkspace } from '@/components/scene-workspace/SceneWorkspace'
 import type { ScenePlace } from '@/components/scene-workspace/ContainerLocationNode'
 import { StoryReader } from './StoryReader'
@@ -166,9 +167,23 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
   const [newSceneTitle, setNewSceneTitle] = useState('')
   const [creatingScene, setCreatingScene] = useState(false)
 
-  // Entered scene workspace
+  // Entered scene workspace. Van en la URL (scene, read): «atrás» vuelve al grafo.
   const [enteredSceneId, setEnteredSceneId] = useState<number | null>(null)
   const [reading, setReading] = useState(false)
+  const [sceneParam, setSceneParam] = useUrlParam('scene')
+  const [readParam, setReadParam] = useUrlParam('read')
+  useEffect(() => {
+    const id = sceneParam ? Number(sceneParam) : null
+    const isReading = readParam === '1'
+    setEnteredSceneId(id)
+    setReading(isReading)
+    onSceneEntered?.(id != null || isReading)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sceneParam, readParam])
+  const enterScene = (sceneId: number) => { setPanelOpen(false); setSceneParam(String(sceneId)) }
+  const leaveScene = () => setSceneParam(null, { replace: true })
+  const startReading = () => setReadParam('1')
+  const stopReading = () => setReadParam(null, { replace: true })
 
   // Plan de escritura: para que la prosa la escriba otro modelo o el autor.
   const [copyingPlan, setCopyingPlan] = useState(false)
@@ -348,10 +363,9 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
   const handleNodeDoubleClick: NodeMouseHandler = useCallback((_event, node) => {
     if (!node.id.startsWith('scene-')) return
     const sceneId = parseInt(node.id.replace('scene-', ''), 10)
-    setEnteredSceneId(sceneId)
-    setPanelOpen(false)
-    onSceneEntered?.(true)
-  }, [onSceneEntered])
+    enterScene(sceneId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setSceneParam])
 
   /* ── Create scene ─── */
   const handleOpenCreateDialog = () => {
@@ -533,10 +547,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
       <StoryReader
         storyId={storyBrief.id}
         title={storyBrief.title}
-        onBack={() => {
-          setReading(false)
-          onSceneEntered?.(false)
-        }}
+        onBack={stopReading}
       />
     )
   }
@@ -553,10 +564,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         locationByID={workspaceLocations}
         onCreateLocation={createWorkspaceLocation}
         relationships={relationships}
-        onBack={() => {
-          setEnteredSceneId(null)
-          onSceneEntered?.(false)
-        }}
+        onBack={leaveScene}
       />
     )
   }
@@ -574,9 +582,9 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
             loading={loadingDetail || graphLoading}
             copyingPlan={copyingPlan}
             onOpenInicio={openInicioPanel}
-            onEnterScene={sceneId => { setEnteredSceneId(sceneId); setPanelOpen(false); onSceneEntered?.(true) }}
+            onEnterScene={enterScene}
             onSceneDetail={sceneId => { setSelectedSceneId(sceneId); setPanelMode('scene'); setPanelOpen(true) }}
-            onRead={() => { setReading(true); onSceneEntered?.(true) }}
+            onRead={startReading}
             onCopyPlan={handleCopyPlan}
             onCreateScene={handleOpenCreateDialog}
           />
@@ -593,10 +601,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
             {copyingPlan ? 'Preparando plan…' : 'Copiar plan de escritura'}
           </button>
           <button
-            onClick={() => {
-              setReading(true)
-              onSceneEntered?.(true)
-            }}
+            onClick={startReading}
             className="bg-white/90 border border-stone-200 rounded-lg shadow-sm px-3 py-1.5 text-sm text-stone-700 hover:text-foreground transition-colors"
           >
             Leer historia
@@ -676,12 +681,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         onNarratorChange={handleNarratorChange}
         onSceneDelete={handleSceneDelete}
         onSceneTitleChange={handleSceneTitleChange}
-        onSceneOpen={() => {
-          if (selectedSceneId == null) return
-          setEnteredSceneId(selectedSceneId)
-          setPanelOpen(false)
-          onSceneEntered?.(true)
-        }}
+        onSceneOpen={() => { if (selectedSceneId != null) enterScene(selectedSceneId) }}
       />
 
       {/* ── Create scene dialog ──────────────────────────────────── */}
