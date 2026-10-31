@@ -9,6 +9,8 @@ import {
   type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry, type NarratorNodeConfig, type StoryRelationship,
 } from '../../services/api';
 import { SceneCanvas, type ArrivalActions } from './SceneCanvas';
+import { SceneCardList } from './SceneCardList';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import type { ScenePlace } from './ContainerLocationNode';
 import { ScenePalette } from './ScenePalette';
 import { SceneProseView } from './SceneProseView';
@@ -44,6 +46,9 @@ interface SceneWorkspaceProps {
 }
 
 export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBack, charNameByID, locationByID, onCreateLocation, relationships }: SceneWorkspaceProps) {
+  // Móvil (2026-10-31): el mismo estado y las mismas acciones, pero en vez del
+  // lienzo se pintan tarjetas en columna (SceneCardList).
+  const isMobile = useIsMobile();
   const charMap = useMemo(() => charNameByID ?? {}, [charNameByID]);
   const locMap = useMemo(() => locationByID ?? {}, [locationByID]);
   const castOptions = useMemo(
@@ -238,6 +243,13 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   const handleEdgeDelete = useCallback(async (id: number) => {
     setEdges((prev) => prev.filter((e) => e.id !== id));
     try { await deleteSceneNodeEdge(id); } catch (err) { console.error(err); }
+  }, []);
+
+  // Quitar un nodo desde las tarjetas del móvil (en el lienzo es la tecla Supr).
+  const handleDeleteNode = useCallback(async (id: number) => {
+    setNodes((prev) => prev.filter((n) => n.id !== id));
+    setEdges((prev) => prev.filter((e) => e.from_node_id !== id && e.to_node_id !== id));
+    try { await deleteSceneNode(id); } catch (err) { notifyError('No se pudo quitar')(err); }
   }, []);
 
   // Un momento nuevo va después del último y queda unido a él: los momentos
@@ -487,6 +499,44 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
       )}
     </aside>
   );
+
+  if (isMobile) {
+    return (
+      <SceneCardList
+        storyTitle={storyTitle}
+        sceneTitle={sceneTitle}
+        comesFrom={comesFrom}
+        onBack={onBack}
+        nodes={nodes}
+        edges={edges}
+        charNameByID={charMap}
+        carryByCharID={carryByCharID}
+        stateByCharID={stateByCharID}
+        stateActions={stateActions}
+        locationByID={locMap}
+        castOptions={castOptions}
+        locationOptions={locationOptions}
+        output={outputData}
+        arrivals={arrivals}
+        arrivalActions={arrivalActions}
+        busyArrival={busyArrival}
+        onMomentEdit={handleMomentEdit}
+        onConnect={handleConnect}
+        onEdgeDelete={handleEdgeDelete}
+        onDeleteNode={handleDeleteNode}
+        onAddMoment={handleAddMoment}
+        onAddNarrator={handleAddNarrator}
+        onAddDirection={handleAddDirection}
+        onAddCharacter={handleAddCharacter}
+        onAddLocation={handleAddLocation}
+        generateLabel={format === 'prose' ? 'Escribir escena' : `Escribir · ${formatInfo(format).label}`}
+        pastedText={pastedText}
+        onPastedTextChange={setPastedText}
+        onSaveProse={handleSaveProse}
+        onCopySheet={storyId != null ? handleCopySheet : undefined}
+      />
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f4f1ec' }}>
