@@ -6,9 +6,11 @@ import {
   getWritingPlan, saveSceneProse, getSceneCarry,
   getSceneState, addStateChange, deleteStateChange, proposeSceneState, type CharacterState, type StateList,
   getSceneArrivals, proposeSceneArrivals, acceptArrival, dismissArrival, regenerateArrival, reproposeArrival, type Arrival,
+  getSceneHooks, proposeSceneHooks, acceptSceneHook, discardSceneHook, type SceneHook,
   type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry, type NarratorNodeConfig, type StoryRelationship,
 } from '../../services/api';
 import { SceneCanvas, type ArrivalActions } from './SceneCanvas';
+import { HooksList, type HookActions } from './HooksPanel';
 import { SceneCardList } from './SceneCardList';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import type { ScenePlace } from './ContainerLocationNode';
@@ -207,6 +209,51 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     };
   }, [sceneId, refresh, refreshArrivals, refreshState]);
   const pendingArrivals = useMemo(() => arrivals.filter((a) => a.status === 'propuesta' && (a.step !== '' || a.pending)).length, [arrivals]);
+
+  // Los ganchos (2026-10-31): el reparto propone pasos desde su ficha y su
+  // estado. Leer es inmediato; proponer son dos o tres llamadas al modelo y
+  // se pide a mano. Aceptar añade el paso al final del flujo.
+  const [hooks, setHooks] = useState<SceneHook[]>([]);
+  const [proposingHooks, setProposingHooks] = useState(false);
+  const [hooksMessage, setHooksMessage] = useState('');
+  const [hooksOpen, setHooksOpen] = useState(false);
+  const refreshHooks = useCallback(async () => {
+    try { setHooks(await getSceneHooks(sceneId)); } catch (err) { console.error(err); }
+  }, [sceneId]);
+  useEffect(() => { if (nodesLoaded) void refreshHooks(); }, [refreshHooks, nodesLoaded]);
+  const handleProposeHooks = useCallback(async () => {
+    setProposingHooks(true);
+    setHooksMessage('');
+    try {
+      const r = await proposeSceneHooks(sceneId);
+      setHooks(r);
+      if (!r.some((h) => h.status === 'proposed')) setHooksMessage('Nada que proponer: ninguna regla se cumple con lo que hay en la escena, o nadie del reparto tiene ficha.');
+    } catch (err) {
+      toast.error(`No se pudieron pedir propuestas: ${describeError(err, 'error desconocido')}`);
+    } finally { setProposingHooks(false); }
+  }, [sceneId]);
+  const [busyHook, setBusyHook] = useState<number | null>(null);
+  const hookActions = useMemo<HookActions>(() => {
+    const run = async (hookId: number, what: string, fn: () => Promise<void>) => {
+      setBusyHook(hookId);
+      try { await fn(); }
+      catch (err) { toast.error(`${what}: ${describeError(err, 'error desconocido')}`); }
+      finally { setBusyHook(null); }
+    };
+    return {
+      accept: (hookId, edit) => run(hookId, 'No se pudo aceptar la propuesta', async () => {
+        await acceptSceneHook(sceneId, hookId, edit);
+        await refresh();
+        await refreshHooks();
+      }),
+      discard: (hookId, novelty) => run(hookId, 'No se pudo descartar la propuesta', async () => {
+        await discardSceneHook(sceneId, hookId, novelty);
+        await refreshHooks();
+      }),
+    };
+  }, [sceneId, refresh, refreshHooks]);
+  const pendingHooks = useMemo(() => hooks.filter((h) => h.status === 'proposed').length, [hooks]);
+  const canProposeHooks = useMemo(() => nodes.some((n) => n.node_kind === 'character'), [nodes]);
 
   const comesFrom = useMemo(() => {
     const titles = [...new Set((carry?.characters ?? []).filter((c) => c.from_scene_id).map((c) => c.from_scene_title || 'escena sin título'))];
@@ -520,6 +567,13 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
         arrivals={arrivals}
         arrivalActions={arrivalActions}
         busyArrival={busyArrival}
+        hooks={hooks}
+        hookActions={hookActions}
+        busyHook={busyHook}
+        proposingHooks={proposingHooks}
+        hooksMessage={hooksMessage}
+        canProposeHooks={canProposeHooks}
+        onProposeHooks={handleProposeHooks}
         onMomentEdit={handleMomentEdit}
         onConnect={handleConnect}
         onEdgeDelete={handleEdgeDelete}
@@ -550,6 +604,13 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
             </h1>
             {comesFrom && <span style={{ fontSize: 13, color: '#9a3412' }}>{comesFrom}</span>}
           </div>
+          <button
+            onClick={() => setHooksOpen((v) => !v)}
+            style={{ ...toolButton, borderColor: pendingHooks > 0 ? '#c2410c' : toolButton.border.split(' ')[2], color: pendingHooks > 0 ? '#9a3412' : toolButton.color }}
+            title="Propuestas del reparto: pasos que sus fichas y su estado sugieren"
+          >
+            Propuestas{pendingHooks > 0 ? ` · ${pendingHooks}` : ''}
+          </button>
         </div>
         <ScenePalette
           onAddMoment={handleAddMoment}
@@ -587,6 +648,19 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           busyArrival={busyArrival}
         />
         {drawer}
+        {hooksOpen && !expanded && !pasting && (
+          <aside aria-label="Propuestas del reparto" style={{
+            position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(420px, 100%)', zIndex: 20,
+            display: 'flex', flexDirection: 'column', background: '#fff', borderLeft: '1px solid #e5ded4',
+            boxShadow: '-8px 0 24px rgba(30,26,36,0.08)', overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '10px 16px', borderBottom: '1px solid #e5ded4' }}>
+              <strong style={{ fontSize: 15 }}>Propuestas del reparto</strong>
+              <button onClick={() => setHooksOpen(false)} style={toolButton}>Cerrar</button>
+            </div>
+            <HooksList hooks={hooks} actions={hookActions} busy={busyHook} proposing={proposingHooks} message={hooksMessage} canPropose={canProposeHooks} onPropose={handleProposeHooks} />
+          </aside>
+        )}
       </div>
     </div>
   );

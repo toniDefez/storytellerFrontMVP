@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { BookOpen, ChevronLeft, ChevronDown, ChevronUp, MoreHorizontal, Play, Plus, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import type { Arrival, CharacterCarry, CharacterState, SceneEdgeKind, SceneNode, SceneNodeEdge } from '../../services/api';
+import type { Arrival, CharacterCarry, CharacterState, SceneEdgeKind, SceneHook, SceneNode, SceneNodeEdge } from '../../services/api';
 import type { ArrivalActions } from './SceneCanvas';
+import { HooksList, type HookActions } from './HooksPanel';
 import type { ScenePlace } from './ContainerLocationNode';
 import type { OutputNodeData } from './OutputNode';
 import { StateBlock, type StateActions } from './StateBlock';
@@ -34,6 +35,13 @@ interface Props {
   arrivals: Arrival[];
   arrivalActions: ArrivalActions;
   busyArrival: number | null;
+  hooks: SceneHook[];
+  hookActions: HookActions;
+  busyHook: number | null;
+  proposingHooks: boolean;
+  hooksMessage: string;
+  canProposeHooks: boolean;
+  onProposeHooks: () => Promise<void>;
   onMomentEdit: (id: number, patch: { description?: string; outcomes?: string[] }) => Promise<void>;
   onConnect: (fromId: number, toId: number, kind: SceneEdgeKind) => Promise<void>;
   onEdgeDelete: (id: number) => Promise<void>;
@@ -169,6 +177,9 @@ export function SceneCardList(p: Props) {
         {visibleArrivals.map((a) => (
           <ArrivalCard key={a.character_id} arrival={a} actions={p.arrivalActions} busy={p.busyArrival === a.character_id} />
         ))}
+
+        {/* Lo que el reparto propone desde su ficha y su estado. */}
+        <HooksList compact hooks={p.hooks} actions={p.hookActions} busy={p.busyHook} proposing={p.proposingHooks} message={p.hooksMessage} canPropose={p.canProposeHooks} onPropose={p.onProposeHooks} />
 
         {/* Los eventos, con su hilo. */}
         <div className="relative flex flex-col gap-2.5 pl-6">

@@ -299,6 +299,37 @@ export interface Character {
   premise?: string
   voice_register?: VoiceRegister
   speech_pattern?: string
+  sheet?: CharacterSheet | null
+}
+
+// --- La ficha corta (2026-10-31) ---
+// Seis campos redactados como acción. No va al escritor de prosa (medido:
+// solo caricatura); alimenta al asistente que propone pasos en el taller.
+
+export interface SheetSignature {
+  si: string
+  hace: string
+}
+
+export interface CharacterSheet {
+  quiere: string
+  cree: string
+  nunca: string
+  salvo: string
+  cuando: SheetSignature[]
+  por_defecto: string
+}
+
+export function createCharacterWithSheet(body: { world_id: number; name: string; premise: string }) {
+  return request<Character>('/character/create-with-sheet', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function generateCharacterSheet(id: number) {
+  return request<CharacterSheet>(`/character/sheet/generate?id=${id}`, { method: 'POST' })
+}
+
+export function updateCharacterSheet(id: number, sheet: CharacterSheet) {
+  return request<void>(`/character/sheet?id=${id}`, { method: 'POST', body: JSON.stringify(sheet) })
 }
 
 // --- Character Psychological Graph ---
@@ -664,10 +695,6 @@ export interface CharacterPremiseAnalysis {
   deseo: string
   conflicto: string
   stakes: string
-}
-
-export function getCharacterProfiles() {
-  return request<ProfileTemplateBrief[]>('/character/profiles')
 }
 
 export function refineCharacterPremise(premise: string) {
@@ -1331,6 +1358,58 @@ export function regenerateArrival(sceneId: number, characterId: number): Promise
 /** «Proponer llegada»: la descartada vuelve a proponerse. */
 export function reproposeArrival(sceneId: number, characterId: number): Promise<void> {
   return request<void>(`/scene/arrival/repropose/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+// --- Los ganchos (2026-10-31) ---
+// El reparto propone pasos cuando su ficha y su estado lo tocan; el autor
+// acepta (el paso se añade al final del flujo), edita o descarta. Proponer
+// llama al modelo (propuesta + showrunner); leer no.
+
+export type HookStatus = 'proposed' | 'accepted' | 'discarded'
+export type HookNovelty = 'known' | 'new' | ''
+
+export interface SceneHook {
+  id: number
+  scene_id: number
+  character_id: number
+  name: string
+  rule: string
+  step: string
+  outcomes: string[]
+  status: HookStatus
+  novelty?: HookNovelty | null
+  moment_node_id?: number | null
+}
+
+export const HOOK_RULE_LABEL: Record<string, string> = {
+  quiere_al_alcance: 'lo que quiere está al alcance',
+  creencia_desmentida: 'un hecho desmiente lo que cree',
+  limite_rozado: 'le tientan su límite',
+  firma_disparada: 'ocurre una de sus situaciones',
+  objeto_sin_coste: 'lleva algo que nadie toca',
+  viene_cargado: 'viene cargado',
+  deuda_pendiente: 'deuda pendiente',
+  secreto_asimetrico: 'sabe algo que el otro no',
+  testigo: 'fue testigo',
+  objeto_ajeno: 'lleva algo ajeno',
+  choque_quiere: 'choque de lo que quieren',
+  reencuentro: 'reencuentro',
+}
+
+export function getSceneHooks(sceneId: number): Promise<SceneHook[]> {
+  return request<SceneHook[]>(`/scene/hooks/${sceneId}`)
+}
+
+export function proposeSceneHooks(sceneId: number): Promise<SceneHook[]> {
+  return request<SceneHook[]>(`/scene/hooks/propose/${sceneId}`, { method: 'POST' })
+}
+
+export function acceptSceneHook(sceneId: number, hookId: number, edit?: { step?: string; outcomes?: string[]; novelty?: HookNovelty }): Promise<SceneNode> {
+  return request<SceneNode>(`/scene/hook/accept/${sceneId}/${hookId}`, { method: 'POST', body: JSON.stringify(edit ?? {}) })
+}
+
+export function discardSceneHook(sceneId: number, hookId: number, novelty?: HookNovelty): Promise<void> {
+  return request<void>(`/scene/hook/discard/${sceneId}/${hookId}`, { method: 'POST', body: JSON.stringify({ novelty: novelty ?? '' }) })
 }
 
 export function createSceneNodeEdge(

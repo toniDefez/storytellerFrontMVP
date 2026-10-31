@@ -1,17 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { getCharacterById, createCharacter, generateCharacterNodes, deleteCharacter, refineCharacterPremise, synthesizeDomain, regenerateCharacterSoul } from '@/services/api'
+import { getCharacterById, createCharacterWithSheet, deleteCharacter, refineCharacterPremise } from '@/services/api'
 import type { Character, CharacterBrief } from '@/services/api'
 import { CharacterSidebar } from './CharacterSidebar'
 import { CharacterGraphPage } from '@/components/character-graph/CharacterGraphPage'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
-import { CharacterProfilePicker } from './CharacterProfilePicker'
 import { Users, Sparkles, Wand2, Loader2, ChevronLeft } from 'lucide-react'
 import { useUrlParam } from '@/hooks/useUrlParam'
 import { notifyError } from '@/lib/notifyError'
-import { describeError } from '@/services/telemetry'
-import { useGenerationProgress } from '@/hooks/useGenerationProgress'
 
 const UNNAMED = 'Personaje sin nombre'
 
@@ -35,14 +32,8 @@ interface Props {
 
 type Mode = 'empty' | 'new' | 'viewing'
 
-// Cómo se llama cada bloque mientras se resume, en minúscula y en orden de lectura.
-const DOMAIN_PHASE: Record<string, string> = {
-  origin: 'las creencias', fear: 'los miedos', drive: 'los deseos', bond: 'las grietas', mask: 'las máscaras',
-}
-
 export function CharacterPanel({ worldId, worldPremise, characterBriefs, onCharacterListChanged }: Props) {
   const { t } = useTranslation()
-  const { progress, start: startProgress, stop: stopProgress } = useGenerationProgress()
   const [mode, setMode] = useState<Mode>('empty')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   // La ficha abierta (o «nuevo») va en la URL: «atrás» vuelve a la lista.
@@ -62,10 +53,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
   const [name, setName] = useState('')
   const [premise, setPremise] = useState('')
   const [generating, setGenerating] = useState(false)
-  // La fase del encadenado (nodos → bloques → alma), para quien espera.
-  const [phase, setPhase] = useState('')
   const [error, setError] = useState('')
-  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null)
   const [refining, setRefining] = useState(false)
 
   useEffect(() => {
@@ -103,8 +91,8 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     setName('')
     setPremise('')
     setError('')
-    setSelectedProfileId(null)
     setMode('new')
+    setCharParam('new')
   }
 
   const handleRefine = async () => {
@@ -124,66 +112,25 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
     if (!premise.trim()) return
     setGenerating(true)
     setError('')
-    // Se crea en dos pasos: si falla el segundo, el personaje ya existe.
-    let createdId: number | null = null
+    // Un solo paso (2026-10-31): nombre y premisa, y el generador propone la
+    // ficha corta entera (quiere, cree, nunca, cuando-hace, por defecto). El
+    // autor la corrige en la vista. El grafo profundo y el alma quedan en
+    // «Profundizar», ya no son el camino. Si la ficha falla, el personaje
+    // existe igualmente y se le pide la ficha desde su vista.
     try {
       const taken = [...characterBriefs.map(b => b.name), ...characters.map(c => c.name)]
-      const result = await createCharacter({
+      const created = await createCharacterWithSheet({
         name: name.trim() || placeholderName(taken),
         world_id: worldId,
         premise: premise.trim(),
       })
-      createdId = result.id
-
-      // The archetype is a seed the derivation reinterprets for this premise,
-      // not a replacement for it: both shape the character.
-      const requestId = startProgress()
-      let generated: { nodes?: { domain: string }[] } | null = null
-      try {
-        setPhase('')
-        generated = await generateCharacterNodes(result.id, premise.trim(), selectedProfileId ?? undefined, requestId)
-      } catch (err) {
-        // Los nodos son los que fallan, no la creación: el personaje existe.
-        toast.error(`El personaje se ha creado, pero no se pudieron generar sus nodos (${describeError(err, 'error desconocido')}). Puedes reintentarlo desde su ficha.`)
-        throw err
-      } finally {
-        stopProgress()
-      }
-
-      // Una sola intención («dame el personaje»), un solo botón (2026-10-31):
-      // tras los nodos, el resumen de cada bloque y el alma, en cadena. Si
-      // algo de esto falla, el personaje queda a medias pero usable, y desde
-      // la ficha se regenera lo que falte.
-      const domains = [...new Set((generated?.nodes ?? []).map(n => n.domain))]
-      for (const domain of domains) {
-        setPhase(`resumiendo ${DOMAIN_PHASE[domain] ?? domain}…`)
-        try { await synthesizeDomain(result.id, domain) }
-        catch (err) { toast.warning(`No se pudo resumir ${DOMAIN_PHASE[domain] ?? domain}: ${describeError(err, 'error desconocido')}`) }
-      }
-      if (domains.length > 0) {
-        setPhase('dando forma al alma…')
-        try { await regenerateCharacterSoul(result.id) }
-        catch (err) { toast.warning(`El personaje está, pero no se pudo generar su alma: ${describeError(err, 'error desconocido')}`) }
-      }
-      setPhase('')
-
-      const newChar = await getCharacterById(result.id)
-      setCharacters(prev => [...prev, newChar])
-      setSelectedId(result.id)
+      if (!created.sheet) toast.warning('El personaje se ha creado, pero el generador no dio la ficha. Pídesela desde su vista.')
+      setCharacters(prev => [...prev, created])
+      setSelectedId(created.id)
       setMode('viewing')
-      setCharParam(String(result.id), { replace: true })
+      setCharParam(String(created.id), { replace: true })
       onCharacterListChanged()
     } catch (err) {
-      if (createdId !== null) {
-        // Antes el personaje a medias no aparecía en la lista y reintentar
-        // con el mismo nombre daba 409. Ahora se abre: su vista vacía
-        // permite volver a generar los nodos con la misma premisa.
-        onCharacterListChanged()
-        setSelectedId(createdId)
-        setMode('viewing')
-        setCharParam(String(createdId), { replace: true })
-        return
-      }
       const message = err instanceof Error ? err.message : ''
       // El backend responde 409 si el nombre ya existe en el mundo: los nombres
       // identifican al personaje en el chat y en las escenas.
@@ -301,13 +248,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
               />
             </div>
 
-            {/* Profile picker */}
-            <div className="w-full">
-              <CharacterProfilePicker
-                selectedId={selectedProfileId}
-                onSelect={setSelectedProfileId}
-              />
-            </div>
+            <p className="w-full text-xs text-muted-foreground">Con esto el generador propone su ficha: qué quiere, qué cree, qué no haría nunca y cómo reacciona. Luego la corriges tú.</p>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
@@ -327,7 +268,7 @@ export function CharacterPanel({ worldId, worldPremise, characterBriefs, onChara
 
         {mode === 'new' && generating && (
           <div className="flex items-center justify-center h-full">
-            <AIGeneratingIndicator label="Creando el personaje…" detail={phase || progress} accent="character" />
+            <AIGeneratingIndicator label="Creando el personaje…" detail="proponiendo su ficha" accent="character" />
           </div>
         )}
 
