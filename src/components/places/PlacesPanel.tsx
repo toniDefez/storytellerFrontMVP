@@ -50,6 +50,12 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [naming, setNaming] = useState(false)
   const selected = places.find(p => p.id === selectedId) ?? null
+  // A dónde lleva cada lugar, por nombre, para la lista.
+  const nameOf = new Map(places.map(p => [p.id, p.name]))
+  const routesOf = (id: number) => routes
+    .filter(r => r.source_node_id === id || r.target_node_id === id)
+    .map(r => nameOf.get(r.source_node_id === id ? r.target_node_id : r.source_node_id))
+    .filter((n): n is string => !!n)
   const sorted = [...places].sort((a, b) => a.name.localeCompare(b.name))
 
   const create = async (name: string) => {
@@ -79,7 +85,7 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
               </Button>
             </div>
           ) : (
-            sorted.map(p => <PlaceRow key={p.id} place={p} selected={p.id === selectedId} onClick={() => setSelectedId(p.id)} />)
+            sorted.map(p => <PlaceRow key={p.id} place={p} routes={routesOf(p.id)} selected={p.id === selectedId} onClick={() => setSelectedId(p.id)} />)
           )}
           {naming && <NewPlaceRow onSubmit={create} onCancel={() => setNaming(false)} />}
         </div>
@@ -124,7 +130,7 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
   )
 }
 
-function PlaceRow({ place, selected, onClick }: { place: LocationNode; selected: boolean; onClick: () => void }) {
+function PlaceRow({ place, routes, selected, onClick }: { place: LocationNode; routes: string[]; selected: boolean; onClick: () => void }) {
   const { t } = useTranslation()
   const things = place.properties?.props ?? []
   const rule = place.properties?.rule?.trim()
@@ -148,6 +154,10 @@ function PlaceRow({ place, selected, onClick }: { place: LocationNode; selected:
           <span className="block truncate text-xs text-muted-foreground">{things.join(' · ')}</span>
         ) : (
           <span className="block truncate text-xs italic text-muted-foreground/60">{t('location.places.emptyRow')}</span>
+        )}
+        {/* Los caminos, en la lista: sin lienzo no se veía ninguna línea entre lugares (2026-10-31). */}
+        {routes.length > 0 && (
+          <span className="block truncate text-xs text-entity-location/90">⇄ {routes.join(' · ')}</span>
         )}
       </span>
     </button>

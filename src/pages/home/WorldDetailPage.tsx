@@ -1,4 +1,4 @@
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getWorldById, deleteWorld, getWorldDetail } from '../../services/api'
@@ -8,7 +8,7 @@ import { useWorldGraph } from '@/hooks/useWorldGraph'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
-import { MoreHorizontal, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
+import { MoreHorizontal, Trash2 } from 'lucide-react'
 import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
 import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
 import { PlacesPanel } from '@/components/places/PlacesPanel'
@@ -16,12 +16,10 @@ import { useLocationGraph } from '@/hooks/useLocationGraph'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
 import { StoryPanel } from '@/components/story-setup/StoryPanel'
-import { exportWorld } from '../../services/worldExport'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { notifyError } from '@/lib/notifyError'
@@ -46,7 +44,6 @@ export default function WorldDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
-  const [exporting, setExporting] = useState(false)
   const [isExpanding, setIsExpanding] = useState(false)
   const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'stories'>('causal')
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
@@ -133,17 +130,6 @@ export default function WorldDetailPage() {
   useEffect(() => {
     if (id) loadLocationGraph()
   }, [id, loadLocationGraph])
-
-  const handleExport = async () => {
-    setExporting(true)
-    try {
-      await exportWorld(Number(id))
-    } catch {
-      toast.error(t('importExport.exportError'))
-    } finally {
-      setExporting(false)
-    }
-  }
 
   const handleDelete = async () => {
     setLoading(true)
@@ -270,24 +256,8 @@ export default function WorldDetailPage() {
               <MoreHorizontal className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>
+          {/* Solo borrar (2026-10-31): biblia, exportar y editar quedaron desfasados. */}
           <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem asChild>
-              <Link to={`/worlds/${id}/bible`} className="flex items-center gap-2">
-                <BookOpen className="w-3.5 h-3.5" />
-                {t('bible.viewBible')}
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExport} disabled={exporting}>
-              <Download className="w-3.5 h-3.5 mr-2" />
-              {exporting ? t('importExport.exporting') : t('importExport.exportButton')}
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to={`/worlds/${id}/edit`} className="flex items-center gap-2">
-                <Pencil className="w-3.5 h-3.5" />
-                {t('world.detail.editButton')}
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => setShowConfirmDelete(true)}
               className="text-destructive focus:text-destructive"

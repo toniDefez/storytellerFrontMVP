@@ -18,7 +18,9 @@ i18n
     // navegador del móvil colaba un menú en inglés en una app en español.
     detection: {
       order: ['localStorage'],
-      lookupLocalStorage: 'storyteller-language',
+      // Clave nueva: la anterior guardaba el idioma del navegador como si lo
+      // hubiera elegido el usuario.
+      lookupLocalStorage: 'storyteller-lang',
       caches: ['localStorage'],
     },
     interpolation: {
