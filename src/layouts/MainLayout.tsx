@@ -2,8 +2,7 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, useReducedMotion } from 'framer-motion'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Globe, Settings, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Globe, Settings, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -113,7 +112,6 @@ export default function MainLayout() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   // Móvil (2026-10-31): el margen del contenido lo escribe Framer como estilo
   // inline, así que ninguna clase `md:` lo anulaba y toda la app nacía 240 px
   // a la derecha de la pantalla. Aquí decide el hook; el resto no se toca.
@@ -157,14 +155,6 @@ export default function MainLayout() {
         <Sidebar onLogout={handleLogout} collapsed={collapsed} onToggle={handleToggle} />
       </motion.div>
 
-      {/* Sidebar mobile */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-60">
-          <SheetTitle className="sr-only">{t('a11y.sidebarNav')}</SheetTitle>
-          <Sidebar onLogout={handleLogout} collapsed={false} onToggle={() => {}} />
-        </SheetContent>
-      </Sheet>
-
       {/* Main */}
       <motion.main
         id="main-content"
@@ -174,17 +164,18 @@ export default function MainLayout() {
         transition={sidebarSpring}
         onAnimationComplete={() => window.dispatchEvent(new Event('resize'))}
       >
-        {/* Mobile topbar */}
-        <div className="md:hidden flex items-center gap-4 bg-[#100d16] border-b border-[#1c1926] px-4 py-3 sticky top-0 z-20">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="text-slate-400 hover:text-white transition"
-            aria-label={t('a11y.openNavMenu')}
-            aria-expanded={sidebarOpen}
+        {/* Cabecera móvil (2026-10-31): sin cajón. Solo hay dos destinos, así
+            que el nombre lleva a Mundos y el engranaje a Ajustes; salir vive
+            en Ajustes. */}
+        <div className="md:hidden flex items-center justify-between bg-[#100d16] border-b border-[#1c1926] pl-4 pr-1 sticky top-0 z-20" style={{ minHeight: 45 }}>
+          <Link to="/worlds" className="font-display italic text-[#e8d5c8] text-base tracking-tight min-h-11 inline-flex items-center">StoryTeller</Link>
+          <Link
+            to="/settings"
+            aria-label={t('nav.settings')}
+            className={`w-11 h-11 inline-flex items-center justify-center rounded-md ${location.pathname.startsWith('/settings') ? 'text-[#e8d5c8]' : 'text-[#8a7a9e]'}`}
           >
-            <Menu className="h-5 w-5" />
-          </button>
-          <span className="font-display italic text-[#e8d5c8] text-base tracking-tight">StoryTeller</span>
+            <Settings className="h-5 w-5" />
+          </Link>
         </div>
 
         {/* Page content */}
