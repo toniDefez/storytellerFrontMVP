@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import type { LocationEdge, LocationNode, LocationNodePatch, PlaceProposal, PlaceProposals as Proposals, RouteProposal } from '@/services/api'
 import { proposePlaces, proposeRoutes } from '@/services/api'
-import { notifyPlaceError } from './placeErrors'
+import { notifyPlaceError, notifyPlaceRemoveError } from './placeErrors'
 import { InlineText } from './InlineText'
 import { PlaceProposals } from './PlaceProposals'
 import { RouteProposals } from './RouteProposals'
@@ -418,7 +418,7 @@ function PlaceSheet({ place, places, routes, locked, onConnect, onSetDistance, o
             <AlertDialogCancel>{t('location.map.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => onDelete(place.id).catch(err => notifyPlaceError(t, err, 'location.map.deleteError'))}
+              onClick={() => onDelete(place.id).catch(err => notifyPlaceRemoveError(t, err, 'location.map.deleteError'))}
             >
               {t('location.map.deleteConfirm')}
             </AlertDialogAction>
@@ -487,7 +487,7 @@ function Routes({ place, places, routes, locked, onConnect, onSetDistance, onDis
               {!locked && (
                 <button
                   type="button"
-                  onClick={() => { onDisconnect(route.id).catch(err => notifyPlaceError(t, err, 'location.map.saveError')) }}
+                  onClick={() => { onDisconnect(route.id).catch(err => notifyPlaceRemoveError(t, err, 'location.map.saveError')) }}
                   aria-label={t('location.places.disconnect', { name: other.name })}
                   className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
                 >

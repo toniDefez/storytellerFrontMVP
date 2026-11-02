@@ -51,10 +51,13 @@ export default function WorldDetailPage() {
     setTabParam(v === 'world' ? null : v, { clear: ['place', 'character', 'story', 'scene', 'read'] })
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
 
+  // El mundo se vuelve a leer con el resumen: `locked` cambia en cuanto una
+  // historia tiene escenas, y eso pasa sin recargar la página.
   const refreshWorldDetail = useCallback(() => {
     const worldId = Number(id)
     if (!id || Number.isNaN(worldId)) return
     getWorldDetail(worldId).then(setWorldDetail).catch(notifyError('No se pudo cargar el resumen del mundo'))
+    getWorldById(worldId).then(setWorld).catch(() => {})
   }, [id])
 
   const {
@@ -98,6 +101,12 @@ export default function WorldDetailPage() {
   useEffect(() => {
     if (id) loadLocationGraph()
   }, [id, loadLocationGraph])
+
+  // Al entrar en Lugares, el candado se lee de nuevo: el autor puede venir de
+  // crear una historia y su primera escena en esta misma página.
+  useEffect(() => {
+    if (tab === 'locations' && id) getWorldById(Number(id)).then(setWorld).catch(() => {})
+  }, [tab, id])
 
   const handleSaveWorld = async (input: WorldInput) => {
     const updated = await updateWorld(Number(id), input)

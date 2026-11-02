@@ -15,3 +15,16 @@ export function notifyPlaceError(t: TFunction, err: unknown, contextKey: string)
   }
   notifyError(t(contextKey))(err)
 }
+
+/**
+ * Al borrar un lugar o quitar un camino, un 409 solo puede ser el candado de
+ * la escena 0 (el mundo ya tiene historia): se enseña el texto fijado, no el
+ * de nombre repetido.
+ */
+export function notifyPlaceRemoveError(t: TFunction, err: unknown, contextKey: string): void {
+  if (err instanceof ApiError && err.status === 409) {
+    toast.error(t('location.places.locked'))
+    return
+  }
+  notifyError(t(contextKey))(err)
+}
