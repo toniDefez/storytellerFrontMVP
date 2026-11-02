@@ -1,7 +1,8 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { NodeCard } from './NodeCard';
 import { NODE_COLORS } from './nodeColors';
-import type { CharacterCarry } from '../../services/api';
+import type { Arrival, CharacterCarry, CharacterState } from '../../services/api';
+import { StateBlock, type StateActions } from './StateBlock';
 
 export interface ContainerCharacterData extends Record<string, unknown> {
   name: string;
@@ -10,6 +11,15 @@ export interface ContainerCharacterData extends Record<string, unknown> {
   soulSummary?: string;
   /** De dónde viene: lo mismo que recibe el escritor. Sin cargar, undefined. */
   carry?: CharacterCarry;
+  /** Cómo está y qué sabe al entrar en la escena; el autor lo corrige aquí. */
+  state?: CharacterState;
+  stateActions?: StateActions;
+  /** Su llegada por un camino del mapa (La llegada), si la hay. */
+  arrival?: Arrival;
+  /** Pulsar «1 llegada» centra el lienzo en su fantasma. */
+  onFocusArrival?: (characterId: number) => void;
+  /** «Proponer llegada»: la descartada vuelve. */
+  onRepropose?: (characterId: number) => Promise<void>;
 }
 
 export function ContainerCharacterNode({ data, selected }: NodeProps<Node<ContainerCharacterData>>) {
@@ -18,6 +28,8 @@ export function ContainerCharacterNode({ data, selected }: NodeProps<Node<Contai
       <div style={{ fontSize: 16, fontWeight: 600 }}>{data.name}</div>
       {data.speechPattern && <div style={{ fontSize: 13, color: '#5f5868', fontStyle: 'italic' }}>{data.speechPattern}</div>}
       {data.carry && <CarryBlock carry={data.carry} />}
+      {data.arrival && <ArrivalBadge arrival={data.arrival} onFocus={data.onFocusArrival} onRepropose={data.onRepropose} />}
+      {data.state && <StateBlock state={data.state} inCast actions={data.stateActions} />}
       <Handle type="source" position={Position.Right} id="attach" style={{ background: '#c2410c', width: 12, height: 12 }} />
     </NodeCard>
   );
@@ -38,14 +50,42 @@ function CarryBlock({ carry }: { carry: CharacterCarry }) {
       {(carry.outcomes ?? []).map((o) => (
         <div key={o} style={{ fontSize: 13, fontWeight: 600 }}>→ {o}</div>
       ))}
-      {(carry.earlier ?? []).length > 0 && (
-        <div style={{ marginTop: 4, fontSize: 12, color: '#5f5868' }}>
-          Antes: {(carry.earlier ?? []).join(' · ')}
-        </div>
-      )}
     </div>
   );
 }
+
+// «1 llegada» (La llegada, 2026-10-30): sin modal ni toast; el aviso vive en
+// el nodo del personaje y pulsarlo lleva al fantasma. Si el autor la
+// descartó, desde aquí la puede pedir otra vez.
+function ArrivalBadge({ arrival, onFocus, onRepropose }: {
+  arrival: Arrival;
+  onFocus?: (characterId: number) => void;
+  onRepropose?: (characterId: number) => Promise<void>;
+}) {
+  if (arrival.status === 'propuesta') {
+    return (
+      <button type="button" className="nodrag" onClick={() => onFocus?.(arrival.character_id)} style={badge}
+        title={`Llega de ${arrival.from}: ver la propuesta`}>
+        1 llegada
+      </button>
+    );
+  }
+  // Descartada, o aceptada y el autor borró el momento: se puede pedir otra vez.
+  if (arrival.status === 'descartada' || (arrival.status === 'aceptada' && arrival.moment_node_id == null)) {
+    return (
+      <button type="button" className="nodrag" onClick={() => void onRepropose?.(arrival.character_id)} style={{ ...badge, borderStyle: 'solid' }}
+        title={`Volver a proponer la llegada desde ${arrival.from}`}>
+        Proponer llegada
+      </button>
+    );
+  }
+  return null;
+}
+
+const badge = {
+  marginTop: 6, padding: '2px 8px', borderRadius: 999, borderWidth: 1, borderStyle: 'dashed', borderColor: '#9a3412',
+  background: '#fff', color: '#9a3412', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+} as const;
 
 const box = {
   marginTop: 8, padding: '6px 8px', borderRadius: 8, background: '#fff7ed',

@@ -40,15 +40,15 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, description, premise })
 
   return (
     <motion.div
-      className="rounded-[4px] cursor-pointer overflow-hidden flex h-[140px] shadow-ambient"
+      className="rounded-[4px] cursor-pointer overflow-hidden flex flex-col md:flex-row md:h-[140px] shadow-ambient"
       whileHover="hovered"
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       onClick={() => navigate(`/worlds/${id}`)}
       style={{ borderBottom: '1px solid hsl(35 12% 88%)' }}
     >
-      {/* Left — gradient atmosphere panel */}
-      <div className="w-52 shrink-0 relative overflow-hidden">
+      {/* Left — gradient atmosphere panel (en móvil, una banda arriba) */}
+      <div className="h-14 md:h-auto w-full md:w-52 shrink-0 relative overflow-hidden">
         <motion.div
           className={`absolute inset-0 bg-gradient-to-br ${gradient}`}
           variants={{
@@ -70,12 +70,12 @@ const WorldCard: React.FC<WorldCardProps> = ({ id, name, description, premise })
 
       {/* Right — warm info panel */}
       <div
-        className="flex-1 flex flex-col justify-between px-6 py-4"
+        className="flex-1 flex flex-col justify-between px-4 md:px-6 py-3.5 md:py-4"
         style={{ background: 'hsl(40 12% 97%)' }}
       >
         <div>
           <h3
-            className="text-[1.2rem] font-bold text-foreground leading-tight line-clamp-1 mb-2"
+            className="text-[1.2rem] font-bold text-foreground leading-tight line-clamp-2 md:line-clamp-1 mb-2"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             {name}

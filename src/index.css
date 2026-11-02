@@ -36,6 +36,10 @@
   --color-entity-scene: hsl(180 55% 30%);
   --color-entity-scene-light: hsl(180 40% 93%);
   --color-entity-scene-muted: hsl(180 40% 50%);
+  /* Lugar: el mismo índigo en el mapa del mundo y en el taller de escena (#4338ca) */
+  --color-entity-location: hsl(244 58% 51%);
+  --color-entity-location-light: hsl(244 60% 95%);
+  --color-entity-location-muted: hsl(244 40% 65%);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

@@ -1,12 +1,19 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   listSceneNodes, listSceneNodeEdges, createSceneNode, updateSceneNode, deleteSceneNode,
   updateSceneNodePosition, deleteSceneNodeEdge, createSceneNodeEdge,
   generateScene, listSceneOutputs, revertSceneOutput, getGenerationProgress,
   getWritingPlan, saveSceneProse, getSceneCarry,
+  getSceneState, addStateChange, deleteStateChange, proposeSceneState, type CharacterState, type StateList,
+  getSceneArrivals, proposeSceneArrivals, acceptArrival, dismissArrival, regenerateArrival, reproposeArrival, type Arrival,
+  getSceneHooks, proposeSceneHooks, acceptSceneHook, discardSceneHook, type SceneHook,
   type SceneNode, type SceneNodeEdge, type SceneEdgeKind, type SceneOutput, type SceneCarry, type NarratorNodeConfig, type StoryRelationship,
 } from '../../services/api';
-import { SceneCanvas } from './SceneCanvas';
+import { SceneCanvas, type ArrivalActions } from './SceneCanvas';
+import { HooksList, type HookActions } from './HooksPanel';
+import { SceneCardList } from './SceneCardList';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import type { ScenePlace } from './ContainerLocationNode';
 import { ScenePalette } from './ScenePalette';
 import { SceneProseView } from './SceneProseView';
 import { SceneVersionDropdown } from './SceneVersionDropdown';
@@ -29,7 +36,9 @@ interface SceneWorkspaceProps {
   sceneId: number;
   onBack: () => void;
   charNameByID?: Record<number, string>;
-  locationByID?: Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>;
+  locationByID?: Record<number, ScenePlace>;
+  /** Crea un lugar en el mundo de la historia y devuelve su id. */
+  onCreateLocation?: (name: string) => Promise<number>;
   /** Relaciones de la historia: sugieren cómo ve quien narra a los demás. */
   relationships?: StoryRelationship[];
   /** Para copiar la hoja de esta escena del plan de escritura de la historia. */
@@ -38,7 +47,10 @@ interface SceneWorkspaceProps {
   sceneTitle?: string;
 }
 
-export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBack, charNameByID, locationByID, relationships }: SceneWorkspaceProps) {
+export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBack, charNameByID, locationByID, onCreateLocation, relationships }: SceneWorkspaceProps) {
+  // Móvil (2026-10-31): el mismo estado y las mismas acciones, pero en vez del
+  // lienzo se pintan tarjetas en columna (SceneCardList).
+  const isMobile = useIsMobile();
   const charMap = useMemo(() => charNameByID ?? {}, [charNameByID]);
   const locMap = useMemo(() => locationByID ?? {}, [locationByID]);
   const castOptions = useMemo(
@@ -79,11 +91,13 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   // El formato de la salida: cada uno con sus versiones, sin mezclarse.
   const [format, setFormat] = useState<SceneFormat>('prose');
 
+  // nodesLoaded: el reparto real ya está; antes no se piden las llegadas.
+  const [nodesLoaded, setNodesLoaded] = useState(false);
   const refresh = useCallback(async () => {
     const [n, e, o] = await Promise.all([
       listSceneNodes(sceneId), listSceneNodeEdges(sceneId), listSceneOutputs(sceneId),
     ]);
-    setNodes(n); setEdges(e); setOutputs(o);
+    setNodes(n); setEdges(e); setOutputs(o); setNodesLoaded(true);
     if (o.length && currentVersion === null) setCurrentVersion((o.find((x) => x.current) ?? o[0]).version);
   }, [sceneId, currentVersion]);
 
@@ -105,6 +119,142 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     () => Object.fromEntries((carry?.characters ?? []).map((c) => [c.character_id, c])),
     [carry],
   );
+
+  // El estado vivo de cada presente al entrar. Lo mismo que recibe el escritor;
+  // el autor lo corrige desde el nodo y la corrección vale desde esta escena.
+  const [states, setStates] = useState<CharacterState[]>([]);
+  // Cada carga lleva su número: una respuesta lenta no pisa a una más nueva.
+  const stateLoad = useRef(0);
+  const refreshState = useCallback(() => {
+    const n = ++stateLoad.current;
+    return getSceneState(sceneId).then((s) => { if (n === stateLoad.current) setStates(s); }).catch((err) => console.error(err));
+  }, [sceneId]);
+  useEffect(() => { void refreshState(); }, [refreshState, castKey]);
+  const stateByCharID = useMemo(() => Object.fromEntries(states.map((s) => [s.character_id, s])), [states]);
+  const stateActions = useMemo(() => ({
+    sceneId,
+    add: async (characterId: number, list: StateList, text: string) => {
+      try { await addStateChange(sceneId, { character_id: characterId, list, op: 'add', text }); await refreshState(); }
+      catch (err) { toast.error(`No se pudo guardar el estado: ${describeError(err, 'error desconocido')}`); }
+    },
+    remove: async (characterId: number, list: StateList, text: string) => {
+      try { await addStateChange(sceneId, { character_id: characterId, list, op: 'remove', text }); await refreshState(); }
+      catch (err) { toast.error(`No se pudo tachar: ${describeError(err, 'error desconocido')}`); }
+    },
+    undo: async (changeId: number) => {
+      try { await deleteStateChange(sceneId, changeId); await refreshState(); }
+      catch (err) { toast.error(`No se pudo quitar: ${describeError(err, 'error desconocido')}`); }
+    },
+  }), [sceneId, refreshState]);
+  // Las llegadas (La llegada, 2026-10-30): quién entra por un camino del mapa.
+  // Leer es inmediato y sin modelo; si alguna está por redactar, se pide la
+  // redacción aparte y el fantasma sale como «calculando» mientras tanto.
+  // Sin toasts salvo error: la llegada es una propuesta, no un aviso.
+  const [arrivals, setArrivals] = useState<Arrival[]>([]);
+  const arrivalLoad = useRef(0);
+  // Una sola redacción en vuelo por escena: dos a la vez serían dos llamadas
+  // al modelo por llegada.
+  const proposing = useRef(false);
+  const refreshArrivals = useCallback(async () => {
+    const n = ++arrivalLoad.current;
+    let first: Arrival[];
+    try {
+      first = await getSceneArrivals(sceneId);
+    } catch (err) { console.error(err); return; }
+    if (n !== arrivalLoad.current) return;
+    setArrivals(first);
+    if (!first.some((a) => a.pending) || proposing.current) return;
+    proposing.current = true;
+    try {
+      const written = await proposeSceneArrivals(sceneId);
+      if (n === arrivalLoad.current) setArrivals(written);
+    } catch (err) {
+      // Sin generador el fantasma no se queda en «calculando…» para siempre:
+      // el autor puede editarlo o descartarlo; al reabrir se vuelve a pedir.
+      toast.error(`No se pudo redactar la llegada: ${describeError(err, 'error desconocido')}`);
+      if (n === arrivalLoad.current) setArrivals(first.map((a) => (a.pending ? { ...a, pending: false, warning: 'el generador no respondió' } : a)));
+    } finally { proposing.current = false; }
+  }, [sceneId]);
+  // Se piden cuando los nodos ya están cargados: antes, el reparto vacío y
+  // el reparto real disparaban dos lecturas seguidas.
+  useEffect(() => { if (nodesLoaded) void refreshArrivals(); }, [refreshArrivals, castKey, nodesLoaded]);
+  const [busyArrival, setBusyArrival] = useState<number | null>(null);
+  const arrivalActions = useMemo<ArrivalActions>(() => {
+    const run = async (characterId: number, what: string, fn: () => Promise<void>) => {
+      setBusyArrival(characterId);
+      try { await fn(); }
+      catch (err) { toast.error(`${what}: ${describeError(err, 'error desconocido')}`); }
+      finally { setBusyArrival(null); }
+    };
+    return {
+      accept: (characterId, edit, pos) => run(characterId, 'No se pudo aceptar la llegada', async () => {
+        await acceptArrival(sceneId, characterId, { ...edit, canvas_x: pos?.x, canvas_y: pos?.y });
+        await refresh();
+        await refreshArrivals();
+      }),
+      dismiss: (characterId) => run(characterId, 'No se pudo descartar la llegada', async () => {
+        await dismissArrival(sceneId, characterId);
+        await refreshArrivals();
+        await refreshState();
+      }),
+      again: (characterId) => run(characterId, 'No se pudo pedir otra llegada', async () => {
+        await regenerateArrival(sceneId, characterId);
+        await refreshArrivals();
+      }),
+      repropose: (characterId) => run(characterId, 'No se pudo proponer la llegada', async () => {
+        await reproposeArrival(sceneId, characterId);
+        await refreshArrivals();
+        await refreshState();
+      }),
+    };
+  }, [sceneId, refresh, refreshArrivals, refreshState]);
+  const pendingArrivals = useMemo(() => arrivals.filter((a) => a.status === 'propuesta' && (a.step !== '' || a.pending)).length, [arrivals]);
+
+  // Los ganchos (2026-10-31): el reparto propone pasos desde su ficha y su
+  // estado. Leer es inmediato; proponer son dos o tres llamadas al modelo y
+  // se pide a mano. Aceptar añade el paso al final del flujo.
+  const [hooks, setHooks] = useState<SceneHook[]>([]);
+  const [proposingHooks, setProposingHooks] = useState(false);
+  const [hooksMessage, setHooksMessage] = useState('');
+  const [hooksOpen, setHooksOpen] = useState(false);
+  const refreshHooks = useCallback(async () => {
+    try { setHooks(await getSceneHooks(sceneId)); } catch (err) { console.error(err); }
+  }, [sceneId]);
+  useEffect(() => { if (nodesLoaded) void refreshHooks(); }, [refreshHooks, nodesLoaded]);
+  const handleProposeHooks = useCallback(async () => {
+    setProposingHooks(true);
+    setHooksMessage('');
+    try {
+      const r = await proposeSceneHooks(sceneId);
+      setHooks(r);
+      if (!r.some((h) => h.status === 'proposed')) setHooksMessage('Nada que proponer: ninguna regla se cumple con lo que hay en la escena, o nadie del reparto tiene ficha.');
+    } catch (err) {
+      toast.error(`No se pudieron pedir propuestas: ${describeError(err, 'error desconocido')}`);
+    } finally { setProposingHooks(false); }
+  }, [sceneId]);
+  const [busyHook, setBusyHook] = useState<number | null>(null);
+  const hookActions = useMemo<HookActions>(() => {
+    const run = async (hookId: number, what: string, fn: () => Promise<void>) => {
+      setBusyHook(hookId);
+      try { await fn(); }
+      catch (err) { toast.error(`${what}: ${describeError(err, 'error desconocido')}`); }
+      finally { setBusyHook(null); }
+    };
+    return {
+      accept: (hookId, edit) => run(hookId, 'No se pudo aceptar la propuesta', async () => {
+        await acceptSceneHook(sceneId, hookId, edit);
+        await refresh();
+        await refreshHooks();
+      }),
+      discard: (hookId, novelty) => run(hookId, 'No se pudo descartar la propuesta', async () => {
+        await discardSceneHook(sceneId, hookId, novelty);
+        await refreshHooks();
+      }),
+    };
+  }, [sceneId, refresh, refreshHooks]);
+  const pendingHooks = useMemo(() => hooks.filter((h) => h.status === 'proposed').length, [hooks]);
+  const canProposeHooks = useMemo(() => nodes.some((n) => n.node_kind === 'character'), [nodes]);
+
   const comesFrom = useMemo(() => {
     const titles = [...new Set((carry?.characters ?? []).filter((c) => c.from_scene_id).map((c) => c.from_scene_title || 'escena sin título'))];
     return titles.length ? `Viene de ${titles.map((t) => `«${t}»`).join(', ')}` : '';
@@ -140,6 +290,13 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
   const handleEdgeDelete = useCallback(async (id: number) => {
     setEdges((prev) => prev.filter((e) => e.id !== id));
     try { await deleteSceneNodeEdge(id); } catch (err) { console.error(err); }
+  }, []);
+
+  // Quitar un nodo desde las tarjetas del móvil (en el lienzo es la tecla Supr).
+  const handleDeleteNode = useCallback(async (id: number) => {
+    setNodes((prev) => prev.filter((n) => n.id !== id));
+    setEdges((prev) => prev.filter((e) => e.from_node_id !== id && e.to_node_id !== id));
+    try { await deleteSceneNode(id); } catch (err) { notifyError('No se pudo quitar')(err); }
   }, []);
 
   // Un momento nuevo va después del último y queda unido a él: los momentos
@@ -209,8 +366,8 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     const created = await createSceneNode(sceneId, {
       node_kind: 'location',
       location_node_id: locationNodeId,
-      canvas_x: 80,
-      canvas_y: -80,
+      canvas_x: -220,
+      canvas_y: -60, // encima de la columna de personajes (empieza en 120): no tapa los eventos
     });
     await Promise.all(previous.map((n) => deleteSceneNode(n.id)));
     setNodes((prev) => [...prev.filter((n) => n.node_kind !== 'location'), created]);
@@ -244,6 +401,11 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
       const fresh = await listSceneOutputs(sceneId);
       setOutputs(fresh);
       setCurrentVersion(res.version);
+      // Tras escribir, el modelo propone cómo queda cada uno; se ve en la
+      // escena siguiente, donde el autor lo tacha o corrige.
+      setProgress('proponiendo cómo queda cada personaje…');
+      try { await proposeSceneState(sceneId); }
+      catch (err) { toast.error(`La escena está escrita, pero no se pudo proponer el estado: ${describeError(err, 'error desconocido')}`); }
     } catch (err) {
       toast.error(`No se pudo generar la escena: ${describeError(err, 'error desconocido')}`);
     } finally {
@@ -339,7 +501,9 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     format,
     onFormatChange: handleFormatChange,
     onCopy: handleCopyOutput,
-  }), [generating, liveDraft, currentProse, progress, unmetOutcomes, formatOutputs, currentVersion, handleVersionSelect, format, handleFormatChange, handleCopyOutput]);
+    pendingArrivals,
+    onGenerate: handleGenerate,
+  }), [generating, liveDraft, currentProse, progress, unmetOutcomes, formatOutputs, currentVersion, handleVersionSelect, format, handleFormatChange, handleCopyOutput, pendingArrivals, handleGenerate]);
 
   // Ampliar para leer, o pegar una prosa escrita fuera: un panel a la derecha
   // sobre el lienzo, que sigue a la vista.
@@ -383,6 +547,51 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
     </aside>
   );
 
+  if (isMobile) {
+    return (
+      <SceneCardList
+        storyTitle={storyTitle}
+        sceneTitle={sceneTitle}
+        comesFrom={comesFrom}
+        onBack={onBack}
+        nodes={nodes}
+        edges={edges}
+        charNameByID={charMap}
+        carryByCharID={carryByCharID}
+        stateByCharID={stateByCharID}
+        stateActions={stateActions}
+        locationByID={locMap}
+        castOptions={castOptions}
+        locationOptions={locationOptions}
+        output={outputData}
+        arrivals={arrivals}
+        arrivalActions={arrivalActions}
+        busyArrival={busyArrival}
+        hooks={hooks}
+        hookActions={hookActions}
+        busyHook={busyHook}
+        proposingHooks={proposingHooks}
+        hooksMessage={hooksMessage}
+        canProposeHooks={canProposeHooks}
+        onProposeHooks={handleProposeHooks}
+        onMomentEdit={handleMomentEdit}
+        onConnect={handleConnect}
+        onEdgeDelete={handleEdgeDelete}
+        onDeleteNode={handleDeleteNode}
+        onAddMoment={handleAddMoment}
+        onAddNarrator={handleAddNarrator}
+        onAddDirection={handleAddDirection}
+        onAddCharacter={handleAddCharacter}
+        onAddLocation={handleAddLocation}
+        generateLabel={format === 'prose' ? 'Escribir escena' : `Escribir · ${formatInfo(format).label}`}
+        pastedText={pastedText}
+        onPastedTextChange={setPastedText}
+        onSaveProse={handleSaveProse}
+        onCopySheet={storyId != null ? handleCopySheet : undefined}
+      />
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f4f1ec' }}>
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: '#fff', borderBottom: '1px solid #e5ded4' }}>
@@ -395,6 +604,13 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
             </h1>
             {comesFrom && <span style={{ fontSize: 13, color: '#9a3412' }}>{comesFrom}</span>}
           </div>
+          <button
+            onClick={() => setHooksOpen((v) => !v)}
+            style={{ ...toolButton, borderColor: pendingHooks > 0 ? '#c2410c' : toolButton.border.split(' ')[2], color: pendingHooks > 0 ? '#9a3412' : toolButton.color }}
+            title="Propuestas del reparto: pasos que sus fichas y su estado sugieren"
+          >
+            Propuestas{pendingHooks > 0 ? ` · ${pendingHooks}` : ''}
+          </button>
         </div>
         <ScenePalette
           onAddMoment={handleAddMoment}
@@ -402,6 +618,7 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           onAddDirection={handleAddDirection}
           onAddCharacter={handleAddCharacter}
           onAddLocation={handleAddLocation}
+          onCreateLocation={onCreateLocation}
           castOptions={castOptions}
           locationOptions={locationOptions}
           onGenerate={handleGenerate}
@@ -421,11 +638,29 @@ export function SceneWorkspace({ sceneId, storyId, storyTitle, sceneTitle, onBac
           unmetOutcomes={unmetOutcomes}
           charNameByID={charMap}
           carryByCharID={carryByCharID}
+          stateByCharID={stateByCharID}
+          stateActions={stateActions}
           viewHints={viewHints}
           locationByID={locMap}
           output={outputData}
+          arrivals={arrivals}
+          arrivalActions={arrivalActions}
+          busyArrival={busyArrival}
         />
         {drawer}
+        {hooksOpen && !expanded && !pasting && (
+          <aside aria-label="Propuestas del reparto" style={{
+            position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(420px, 100%)', zIndex: 20,
+            display: 'flex', flexDirection: 'column', background: '#fff', borderLeft: '1px solid #e5ded4',
+            boxShadow: '-8px 0 24px rgba(30,26,36,0.08)', overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '10px 16px', borderBottom: '1px solid #e5ded4' }}>
+              <strong style={{ fontSize: 15 }}>Propuestas del reparto</strong>
+              <button onClick={() => setHooksOpen(false)} style={toolButton}>Cerrar</button>
+            </div>
+            <HooksList hooks={hooks} actions={hookActions} busy={busyHook} proposing={proposingHooks} message={hooksMessage} canPropose={canProposeHooks} onPropose={handleProposeHooks} />
+          </aside>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,18 @@
 import { ApiError, newRequestId, reportClientError } from './telemetry'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const CONFIGURED_API = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Abierta desde otro equipo (el móvil en la misma red) con la API configurada
+// en localhost, «localhost» sería el móvil: se usa /api, que Vite reenvía al
+// backend desde el mismo origen (vite.config.ts).
+const API_URL = typeof window !== 'undefined' && /\/\/localhost[:/]/.test(CONFIGURED_API) && !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+  ? '/api'
+  : CONFIGURED_API
 
-/** Dirección del backend, para los comandos que el usuario ejecuta en su equipo. */
-export const apiUrl = () => API_URL
+/**
+ * Dirección completa del backend, la que se escribe en la app del generador.
+ * Desplegada, VITE_API_URL puede ser relativa (/api): se resuelve contra esta página.
+ */
+export const apiUrl = () => new URL(API_URL, window.location.href).href.replace(/\/+$/, '')
 
 function getToken(): string {
   return localStorage.getItem('token') || ''
@@ -96,7 +105,21 @@ export interface World {
   name: string
   description: string
   premise: string
-  root_node_id?: number
+  /** El mundo en tres líneas (escena 0). Vacías en los mundos anteriores. */
+  rule: string     // «¿Qué es siempre verdad aquí?»
+  scarcity: string // «¿Qué falta?»
+  power: string    // «¿Quién manda?»
+  /** Alguna historia ya tiene escenas: lugares, caminos y facciones se añaden, no se quitan. */
+  locked: boolean
+}
+
+export interface WorldInput {
+  name: string
+  premise: string
+  description: string
+  rule: string
+  scarcity: string
+  power: string
 }
 
 export interface CharacterBrief {
@@ -117,48 +140,6 @@ export function getWorldDetail(id: number) {
   return request<WorldDetail>(`/world-detail/get?id=${id}`)
 }
 
-// --- World Graph (causal tree) ---
-
-export type NodeDomain = 'core' | 'physical' | 'biological' | 'social' | 'symbolic' | 'technic'
-export type NodeRole = 'state' | 'event' | 'rupture'
-export type EdgeType = 'requires' | 'produces' | 'enables' | 'undermines' | 'gives_rise_to'
-
-export interface NodeContent {
-  description: string
-  causal_summary: string
-}
-
-export interface WorldNode {
-  id: number
-  world_id: number
-  parent_id?: number
-  parent_edge_type?: EdgeType
-  domain: NodeDomain
-  role: NodeRole
-  label: string
-  content: NodeContent
-  position_order: number
-}
-
-export interface WorldGraph {
-  world_id: number
-  premise: string
-  nodes: WorldNode[]
-}
-
-export interface SubtreePreview {
-  node_count: number
-  labels: string[]
-}
-
-export interface CandidateNode {
-  domain: NodeDomain
-  role: NodeRole
-  label: string
-  description: string
-  parent_edge_type: EdgeType
-}
-
 export function getWorlds() {
   return request<World[]>('/worlds')
 }
@@ -167,14 +148,14 @@ export function getWorldById(id: number) {
   return request<World>(`/world/get?id=${id}`)
 }
 
-export function createWorld(name: string, premise: string, description: string) {
+export function createWorld(input: WorldInput) {
   return request<{ id: number }>('/world', {
     method: 'POST',
-    body: JSON.stringify({ name, premise, description }),
+    body: JSON.stringify(input),
   })
 }
 
-export function updateWorld(id: number, input: { name?: string; description?: string; premise?: string }) {
+export function updateWorld(id: number, input: WorldInput) {
   return request<World>(`/world/update?id=${id}`, {
     method: 'PUT',
     body: JSON.stringify(input),
@@ -185,12 +166,6 @@ export function deleteWorld(id: number) {
   return request<{ status: string }>(`/world/delete?id=${id}`, {
     method: 'DELETE',
   })
-}
-
-// --- World Graph API ---
-
-export function getWorldGraph(worldId: number) {
-  return request<WorldGraph>(`/world/graph?world_id=${worldId}`)
 }
 
 export function suggestPremises() {
@@ -207,78 +182,58 @@ export interface PremiseAnalysis {
   stakes: 'PRESENTE' | 'AUSENTE'
 }
 
+/** La lectura de la premisa («Así entiendo tu mundo»): premisa enriquecida, nombre y tres líneas. Cualquiera puede venir vacío. */
+export interface RefinedPremise {
+  analysis: PremiseAnalysis
+  premise: string
+  name: string
+  rule: string
+  scarcity: string
+  power: string
+}
+
 export function refinePremise(premise: string) {
-  return request<{ analysis: PremiseAnalysis; premise: string }>('/world/refine-premise', {
+  return request<RefinedPremise>('/world/refine-premise', {
     method: 'POST',
     body: JSON.stringify({ premise }),
   })
 }
 
-export function createNode(worldId: number, node: {
-  parent_id?: number
-  parent_edge_type?: EdgeType
-  domain: NodeDomain
-  role: NodeRole
-  label: string
-  description: string
-  causal_summary?: string
-  position_order: number
-}) {
-  return request<WorldNode>(`/world/nodes?world_id=${worldId}`, {
+// --- Escena 0: lugares y caminos propuestos (nada se guarda) ---
+
+export interface PlaceProposal {
+  name: string
+  rule: string
+  things: string[]
+  because: string
+}
+
+export interface PlaceProposals {
+  tension: string
+  places: PlaceProposal[]
+}
+
+export function proposePlaces(worldId: number) {
+  return request<PlaceProposals>(`/world/propose-places?id=${worldId}`, {
     method: 'POST',
-    body: JSON.stringify(node),
+    body: JSON.stringify({}),
   })
 }
 
-export function updateNode(worldId: number, nodeId: number, data: {
-  label: string
-  domain: NodeDomain
-  role: NodeRole
-  description: string
-  causal_summary: string
-}) {
-  return request<WorldNode>(`/world/nodes?world_id=${worldId}&node_id=${nodeId}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
+export interface RouteProposal {
+  from_id: number
+  to_id: number
+  from: string
+  to: string
+  distance: string
+  bidirectional: boolean
 }
 
-export function expandNodeCandidates(worldId: number, nodeId: number) {
-  return request<{ candidates: CandidateNode[] }>(
-    `/world/nodes/expand?world_id=${worldId}&node_id=${nodeId}`,
-    { method: 'POST' },
-  )
-}
-
-export function graphChat(worldId: number, message: string) {
-  return request<{ reply: string; created_nodes?: WorldNode[] }>(`/world/graph/chat?world_id=${worldId}`, {
+export function proposeRoutes(worldId: number) {
+  return request<{ routes: RouteProposal[] }>(`/world/propose-routes?id=${worldId}`, {
     method: 'POST',
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({}),
   })
-}
-
-export function generateWorld(premise: string) {
-  return request<{ job_id: string }>('/world/generate', {
-    method: 'POST',
-    body: JSON.stringify({ premise }),
-  })
-}
-
-export function getJobStatus(jobId: string) {
-  return request<{ status: 'pending' | 'done' | 'error'; world_id: number; error: string }>(
-    `/jobs/status?id=${jobId}`
-  )
-}
-
-export function getSubtreePreview(worldId: number, nodeId: number) {
-  return request<SubtreePreview>(`/world/nodes/subtree?world_id=${worldId}&node_id=${nodeId}`)
-}
-
-export function deleteSubtree(worldId: number, nodeId: number) {
-  return request<{ deleted_ids: number[] }>(
-    `/world/nodes/subtree/delete?world_id=${worldId}&node_id=${nodeId}`,
-    { method: 'DELETE' },
-  )
 }
 
 // --- World Detail ---
@@ -290,6 +245,37 @@ export interface Character {
   premise?: string
   voice_register?: VoiceRegister
   speech_pattern?: string
+  sheet?: CharacterSheet | null
+}
+
+// --- La ficha corta (2026-10-31) ---
+// Seis campos redactados como acción. No va al escritor de prosa (medido:
+// solo caricatura); alimenta al asistente que propone pasos en el taller.
+
+export interface SheetSignature {
+  si: string
+  hace: string
+}
+
+export interface CharacterSheet {
+  quiere: string
+  cree: string
+  nunca: string
+  salvo: string
+  cuando: SheetSignature[]
+  por_defecto: string
+}
+
+export function createCharacterWithSheet(body: { world_id: number; name: string; premise: string }) {
+  return request<Character>('/character/create-with-sheet', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function generateCharacterSheet(id: number) {
+  return request<CharacterSheet>(`/character/sheet/generate?id=${id}`, { method: 'POST' })
+}
+
+export function updateCharacterSheet(id: number, sheet: CharacterSheet) {
+  return request<void>(`/character/sheet?id=${id}`, { method: 'POST', body: JSON.stringify(sheet) })
 }
 
 // --- Character Psychological Graph ---
@@ -514,6 +500,10 @@ export interface LocationNodeProperties {
   emplazamiento?: string
   /** Dónde la colocó el mapa por última vez; si el autor la mueve, el mapa la respeta. */
   map_pos?: [number, number]
+  /** Ficha del lugar: cosas que hay ahí y que una escena puede usar. */
+  props?: string[]
+  /** Lo que siempre se cumple ahí, en una línea ("nadie entra armado"). */
+  rule?: string
 }
 
 export interface LocationNode {
@@ -556,7 +546,18 @@ export function createLocationNode(node: Omit<LocationNode, 'id'>) {
   return request<LocationNode>('/location/nodes', { method: 'POST', body: JSON.stringify(node) })
 }
 
-export function updateLocationNode(id: number, data: Pick<LocationNode, 'name' | 'node_type' | 'description' | 'properties'>) {
+/**
+ * Cambios de un lugar: solo se envía lo que cambia. El backend fusiona
+ * `properties` clave a clave y conserva lo que no venga, así que editar el
+ * nombre ya no borra la función narrativa ni el emplazamiento.
+ */
+export type LocationNodePatch = Partial<Pick<LocationNode, 'name' | 'node_type' | 'description'>> & {
+  /** '' la quita. */
+  narrative_function?: NarrativeFunction | ''
+  properties?: Partial<LocationNodeProperties>
+}
+
+export function updateLocationNode(id: number, data: LocationNodePatch) {
   return request<void>(`/location/nodes/update?id=${id}`, { method: 'PUT', body: JSON.stringify(data) })
 }
 
@@ -580,51 +581,6 @@ export function deleteLocationEdge(id: number) {
   return request<void>(`/location/edges/delete?id=${id}`, { method: 'DELETE' })
 }
 
-/** requestId: para seguir la fase con getGenerationProgress mientras tarda. */
-export function generateLocationRegions(worldId: number, additive = false, requestId?: string) {
-  return request<LocationGraph>('/location/generate-regions', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, additive }),
-    requestId,
-  })
-}
-
-export function expandLocationNode(worldId: number, nodeId: number) {
-  return request<LocationGraph>('/location/expand-node', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, node_id: nodeId }),
-  })
-}
-
-export function enrichLocationNode(worldId: number, nodeId: number) {
-  return request<LocationNode>('/location/enrich-node', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, node_id: nodeId }),
-  })
-}
-
-// --- Seed Templates ---
-
-export interface SeedTemplateBrief {
-  id: number
-  title: string
-  description: string
-  category: string
-  tags: string[]
-  node_count: number
-}
-
-export function listSeedTemplates() {
-  return request<SeedTemplateBrief[]>('/seeds')
-}
-
-export function createWorldFromSeed(seedId: number, name: string, premise: string) {
-  return request<{ job_id: string }>('/seeds/create-world', {
-    method: 'POST',
-    body: JSON.stringify({ seed_id: seedId, name, premise }),
-  })
-}
-
 // --- Character Profiles ---
 
 export interface ProfileTemplateBrief {
@@ -640,10 +596,6 @@ export interface CharacterPremiseAnalysis {
   deseo: string
   conflicto: string
   stakes: string
-}
-
-export function getCharacterProfiles() {
-  return request<ProfileTemplateBrief[]>('/character/profiles')
 }
 
 export function refineCharacterPremise(premise: string) {
@@ -1189,6 +1141,176 @@ export interface SceneCarry {
 
 export function getSceneCarry(sceneId: number): Promise<SceneCarry> {
   return request<SceneCarry>(`/scene/carry/${sceneId}`)
+}
+
+// ─── Estado vivo ────────────────────────────────────────────────────────────
+// Cómo está y qué sabe cada personaje al entrar en la escena. Se guarda como
+// cambios (añadir o quitar una línea) atados a la escena; lo del autor manda
+// sobre las reglas y sobre lo que propone el modelo.
+
+export type StateList = 'estado' | 'sabe'
+/** llegada: lo que cuesta el camino por el que entra el personaje; vale al entrar, como lo del autor. */
+export type StateOrigin = 'autor' | 'regla' | 'propuesta' | 'llegada'
+
+export interface StateLine {
+  id?: number
+  text: string
+  item?: string
+  origin: StateOrigin
+  scene_id: number
+}
+
+export interface CharacterState {
+  character_id: number
+  name: string
+  estado: StateLine[]
+  sabe: StateLine[]
+  dead: boolean
+}
+
+export interface SceneStateChange {
+  id: number
+  scene_id: number
+  character_id: number
+  list: StateList
+  op: 'add' | 'remove'
+  text: string
+  item?: string
+  origin: StateOrigin
+}
+
+export function getSceneState(sceneId: number): Promise<CharacterState[]> {
+  return request<CharacterState[]>(`/scene/state/${sceneId}`)
+}
+
+export function addStateChange(sceneId: number, body: { character_id: number; list: StateList; op: 'add' | 'remove'; text: string; item?: string }): Promise<SceneStateChange> {
+  return request<SceneStateChange>(`/scene/state/${sceneId}`, { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function deleteStateChange(sceneId: number, id: number): Promise<void> {
+  return request<void>(`/scene/state/change/delete/${sceneId}/${id}`, { method: 'POST' })
+}
+
+/** El modelo propone cómo queda cada presente tras la escena; devuelve el estado de después. */
+export function proposeSceneState(sceneId: number): Promise<CharacterState[]> {
+  return request<CharacterState[]>(`/scene/state/propose/${sceneId}`, { method: 'POST' })
+}
+
+// ─── La llegada ─────────────────────────────────────────────────────────────
+// Cuando un personaje entra en la escena viniendo de otro lugar por un camino
+// del mapa, el backend calcula qué le cuesta el umbral y lo propone como un
+// nodo fantasma: un paso que el autor acepta, edita o descarta. Leer nunca
+// llama al modelo; redactar (propose) es otra petición.
+
+export type ArrivalStatus = 'propuesta' | 'aceptada' | 'descartada'
+
+export interface ArrivalRoute {
+  edge_type: string
+  effort: string
+  dramatic_charge: string
+  note: string
+}
+
+export interface Arrival {
+  character_id: number
+  name: string
+  status: ArrivalStatus
+  origin_scene_id: number
+  from: string
+  to: string
+  /** Sin camino en el mapa, no hay ruta: fantasma mínimo con aviso. */
+  route?: ArrivalRoute
+  step: string
+  outcomes: string[]
+  warning?: string
+  /** El paso aún no está redactado: el taller lo muestra como «calculando». */
+  pending: boolean
+  moment_node_id?: number | null
+  state_line_id?: number | null
+}
+
+export function getSceneArrivals(sceneId: number): Promise<Arrival[]> {
+  return request<Arrival[]>(`/scene/arrivals/${sceneId}`)
+}
+
+/** Redacta las llegadas pendientes (una llamada al modelo por llegada). */
+export function proposeSceneArrivals(sceneId: number): Promise<Arrival[]> {
+  return request<Arrival[]>(`/scene/arrivals/propose/${sceneId}`, { method: 'POST' })
+}
+
+/** Convierte el fantasma en un momento real; con edit, usa el texto editado y la posición del fantasma. */
+export function acceptArrival(
+  sceneId: number,
+  characterId: number,
+  edit?: { step?: string; outcomes?: string[]; canvas_x?: number; canvas_y?: number },
+): Promise<SceneNode> {
+  return request<SceneNode>(`/scene/arrival/accept/${sceneId}/${characterId}`, { method: 'POST', body: JSON.stringify(edit ?? {}) })
+}
+
+export function dismissArrival(sceneId: number, characterId: number): Promise<void> {
+  return request<void>(`/scene/arrival/dismiss/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+/** «Otra»: vuelve a redactar solo esa llegada. */
+export function regenerateArrival(sceneId: number, characterId: number): Promise<Arrival> {
+  return request<Arrival>(`/scene/arrival/again/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+/** «Proponer llegada»: la descartada vuelve a proponerse. */
+export function reproposeArrival(sceneId: number, characterId: number): Promise<void> {
+  return request<void>(`/scene/arrival/repropose/${sceneId}/${characterId}`, { method: 'POST' })
+}
+
+// --- Los ganchos (2026-10-31) ---
+// El reparto propone pasos cuando su ficha y su estado lo tocan; el autor
+// acepta (el paso se añade al final del flujo), edita o descarta. Proponer
+// llama al modelo (propuesta + showrunner); leer no.
+
+export type HookStatus = 'proposed' | 'accepted' | 'discarded'
+export type HookNovelty = 'known' | 'new' | ''
+
+export interface SceneHook {
+  id: number
+  scene_id: number
+  character_id: number
+  name: string
+  rule: string
+  step: string
+  outcomes: string[]
+  status: HookStatus
+  novelty?: HookNovelty | null
+  moment_node_id?: number | null
+}
+
+export const HOOK_RULE_LABEL: Record<string, string> = {
+  quiere_al_alcance: 'lo que quiere está al alcance',
+  creencia_desmentida: 'un hecho desmiente lo que cree',
+  limite_rozado: 'le tientan su límite',
+  firma_disparada: 'ocurre una de sus situaciones',
+  objeto_sin_coste: 'lleva algo que nadie toca',
+  viene_cargado: 'viene cargado',
+  deuda_pendiente: 'deuda pendiente',
+  secreto_asimetrico: 'sabe algo que el otro no',
+  testigo: 'fue testigo',
+  objeto_ajeno: 'lleva algo ajeno',
+  choque_quiere: 'choque de lo que quieren',
+  reencuentro: 'reencuentro',
+}
+
+export function getSceneHooks(sceneId: number): Promise<SceneHook[]> {
+  return request<SceneHook[]>(`/scene/hooks/${sceneId}`)
+}
+
+export function proposeSceneHooks(sceneId: number): Promise<SceneHook[]> {
+  return request<SceneHook[]>(`/scene/hooks/propose/${sceneId}`, { method: 'POST' })
+}
+
+export function acceptSceneHook(sceneId: number, hookId: number, edit?: { step?: string; outcomes?: string[]; novelty?: HookNovelty }): Promise<SceneNode> {
+  return request<SceneNode>(`/scene/hook/accept/${sceneId}/${hookId}`, { method: 'POST', body: JSON.stringify(edit ?? {}) })
+}
+
+export function discardSceneHook(sceneId: number, hookId: number, novelty?: HookNovelty): Promise<void> {
+  return request<void>(`/scene/hook/discard/${sceneId}/${hookId}`, { method: 'POST', body: JSON.stringify({ novelty: novelty ?? '' }) })
 }
 
 export function createSceneNodeEdge(

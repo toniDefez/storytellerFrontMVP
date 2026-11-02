@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Network, MessageCircle, Sparkles, Trash2, X, Mic } from 'lucide-react'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { VoiceTab } from './VoiceTab'
 import { VoiceBadge } from './VoiceBadge'
 import { useCharacterGraph } from './useCharacterGraph'
@@ -9,7 +10,8 @@ import { DecisionFlowOutline } from './DecisionFlowOutline'
 import { CatalogDrawer } from './CatalogDrawer'
 import { ContainerContextMenu, OrbitalContextMenu } from './CharacterContextMenu'
 import { AIGeneratingIndicator } from '@/components/world-creation/AIGeneratingIndicator'
-import type { CharacterNode, CharacterNodeDomain } from '@/services/api'
+import { CharacterSheetCard } from '@/components/character-panel/CharacterSheetCard'
+import { getCharacterById, type CharacterNode, type CharacterNodeDomain, type CharacterSheet } from '@/services/api'
 import { CHARACTER_DOMAIN_LABEL } from './domainLabels'
 
 interface Props {
@@ -27,10 +29,27 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     voiceExamples, premise, speechPattern, generatingExamples,
     loadGraph, removeNode, editNode, moveNode,
     updateVoice, saveExamples, generateExamples, sendMessage, generateNodes, clearChat,
-    toggleMode, setSelectedNodeId,
+    toggleMode, setSelectedNodeId, setMode,
     addFromCatalog, addFromContextual, regenerateSynthesis,
     regenerateSoul,
   } = useCharacterGraph(characterId)
+  // Móvil (2026-10-31): el lienzo de nodos no se recorre con el dedo; la
+  // ficha abre en la vista de texto (Voz). Flujo sigue ahí por si se quiere.
+  const isMobile = useIsMobile()
+  useEffect(() => {
+    if (isMobile) setMode('voice')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile, characterId])
+
+  // La ficha corta arriba (2026-10-31): es lo que define al personaje. El
+  // grafo, el alma, la voz y el chat quedan debajo como «Profundizar».
+  const [sheet, setSheet] = useState<CharacterSheet | null | undefined>(undefined)
+  useEffect(() => {
+    let alive = true
+    getCharacterById(characterId).then((c) => { if (alive) setSheet(c.sheet ?? null) }).catch(() => { if (alive) setSheet(null) })
+    return () => { alive = false }
+  }, [characterId])
+  const [deep, setDeep] = useState(false)
 
   const [selectedNode, setSelectedNode] = useState<CharacterNode | undefined>()
   // null: aún sin tocar, se propone la premisa con la que se creó el
@@ -121,10 +140,10 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
     return <div className="flex items-center justify-center h-full text-muted-foreground/40">Cargando...</div>
   }
 
-  // Initial state — no nodes, show premise input
-  if (nodes.length === 0 && !generating) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full px-8 max-w-xl mx-auto">
+  // Lo profundo: sin nodos, la premisa para generarlos; generando, la espera;
+  // y si no, el grafo, la voz y el chat.
+  const deepBody = nodes.length === 0 && !generating ? (
+      <div className="flex flex-col items-center justify-center h-full px-8 py-6 max-w-xl mx-auto">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600/60 mb-6">
           Definir personaje
         </p>
@@ -154,18 +173,11 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
         </button>
         {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
       </div>
-    )
-  }
-
-  if (generating) {
-    return (
+  ) : generating ? (
       <div className="flex items-center justify-center h-full">
-        <AIGeneratingIndicator label="Creando el personaje…" detail={generatingProgress} accent="character" />
+        <AIGeneratingIndicator label="Profundizando en el personaje…" detail={generatingProgress} accent="character" />
       </div>
-    )
-  }
-
-  return (
+  ) : (
     <div className="h-full flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0">
@@ -414,6 +426,35 @@ export function CharacterGraphPage({ characterId, worldId, onDelete }: Props) {
           </div>
         )}
       </div>
+    </div>
+  )
+
+  return (
+    <div className="md:h-full flex flex-col">
+      <div className="shrink-0 flex items-center justify-between px-4 md:px-6 pt-3">
+        <span className="font-display text-[22px] leading-tight">{characterName}</span>
+        {onDelete && isMobile && (
+          <button
+            type="button"
+            onClick={() => { if (window.confirm(`¿Eliminar a ${characterName}?`)) onDelete() }}
+            className="min-h-9 px-2 text-xs text-muted-foreground underline underline-offset-4"
+          >
+            Eliminar
+          </button>
+        )}
+      </div>
+      <CharacterSheetCard characterId={characterId} characterName={characterName} sheet={sheet} onChange={setSheet} />
+      {isMobile ? (
+        <div className="border-t border-border/30">
+          <button type="button" onClick={() => setDeep((v) => !v)} className="w-full min-h-12 px-4 flex items-center justify-between text-sm">
+            <span className="font-semibold">Profundizar</span>
+            <span className="text-muted-foreground">{deep ? 'cerrar' : 'alma, voz y chat'}</span>
+          </button>
+          {deep && <div className="h-[75dvh] border-t border-border/30">{deepBody}</div>}
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 border-t border-border/30">{deepBody}</div>
+      )}
     </div>
   )
 }

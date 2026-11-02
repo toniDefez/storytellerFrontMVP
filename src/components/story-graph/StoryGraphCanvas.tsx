@@ -37,6 +37,7 @@ import {
   deleteFact,
   getStoryGraph,
   getLocationGraph,
+  createLocationNode,
   createScene,
   createSceneEdge,
   updateScenePosition,
@@ -55,7 +56,11 @@ import type {
 import { InicioNode, type InicioNodeData } from './InicioNode'
 import { SceneNode, type SceneNodeData } from './SceneNode'
 import { StoryGraphPanel, type PanelMode } from './StoryGraphPanel'
+import { StorySceneList } from './StorySceneList'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useUrlParam } from '@/hooks/useUrlParam'
 import { SceneWorkspace } from '@/components/scene-workspace/SceneWorkspace'
+import type { ScenePlace } from '@/components/scene-workspace/ContainerLocationNode'
 import { StoryReader } from './StoryReader'
 import { writingPlanMarkdown, copyOrDownload } from '@/lib/writingPlan'
 import { notifyError } from '@/lib/notifyError'
@@ -147,6 +152,9 @@ interface Props {
 /* ── Main component ─────────────────────────────────────────────── */
 
 export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }: Props) {
+  // Móvil: el mismo estado y los mismos datos, pero en vez del lienzo se pinta
+  // la lista de escenas en orden de lectura (StorySceneList).
+  const isMobile = useIsMobile()
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelMode, setPanelMode] = useState<PanelMode>('inicio')
   const [selectedSceneId, setSelectedSceneId] = useState<number | undefined>()
@@ -159,9 +167,23 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
   const [newSceneTitle, setNewSceneTitle] = useState('')
   const [creatingScene, setCreatingScene] = useState(false)
 
-  // Entered scene workspace
+  // Entered scene workspace. Van en la URL (scene, read): «atrás» vuelve al grafo.
   const [enteredSceneId, setEnteredSceneId] = useState<number | null>(null)
   const [reading, setReading] = useState(false)
+  const [sceneParam, setSceneParam] = useUrlParam('scene')
+  const [readParam, setReadParam] = useUrlParam('read')
+  useEffect(() => {
+    const id = sceneParam ? Number(sceneParam) : null
+    const isReading = readParam === '1'
+    setEnteredSceneId(id)
+    setReading(isReading)
+    onSceneEntered?.(id != null || isReading)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sceneParam, readParam])
+  const enterScene = (sceneId: number) => { setPanelOpen(false); setSceneParam(String(sceneId)) }
+  const leaveScene = () => setSceneParam(null, { replace: true })
+  const startReading = () => setReadParam('1')
+  const stopReading = () => setReadParam(null, { replace: true })
 
   // Plan de escritura: para que la prosa la escriba otro modelo o el autor.
   const [copyingPlan, setCopyingPlan] = useState(false)
@@ -203,7 +225,8 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
 
   /* ── Load story detail (for INICIO panel) ─── */
   useEffect(() => {
-    if (!panelOpen || panelMode !== 'inicio') return
+    // En móvil la portada enseña el reparto, así que el detalle se carga ya.
+    if (!isMobile && (!panelOpen || panelMode !== 'inicio')) return
     if (detail?.story.id === storyBrief.id) return
 
     setLoadingDetail(true)
@@ -211,14 +234,15 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
       .then(setDetail)
       .catch(err => toast.error(err instanceof Error ? err.message : 'Error al cargar la historia.'))
       .finally(() => setLoadingDetail(false))
-  }, [panelOpen, panelMode, storyBrief.id, detail?.story.id])
+  }, [panelOpen, panelMode, storyBrief.id, detail?.story.id, isMobile])
 
   /* ── Cast and places for the scene workspace ─── */
   // El workspace pinta personajes y lugares por id, y su paleta ofrece el
   // reparto de la historia y las localizaciones del mundo. Sin estos mapas los
   // nodos salían como "?" y no había forma de añadirlos a la escena.
   const [workspaceCharNames, setWorkspaceCharNames] = useState<Record<number, string>>({})
-  const [workspaceLocations, setWorkspaceLocations] = useState<Record<number, { name: string; nodeType?: string; narrativeFunction?: string; atmosphere?: string }>>({})
+  const [workspaceLocations, setWorkspaceLocations] = useState<Record<number, ScenePlace>>({})
+  const [workspaceWorldId, setWorkspaceWorldId] = useState<number | null>(null)
 
   useEffect(() => {
     if (enteredSceneId == null) return
@@ -228,15 +252,29 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         const graph = await getLocationGraph(d.story.world_id)
         if (cancelled) return
         setWorkspaceCharNames(Object.fromEntries((d.characters ?? []).map(c => [c.character_id, c.name])))
+        setWorkspaceWorldId(d.story.world_id)
         setWorkspaceLocations(Object.fromEntries((graph.nodes ?? []).map(n => [n.id, {
           name: n.name,
           nodeType: n.node_type,
-          narrativeFunction: n.narrative_function,
+          props: n.properties?.props,
+          rule: n.properties?.rule,
         }])))
       })
       .catch(err => toast.error(err instanceof Error ? err.message : 'Error al cargar el reparto de la escena.'))
     return () => { cancelled = true }
   }, [enteredSceneId, storyBrief.id])
+
+  // Un lugar nuevo nace donde se necesita: en la escena. Se crea en el mundo
+  // de la historia y queda a mano en la paleta.
+  const createWorkspaceLocation = useCallback(async (name: string) => {
+    if (workspaceWorldId == null) throw new Error('La historia aún no ha cargado su mundo.')
+    const created = await createLocationNode({
+      world_id: workspaceWorldId, parent_id: null, name, node_type: 'settlement',
+      description: '', properties: {}, canvas_x: 0, canvas_y: 0,
+    })
+    setWorkspaceLocations(prev => ({ ...prev, [created.id]: { name: created.name, nodeType: created.node_type } }))
+    return created.id
+  }, [workspaceWorldId])
 
   /* ── Load scene graph ─── */
   const loadGraph = useCallback(async () => {
@@ -325,10 +363,9 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
   const handleNodeDoubleClick: NodeMouseHandler = useCallback((_event, node) => {
     if (!node.id.startsWith('scene-')) return
     const sceneId = parseInt(node.id.replace('scene-', ''), 10)
-    setEnteredSceneId(sceneId)
-    setPanelOpen(false)
-    onSceneEntered?.(true)
-  }, [onSceneEntered])
+    enterScene(sceneId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setSceneParam])
 
   /* ── Create scene ─── */
   const handleOpenCreateDialog = () => {
@@ -510,10 +547,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
       <StoryReader
         storyId={storyBrief.id}
         title={storyBrief.title}
-        onBack={() => {
-          setReading(false)
-          onSceneEntered?.(false)
-        }}
+        onBack={stopReading}
       />
     )
   }
@@ -528,11 +562,9 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         sceneTitle={String(nodes.find((n) => n.id === `scene-${enteredSceneId}`)?.data?.title ?? '')}
         charNameByID={workspaceCharNames}
         locationByID={workspaceLocations}
+        onCreateLocation={createWorkspaceLocation}
         relationships={relationships}
-        onBack={() => {
-          setEnteredSceneId(null)
-          onSceneEntered?.(false)
-        }}
+        onBack={leaveScene}
       />
     )
   }
@@ -540,6 +572,24 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
   return (
     <div className="flex h-full w-full overflow-hidden">
       {/* ── Canvas ─────────────────────────────────────────────── */}
+      {isMobile ? (
+        <div className="flex-1 min-w-0 h-full relative">
+          <StorySceneList
+            storyTitle={storyBrief.title}
+            castNames={(detail?.characters ?? []).map(c => c.name)}
+            nodes={nodes}
+            edges={edges}
+            loading={loadingDetail || graphLoading}
+            copyingPlan={copyingPlan}
+            onOpenInicio={openInicioPanel}
+            onEnterScene={enterScene}
+            onSceneDetail={sceneId => { setSelectedSceneId(sceneId); setPanelMode('scene'); setPanelOpen(true) }}
+            onRead={startReading}
+            onCopyPlan={handleCopyPlan}
+            onCreateScene={handleOpenCreateDialog}
+          />
+        </div>
+      ) : (
       <div className="flex-1 min-w-0 h-full relative" onDoubleClick={handleCanvasDoubleClick}>
         <div className="absolute top-3 right-3 z-20 flex gap-2" onDoubleClick={e => e.stopPropagation()}>
           <button
@@ -551,10 +601,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
             {copyingPlan ? 'Preparando plan…' : 'Copiar plan de escritura'}
           </button>
           <button
-            onClick={() => {
-              setReading(true)
-              onSceneEntered?.(true)
-            }}
+            onClick={startReading}
             className="bg-white/90 border border-stone-200 rounded-lg shadow-sm px-3 py-1.5 text-sm text-stone-700 hover:text-foreground transition-colors"
           >
             Leer historia
@@ -609,6 +656,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
           <Plus className="w-5 h-5" />
         </button>
       </div>
+      )}
 
       {/* ── Right panel ────────────────────────────────────────── */}
       <StoryGraphPanel
@@ -633,6 +681,7 @@ export function StoryGraphCanvas({ storyBrief, worldCharacters, onSceneEntered }
         onNarratorChange={handleNarratorChange}
         onSceneDelete={handleSceneDelete}
         onSceneTitleChange={handleSceneTitleChange}
+        onSceneOpen={() => { if (selectedSceneId != null) enterScene(selectedSceneId) }}
       />
 
       {/* ── Create scene dialog ──────────────────────────────────── */}

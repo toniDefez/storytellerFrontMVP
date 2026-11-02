@@ -1,35 +1,27 @@
 import { useState, useCallback } from 'react'
-import type { LocationNode, LocationEdge } from '@/services/api'
+import type { LocationNode, LocationEdge, LocationNodePatch } from '@/services/api'
 import {
   getLocationGraph, createLocationNode, updateLocationNode,
   updateLocationNodePosition, deleteLocationNode,
   createLocationEdge, updateLocationEdge, deleteLocationEdge,
-  generateLocationRegions, expandLocationNode, enrichLocationNode,
 } from '@/services/api'
-import { useGenerationProgress } from './useGenerationProgress'
-
-async function fetchGraph(worldId: number) {
-  const graph = await getLocationGraph(worldId)
-  return { nodes: graph.nodes ?? [], edges: graph.edges ?? [] }
-}
 
 export type SelectedLocation =
   | { type: 'node'; item: LocationNode }
   | { type: 'edge'; item: LocationEdge }
   | null
 
+/**
+ * Los lugares y caminos de un mundo. La generación de regiones, expandir y
+ * enriquecer murieron con la jerarquía: la escena 0 propone lugares como
+ * tarjetas (proposePlaces) y el autor los crea con addNode.
+ */
 export function useLocationGraph(worldId: number | null) {
   const [nodes, setNodes] = useState<LocationNode[]>([])
   const [edges, setEdges] = useState<LocationEdge[]>([])
   const [selected, setSelected] = useState<SelectedLocation>(null)
   const [loading, setLoading] = useState(false)
-  const [generating, setGenerating] = useState(false)
-  const [expandingNodeId, setExpandingNodeId] = useState<number | null>(null)
-  const [enrichingNodeId, setEnrichingNodeId] = useState<number | null>(null)
   const [error, setError] = useState('')
-  // Generar tarda ~40 s y el modelo corrige su propia salida: la fase real
-  // («corrigiendo localizaciones…») se enseña junto al botón.
-  const { progress: generatingProgress, start: startProgress, stop: stopProgress } = useGenerationProgress()
 
   const loadGraph = useCallback(async () => {
     if (!worldId) return
@@ -45,81 +37,24 @@ export function useLocationGraph(worldId: number | null) {
     }
   }, [worldId])
 
-  const generate = useCallback(async () => {
-    if (!worldId) return
-    setGenerating(true)
-    setError('')
-    const requestId = startProgress()
-    try {
-      const graph = await generateLocationRegions(worldId, false, requestId)
-      setNodes(graph.nodes ?? [])
-      setEdges(graph.edges ?? [])
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error generando localizaciones')
-    } finally {
-      stopProgress()
-      setGenerating(false)
-    }
-  }, [worldId, startProgress, stopProgress])
-
-  const addRegions = useCallback(async () => {
-    if (!worldId) return
-    setGenerating(true)
-    setError('')
-    const requestId = startProgress()
-    try {
-      await generateLocationRegions(worldId, true, requestId)
-      // Reload full graph from DB to get accurate state (includes pre-existing nodes)
-      const { nodes: fresh, edges: freshEdges } = await fetchGraph(worldId)
-      setNodes(fresh)
-      setEdges(freshEdges)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error añadiendo regiones')
-    } finally {
-      stopProgress()
-      setGenerating(false)
-    }
-  }, [worldId, startProgress, stopProgress])
-
-  const expandNode = useCallback(async (worldId: number, nodeId: number) => {
-    setExpandingNodeId(nodeId)
-    setError('')
-    try {
-      const graph = await expandLocationNode(worldId, nodeId)
-      setNodes(prev => [...prev, ...(graph.nodes ?? [])])
-      setEdges(prev => [...prev, ...(graph.edges ?? [])])
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error expandiendo localización')
-    } finally {
-      setExpandingNodeId(null)
-    }
-  }, [])
-
-  const enrichNode = useCallback(async (worldId: number, nodeId: number) => {
-    setEnrichingNodeId(nodeId)
-    setError('')
-    try {
-      const updated = await enrichLocationNode(worldId, nodeId)
-      setNodes(prev => prev.map(n => n.id === nodeId ? updated : n))
-      if (selected?.type === 'node' && selected.item.id === nodeId) {
-        setSelected({ type: 'node', item: updated })
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error completando localización')
-    } finally {
-      setEnrichingNodeId(null)
-    }
-  }, [selected])
-
   const addNode = useCallback(async (node: Omit<LocationNode, 'id'>) => {
-    const created = await createLocationNode(node)
+    const raw = await createLocationNode(node)
+    const created: LocationNode = { ...raw, properties: raw.properties ?? {} }
     setNodes(prev => [...prev, created])
     return created
   }, [])
 
-  const editNode = useCallback(async (id: number, data: Pick<LocationNode, 'name' | 'node_type' | 'description' | 'properties'>) => {
-    await updateLocationNode(id, data)
-    setNodes(prev => prev.map(n => n.id === id ? { ...n, ...data } : n))
+  // Solo lo que cambia: el backend conserva el resto.
+  const editNode = useCallback(async (id: number, patch: LocationNodePatch) => {
+    await updateLocationNode(id, patch)
+    setNodes(prev => prev.map(n => {
+      if (n.id !== id) return n
+      const { properties, narrative_function, ...rest } = patch
+      const next: LocationNode = { ...n, ...rest }
+      if (narrative_function !== undefined) next.narrative_function = narrative_function || undefined
+      if (properties) next.properties = { ...n.properties, ...properties }
+      return next
+    }))
   }, [])
 
   const moveNode = useCallback(async (id: number, x: number, y: number) => {
@@ -153,8 +88,8 @@ export function useLocationGraph(worldId: number | null) {
 
   return {
     nodes, edges, selected, setSelected,
-    loading, generating, generatingProgress, expandingNodeId, enrichingNodeId, error,
-    loadGraph, generate, addRegions, expandNode, enrichNode,
+    loading, error,
+    loadGraph,
     addNode, editNode, moveNode, removeNode,
     addEdge, editEdge, removeEdge,
   }

@@ -1,34 +1,28 @@
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getWorldById, deleteWorld, getWorldDetail } from '../../services/api'
-import type { World, WorldNode, WorldDetail } from '../../services/api'
-import type { NodeFormInput } from '@/components/world-graph/NodeFormDialog'
-import { useWorldGraph } from '@/hooks/useWorldGraph'
+import { getWorldById, deleteWorld, getWorldDetail, updateWorld } from '../../services/api'
+import type { World, WorldDetail, WorldInput } from '../../services/api'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
-import { MoreHorizontal, Trash2, Pencil, BookOpen, Download } from 'lucide-react'
-import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
-import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
-import { LocationGraphCanvas } from '@/components/world-graph/LocationGraphCanvas'
-import { EdgeFormDialog } from '@/components/world-graph/EdgeFormDialog'
+import { MoreHorizontal, Trash2 } from 'lucide-react'
+import { useUrlParam } from '@/hooks/useUrlParam'
+import { WorldPanel } from '@/components/world/WorldPanel'
+import { PlacesPanel } from '@/components/places/PlacesPanel'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
-import { useFactions } from '@/hooks/useFactions'
-import { useRegions } from '@/hooks/useRegions'
-import { generateFactions, generateGeography } from '@/services/factionApi'
 import { toast } from 'sonner'
 import { CharacterPanel } from '@/components/character-panel/CharacterPanel'
 import { StoryPanel } from '@/components/story-setup/StoryPanel'
-import { exportWorld } from '../../services/worldExport'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { notifyError } from '@/lib/notifyError'
+
+type Tab = 'world' | 'locations' | 'characters' | 'stories'
 
 function inferDotColor(world: World): string {
   const text = (world.premise || world.description || '').toLowerCase()
@@ -50,98 +44,33 @@ export default function WorldDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
-  const [exporting, setExporting] = useState(false)
-  const [isExpanding, setIsExpanding] = useState(false)
-  const [graphView, setGraphView] = useState<'causal' | 'locations' | 'characters' | 'stories'>('causal')
+  // La pestaña vive en la URL: «atrás» vuelve a la pestaña anterior, no saca del mundo.
+  const [tabParam, setTabParam] = useUrlParam('tab')
+  const tab = (tabParam ?? 'world') as Tab
+  const setTab = (v: Tab) =>
+    setTabParam(v === 'world' ? null : v, { clear: ['place', 'character', 'story', 'scene', 'read'] })
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
-  const [pendingConn, setPendingConn] = useState<{ src: number; tgt: number } | null>(null)
-  const [confirmRegen, setConfirmRegen] = useState(false)
-  const graph = useWorldGraph()
 
+  // El mundo se vuelve a leer con el resumen: `locked` cambia en cuanto una
+  // historia tiene escenas, y eso pasa sin recargar la página.
   const refreshWorldDetail = useCallback(() => {
     const worldId = Number(id)
     if (!id || Number.isNaN(worldId)) return
     getWorldDetail(worldId).then(setWorldDetail).catch(notifyError('No se pudo cargar el resumen del mundo'))
+    getWorldById(worldId).then(setWorld).catch(() => {})
   }, [id])
 
   const {
     nodes: locationNodes, edges: locationEdges,
-    selected: locationSelected, setSelected: setLocationSelected,
-    generating: locationGenerating,
-    generatingProgress: locationGeneratingProgress,
     error: locationError,
-    expandingNodeId: locationExpandingNodeId,
-    enrichingNodeId: locationEnrichingNodeId,
-    loadGraph: loadLocationGraph, generate: generateLocations,
-    expandNode: expandLocationNode, enrichNode: enrichLocationNode,
-    moveNode, addNode: addLocationNode, addEdge, editNode: editLocationNode, removeNode,
-    editEdge, removeEdge,
+    loadGraph: loadLocationGraph,
+    addNode: addLocationNode, editNode: editLocationNode, removeNode,
+    addEdge, editEdge, removeEdge,
   } = useLocationGraph(Number(id))
 
-  // El hook guardaba el error y nadie lo enseñaba: generar localizaciones
-  // podía fallar sin que la pantalla cambiase.
   useEffect(() => {
     if (locationError) toast.error(`Localizaciones: ${locationError}`)
   }, [locationError])
-
-  const _wid = Number(id)
-  const worldIdNum = Number.isNaN(_wid) ? null : _wid
-  const { factions, reload: reloadFactions } = useFactions(worldIdNum)
-  const { regions, reload: reloadRegions } = useRegions(worldIdNum)
-
-  // El mapa tarda unos segundos (el modelo propone la intención y los
-  // nombres): tiene su propio estado y avisa al terminar o al fallar. Antes
-  // el botón no daba ninguna señal y el error solo iba a la consola.
-  const [geographyGenerating, setGeographyGenerating] = useState(false)
-  const handleGenerateGeography = useCallback(async () => {
-    if (worldIdNum == null) return
-    setGeographyGenerating(true)
-    try {
-      const res = await generateGeography(worldIdNum)
-      // El mapa nuevo recoloca las localizaciones sobre el terreno.
-      await Promise.all([reloadRegions(), reloadFactions(), loadLocationGraph()])
-      toast.success(`Mapa físico generado: ${res.regions?.length ?? 0} regiones`)
-    } catch (e) {
-      notifyError('No se pudo generar el mapa')(e)
-    } finally {
-      setGeographyGenerating(false)
-    }
-  }, [worldIdNum, reloadRegions, reloadFactions])
-
-  const handleGenerateFactions = useCallback(async () => {
-    if (worldIdNum == null) return
-    try {
-      await generateFactions(worldIdNum)
-      await reloadFactions()
-    } catch (e) {
-      notifyError('No se pudieron generar las facciones')(e)
-    }
-  }, [worldIdNum, reloadFactions])
-
-  const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
-    const wid = Number(id)
-    if (!id || Number.isNaN(wid)) return
-    await graph.addNodeManually(wid, {
-      parentId: parentNode?.id,
-      parentEdgeType: input.parentEdgeType,
-      domain: input.domain,
-      role: input.role,
-      label: input.label,
-      description: input.description,
-      causalSummary: input.description,
-    })
-  }, [id, graph])
-
-  const handleUpdateNode = useCallback(async (input: NodeFormInput, nodeId: number) => {
-    const wid = Number(id)
-    if (!id || Number.isNaN(wid)) return
-    await graph.updateNodeManually(wid, nodeId, {
-      label: input.label,
-      domain: input.domain,
-      role: input.role,
-      description: input.description,
-    })
-  }, [id, graph])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -159,34 +88,29 @@ export default function WorldDetailPage() {
       return
     }
 
-    Promise.all([
-      getWorldById(worldId),
-      graph.loadGraph(worldId),
-      getWorldDetail(worldId),
-    ])
-      .then(([w, , detail]) => {
+    Promise.all([getWorldById(worldId), getWorldDetail(worldId)])
+      .then(([w, detail]) => {
         setWorld(w)
         setWorldDetail(detail)
         document.title = `${w.name} — StoryTeller`
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, t])
 
   useEffect(() => {
     if (id) loadLocationGraph()
   }, [id, loadLocationGraph])
 
-  const handleExport = async () => {
-    setExporting(true)
-    try {
-      await exportWorld(Number(id))
-    } catch {
-      toast.error(t('importExport.exportError'))
-    } finally {
-      setExporting(false)
-    }
+  // Al entrar en Lugares, el candado se lee de nuevo: el autor puede venir de
+  // crear una historia y su primera escena en esta misma página.
+  useEffect(() => {
+    if (tab === 'locations' && id) getWorldById(Number(id)).then(setWorld).catch(() => {})
+  }, [tab, id])
+
+  const handleSaveWorld = async (input: WorldInput) => {
+    const updated = await updateWorld(Number(id), input)
+    setWorld(updated)
   }
 
   const handleDelete = async () => {
@@ -220,9 +144,13 @@ export default function WorldDetailPage() {
   }
 
   const dotColor = inferDotColor(world)
+  const tabClass = (active: boolean, on: string) =>
+    `text-xs font-medium px-3 py-1 rounded-sm transition-colors ${active ? on : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`
 
   return (
-    <div>
+    // Móvil: la cabecera con el menú mide 45 px y la barra se parte en dos
+    // filas, así que la altura la reparte un flex en vez de un calc fijo.
+    <div className="flex flex-col h-[calc(100dvh-45px)] md:h-screen">
       <ConfirmModal
         open={showConfirmDelete}
         title={t('world.detail.deleteTitle')}
@@ -235,75 +163,33 @@ export default function WorldDetailPage() {
       />
 
       {/* ── Slim toolbar 44px ─────────────────────────────────────────── */}
-      <div
-        className="flex items-center gap-0 px-4 border-b border-border/60 bg-background"
-        style={{ height: 44 }}
-      >
-        {/* Left: world identity + tab switcher */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* World dot */}
-          <div
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: dotColor }}
-          />
-
-          {/* World name */}
-          <span
-            className="text-sm font-medium text-foreground truncate max-w-[180px]"
-            title={world.name}
-          >
+      <div className="flex flex-wrap items-center gap-y-1 px-3 md:px-4 py-1.5 md:py-0 md:h-11 shrink-0 border-b border-border/60 bg-background">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+          <span className="text-sm font-medium text-foreground truncate max-w-[180px]" title={world.name}>
             {world.name}
           </span>
+          <span className="hidden md:inline text-border/60 text-xs shrink-0 mx-1">·</span>
 
-          {/* Separator */}
-          <span className="text-border/60 text-xs shrink-0 mx-1">·</span>
-
-          {/* Tab switcher */}
-          <div className="flex items-center gap-0 shrink-0">
-            <button
-              onClick={() => setGraphView('causal')}
-              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'causal'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
+          {/* Tab switcher: en móvil, segunda fila a ancho completo */}
+          <div className="grid grid-cols-4 basis-full md:basis-auto md:flex items-center gap-0 shrink-0 [&>button]:min-h-10 md:[&>button]:min-h-0">
+            <button onClick={() => setTab('world')} className={tabClass(tab === 'world', 'bg-primary/10 text-primary')}>
               Mundo
             </button>
-            <button
-              onClick={() => setGraphView('locations')}
-              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'locations'
-                  ? 'bg-[#14b8a6]/10 text-[#0f766e]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
+            <button onClick={() => setTab('locations')} className={tabClass(tab === 'locations', 'bg-entity-location/10 text-entity-location')}>
               Lugares
             </button>
-            <button
-              onClick={() => setGraphView('characters')}
-              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'characters'
-                  ? 'bg-[#f97316]/10 text-[#c2410c]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
+            <button onClick={() => setTab('characters')} className={tabClass(tab === 'characters', 'bg-[#f97316]/10 text-[#c2410c]')}>
               Personajes
             </button>
-            <button
-              onClick={() => setGraphView('stories')}
-              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'stories'
-                  ? 'bg-[#06b6d4]/10 text-[#0e7490]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
+            <button onClick={() => setTab('stories')} className={tabClass(tab === 'stories', 'bg-[#06b6d4]/10 text-[#0e7490]')}>
               Historias
             </button>
           </div>
         </div>
 
-        {/* Right: ··· menu */}
+        {/* Right: ··· menu (solo escritorio; en el móvil borrar está al final de la pestaña Mundo) */}
+        <div className="hidden md:block">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -314,23 +200,6 @@ export default function WorldDetailPage() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem asChild>
-              <Link to={`/worlds/${id}/bible`} className="flex items-center gap-2">
-                <BookOpen className="w-3.5 h-3.5" />
-                {t('bible.viewBible')}
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExport} disabled={exporting}>
-              <Download className="w-3.5 h-3.5 mr-2" />
-              {exporting ? t('importExport.exporting') : t('importExport.exportButton')}
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to={`/worlds/${id}/edit`} className="flex items-center gap-2">
-                <Pencil className="w-3.5 h-3.5" />
-                {t('world.detail.editButton')}
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => setShowConfirmDelete(true)}
               className="text-destructive focus:text-destructive"
@@ -340,115 +209,54 @@ export default function WorldDetailPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
-      {/* ── Full-viewport graph ───────────────────────────────────────── */}
-      <div
-        className="overflow-hidden"
-        style={{ height: 'calc(100vh - 44px)' }}
-      >
+      <div className="overflow-hidden flex-1 min-h-0">
         <div className="relative h-full">
-          {/* Causal canvas */}
-          <div
-            style={{
-              position: 'absolute', inset: 0,
-              display: graphView === 'causal' ? 'block' : 'none',
-            }}
-          >
-            <div className="relative h-full">
-              <CausalTreeCanvas
-                nodes={graph.nodes}
-                worldId={Number(id)}
-                selectedNode={graph.selectedNode}
-                onSelectNode={graph.selectNode}
-                onAddNode={handleAddNode}
-                onUpdateNode={handleUpdateNode}
-                isExpanding={isExpanding}
-                chatHistory={graph.chatHistory}
-                chatLoading={graph.chatLoading}
-                onSendMessage={(text) => graph.sendChatMessage(Number(id), text)}
-                onExpand={async () => {
-                  setIsExpanding(true)
-                  try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
-                  finally { setIsExpanding(false) }
-                }}
-                onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
-                onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
-              />
-              {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
-                <GhostCandidates
-                  candidates={graph.ghostCandidates}
-                  parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
-                  onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
-                  onDismiss={graph.dismissGhosts}
-                />
-              )}
-            </div>
+          {/* Mundo: la premisa y las tres líneas (escena 0). */}
+          <div style={{ position: 'absolute', inset: 0, display: tab === 'world' ? 'block' : 'none' }}>
+            <WorldPanel world={world} onSave={handleSaveWorld} onDeleteWorld={() => setShowConfirmDelete(true)} />
           </div>
 
-          {/* Locations canvas */}
-          <div
-            style={{
-              position: 'absolute', inset: 0,
-              display: graphView === 'locations' ? 'block' : 'none',
-            }}
-          >
-            <LocationGraphCanvas
+          {/* Lugares como fichas. */}
+          <div style={{ position: 'absolute', inset: 0, display: tab === 'locations' ? 'block' : 'none' }}>
+            <PlacesPanel
               worldId={Number(id)}
-              locationNodes={locationNodes}
-              regions={regions}
-              factions={factions}
-              locationEdges={locationEdges}
-              selected={locationSelected}
-              visible={graphView === 'locations'}
-              onSelectNode={node => setLocationSelected(node ? { type: 'node', item: node } : null)}
-              onSelectEdge={edge => setLocationSelected(edge ? { type: 'edge', item: edge } : null)}
-              onMoveNode={moveNode}
-              onConnect={(src, tgt) => setPendingConn({ src, tgt })}
-              onAddNode={async (input, parentId) => {
-                await addLocationNode({
-                  world_id: Number(id),
-                  parent_id: parentId,
-                  name: input.name,
-                  node_type: input.node_type,
-                  description: input.description,
-                  properties: {},
-                  canvas_x: 200 + Math.random() * 800,
-                  canvas_y: 100 + Math.random() * 600,
-                })
-              }}
-              onEditNode={async (nodeId, input) => {
-                await editLocationNode(nodeId, {
-                  name: input.name,
-                  node_type: input.node_type,
-                  description: input.description,
-                  properties: {},
-                })
-              }}
-              onDeleteNode={removeNode}
-              onUpdateEdge={editEdge}
-              onDeleteEdge={removeEdge}
-              onGenerate={() => (locationNodes.length > 0 ? setConfirmRegen(true) : generateLocations())}
-              onAddRegions={handleGenerateGeography}
-              onGenerateFactions={handleGenerateFactions}
-              onRegionsChanged={reloadRegions}
-              generating={locationGenerating}
-              generatingProgress={locationGeneratingProgress}
-              generatingMap={geographyGenerating}
-              onExpandWithAI={node => expandLocationNode(Number(id), node.id)}
-              expandingNodeId={locationExpandingNodeId}
-              onEnrichWithAI={node => enrichLocationNode(Number(id), node.id)}
-              enrichingNodeId={locationEnrichingNodeId}
+              locked={world.locked}
+              hasStories={(worldDetail?.stories?.length ?? 0) > 0}
+              onStartStory={() => setTab('stories')}
+              places={locationNodes}
+              routes={locationEdges}
+              // Un camino vale en los dos sentidos; tipo y esfuerzo quedan por
+              // defecto: lo que cuenta es a cuánto está, en palabras.
+              onConnect={(a, b, distance) => addEdge({
+                world_id: Number(id), source_node_id: a, target_node_id: b,
+                edge_type: 'road', effort: 'moderate', dramatic_charge: 'medium',
+                bidirectional: true, note: distance,
+              })}
+              onSetDistance={(route, distance) => editEdge(route.id, {
+                edge_type: route.edge_type, effort: route.effort, dramatic_charge: route.dramatic_charge,
+                bidirectional: route.bidirectional, note: distance,
+              })}
+              onDisconnect={removeEdge}
+              onCreate={name => addLocationNode({
+                world_id: Number(id),
+                parent_id: null,
+                name,
+                node_type: 'settlement',
+                description: '',
+                properties: {},
+                canvas_x: 0,
+                canvas_y: 0,
+              })}
+              // Solo lo que cambió: enviar properties: {} a ciegas borraba datos.
+              onUpdate={editLocationNode}
+              onDelete={removeNode}
             />
           </div>
 
-          {/* Characters view */}
-          <div
-            style={{
-              position: 'absolute', inset: 0,
-              display: graphView === 'characters' ? 'block' : 'none',
-            }}
-          >
+          <div style={{ position: 'absolute', inset: 0, display: tab === 'characters' ? 'block' : 'none' }}>
             <CharacterPanel
               worldId={Number(id)}
               worldPremise={worldDetail?.summary || world?.premise || ''}
@@ -457,13 +265,7 @@ export default function WorldDetailPage() {
             />
           </div>
 
-          {/* Stories view */}
-          <div
-            style={{
-              position: 'absolute', inset: 0,
-              display: graphView === 'stories' ? 'block' : 'none',
-            }}
-          >
+          <div style={{ position: 'absolute', inset: 0, display: tab === 'stories' ? 'block' : 'none' }}>
             <StoryPanel
               worldId={Number(id)}
               stories={worldDetail?.stories ?? []}
@@ -473,54 +275,6 @@ export default function WorldDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* EdgeFormDialog */}
-      <EdgeFormDialog
-        open={pendingConn !== null}
-        onConfirm={(edgeType, effort, bidirectional) => {
-          if (pendingConn && id) {
-            addEdge({
-              world_id: Number(id),
-              source_node_id: pendingConn.src,
-              target_node_id: pendingConn.tgt,
-              edge_type: edgeType,
-              effort,
-              dramatic_charge: 'medium',
-              bidirectional,
-              note: '',
-            })
-          }
-          setPendingConn(null)
-        }}
-        onCancel={() => setPendingConn(null)}
-      />
-
-      {/* Regenerate confirmation */}
-      {confirmRegen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-background border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-semibold text-base mb-2">¿Regenerar las localizaciones?</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Se sustituirán las {locationNodes.length} localizaciones actuales por otras nuevas
-              generadas desde el grafo causal. El mapa físico no cambia.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setConfirmRegen(false)}
-                className="text-sm px-3 py-1.5 rounded-lg border border-border hover:bg-accent"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { setConfirmRegen(false); generateLocations() }}
-                className="text-sm px-3 py-1.5 rounded-lg bg-[#14b8a6] text-white hover:bg-[#0f766e]"
-              >
-                Regenerar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

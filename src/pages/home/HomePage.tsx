@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
@@ -8,15 +8,7 @@ import type { World } from '../../services/api'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { WorldCardSkeleton } from '@/components/skeletons/WorldCardSkeleton'
-import ConfirmModal from '../../components/ConfirmModal'
-import { Plus, Upload } from 'lucide-react'
-import { toast } from 'sonner'
-import {
-  validateExportFile,
-  validateExportVersion,
-  importWorld,
-} from '../../services/worldExport'
-import type { StoryTellerExport } from '../../services/worldExport'
+import { Plus } from 'lucide-react'
 
 const container = {
   hidden: {},
@@ -37,10 +29,6 @@ export default function HomePage() {
   const [worlds, setWorlds] = useState<World[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [importing, setImporting] = useState(false)
-  const [importData, setImportData] = useState<StoryTellerExport | null>(null)
-  const [showImportConfirm, setShowImportConfirm] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -52,54 +40,6 @@ export default function HomePage() {
       .then(data => setWorlds(Array.isArray(data) ? data : []))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, [])
-
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target?.result as string)
-        if (!validateExportFile(parsed)) {
-          toast.error(t('importExport.importInvalidFile'))
-          return
-        }
-        if (!validateExportVersion(parsed)) {
-          toast.error(t('importExport.importInvalidVersion'))
-          return
-        }
-        setImportData(parsed)
-        setShowImportConfirm(true)
-      } catch {
-        toast.error(t('importExport.importInvalidFile'))
-      }
-    }
-    reader.readAsText(file)
-
-    // Reset so re-selecting the same file triggers onChange again
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }, [t])
-
-  const handleImportConfirm = useCallback(async () => {
-    if (!importData) return
-    setShowImportConfirm(false)
-    setImporting(true)
-    const result = await importWorld(importData)
-    setImporting(false)
-    setImportData(null)
-    if (result.success && result.worldId) {
-      toast.success(t('importExport.importSuccess'))
-      navigate(`/worlds/${result.worldId}`)
-    } else {
-      toast.error(result.error || t('importExport.importError'))
-    }
-  }, [importData, navigate, t])
-
-  const handleImportCancel = useCallback(() => {
-    setShowImportConfirm(false)
-    setImportData(null)
   }, [])
 
   if (loading) {
@@ -122,30 +62,6 @@ export default function HomePage() {
     )
   }
 
-  const importElements = (
-    <>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        className="hidden"
-        onChange={handleFileSelect}
-        aria-label={t('importExport.importButton')}
-      />
-      <ConfirmModal
-        open={showImportConfirm}
-        title={t('importExport.importConfirmTitle')}
-        message={t('importExport.importConfirmMessage', {
-          name: importData?.storyteller_export?.world?.name ?? '',
-        })}
-        confirmText={t('importExport.importButton')}
-        cancelText={t('common.cancel')}
-        onConfirm={handleImportConfirm}
-        onCancel={handleImportCancel}
-      />
-    </>
-  )
-
   if (worlds.length === 0) {
     return (
       <motion.div
@@ -154,7 +70,6 @@ export default function HomePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
-        {importElements}
         <p
           className="text-[11px] tracking-[0.35em] uppercase mb-5"
           style={{ color: 'hsl(260 30% 58%)' }}
@@ -175,15 +90,6 @@ export default function HomePage() {
             <Plus className="w-4 h-4" />
             {t('home.createFirstButton')}
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-          >
-            <Upload className="w-4 h-4" />
-            {importing ? t('importExport.importing') : t('importExport.importButton')}
-          </Button>
         </div>
       </motion.div>
     )
@@ -195,9 +101,8 @@ export default function HomePage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-      {importElements}
-      <div className="flex items-center justify-between mb-8">
-        <div>
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-4 mb-6 md:mb-8">
+        <div className="min-w-0">
           <h1
             className="text-3xl font-normal tracking-[-0.02em]"
             style={{ fontFamily: 'var(--font-display)', color: 'hsl(30 8% 11%)' }}
@@ -206,16 +111,8 @@ export default function HomePage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t('home.worldCount', { count: worlds.length })}</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-          >
-            <Upload className="w-4 h-4" />
-            {importing ? t('importExport.importing') : t('importExport.importButton')}
-          </Button>
-          <Button onClick={() => navigate('/worlds/create')}>
+        <div className="flex gap-2 basis-full md:basis-auto">
+          <Button onClick={() => navigate('/worlds/create')} className="min-h-11 md:min-h-0 flex-1 md:flex-none">
             <Plus className="w-4 h-4" />
             {t('home.createButton')}
           </Button>

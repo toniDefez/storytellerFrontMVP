@@ -21,7 +21,7 @@ export function ManualWorldForm() {
     if (!name.trim()) return
     setSaving(true)
     try {
-      const { id } = await createWorld(name.trim(), premise.trim(), '')
+      const { id } = await createWorld({ name: name.trim(), premise: premise.trim(), description: '', rule: '', scarcity: '', power: '' })
       navigate(`/worlds/${id}`)
     } catch (err) {
       notifyError('No se pudo crear el mundo')(err)

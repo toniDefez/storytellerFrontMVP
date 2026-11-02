@@ -14,9 +14,13 @@ i18n
     },
     fallbackLng: 'es',
     compatibilityJSON: 'v4',
+    // Español salvo que el usuario elija otro idioma en Ajustes: el idioma del
+    // navegador del móvil colaba un menú en inglés en una app en español.
     detection: {
-      order: ['localStorage', 'navigator'],
-      lookupLocalStorage: 'storyteller-language',
+      order: ['localStorage'],
+      // Clave nueva: la anterior guardaba el idioma del navegador como si lo
+      // hubiera elegido el usuario.
+      lookupLocalStorage: 'storyteller-lang',
       caches: ['localStorage'],
     },
     interpolation: {
