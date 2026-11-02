@@ -180,7 +180,8 @@ export default function MainLayout() {
 
         {/* Page content */}
         {(() => {
-          const isWorldDetail = /^\/worlds\/\d+$/.test(location.pathname)
+          // Sin relleno: el detalle del mundo y las pantallas de contar primero se maquetan solas.
+          const isWorldDetail = /^\/worlds\/\d+$/.test(location.pathname) || /^\/contar$/.test(location.pathname) || /^\/worlds\/\d+\/contar(\/\d+)?$/.test(location.pathname)
           return (
             <motion.div
               key={location.pathname}
