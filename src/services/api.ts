@@ -105,7 +105,21 @@ export interface World {
   name: string
   description: string
   premise: string
-  root_node_id?: number
+  /** El mundo en tres líneas (escena 0). Vacías en los mundos anteriores. */
+  rule: string     // «¿Qué es siempre verdad aquí?»
+  scarcity: string // «¿Qué falta?»
+  power: string    // «¿Quién manda?»
+  /** Alguna historia ya tiene escenas: lugares, caminos y facciones se añaden, no se quitan. */
+  locked: boolean
+}
+
+export interface WorldInput {
+  name: string
+  premise: string
+  description: string
+  rule: string
+  scarcity: string
+  power: string
 }
 
 export interface CharacterBrief {
@@ -126,48 +140,6 @@ export function getWorldDetail(id: number) {
   return request<WorldDetail>(`/world-detail/get?id=${id}`)
 }
 
-// --- World Graph (causal tree) ---
-
-export type NodeDomain = 'core' | 'physical' | 'biological' | 'social' | 'symbolic' | 'technic'
-export type NodeRole = 'state' | 'event' | 'rupture'
-export type EdgeType = 'requires' | 'produces' | 'enables' | 'undermines' | 'gives_rise_to'
-
-export interface NodeContent {
-  description: string
-  causal_summary: string
-}
-
-export interface WorldNode {
-  id: number
-  world_id: number
-  parent_id?: number
-  parent_edge_type?: EdgeType
-  domain: NodeDomain
-  role: NodeRole
-  label: string
-  content: NodeContent
-  position_order: number
-}
-
-export interface WorldGraph {
-  world_id: number
-  premise: string
-  nodes: WorldNode[]
-}
-
-export interface SubtreePreview {
-  node_count: number
-  labels: string[]
-}
-
-export interface CandidateNode {
-  domain: NodeDomain
-  role: NodeRole
-  label: string
-  description: string
-  parent_edge_type: EdgeType
-}
-
 export function getWorlds() {
   return request<World[]>('/worlds')
 }
@@ -176,14 +148,14 @@ export function getWorldById(id: number) {
   return request<World>(`/world/get?id=${id}`)
 }
 
-export function createWorld(name: string, premise: string, description: string) {
+export function createWorld(input: WorldInput) {
   return request<{ id: number }>('/world', {
     method: 'POST',
-    body: JSON.stringify({ name, premise, description }),
+    body: JSON.stringify(input),
   })
 }
 
-export function updateWorld(id: number, input: { name?: string; description?: string; premise?: string }) {
+export function updateWorld(id: number, input: WorldInput) {
   return request<World>(`/world/update?id=${id}`, {
     method: 'PUT',
     body: JSON.stringify(input),
@@ -194,12 +166,6 @@ export function deleteWorld(id: number) {
   return request<{ status: string }>(`/world/delete?id=${id}`, {
     method: 'DELETE',
   })
-}
-
-// --- World Graph API ---
-
-export function getWorldGraph(worldId: number) {
-  return request<WorldGraph>(`/world/graph?world_id=${worldId}`)
 }
 
 export function suggestPremises() {
@@ -216,78 +182,58 @@ export interface PremiseAnalysis {
   stakes: 'PRESENTE' | 'AUSENTE'
 }
 
+/** La lectura de la premisa («Así entiendo tu mundo»): premisa enriquecida, nombre y tres líneas. Cualquiera puede venir vacío. */
+export interface RefinedPremise {
+  analysis: PremiseAnalysis
+  premise: string
+  name: string
+  rule: string
+  scarcity: string
+  power: string
+}
+
 export function refinePremise(premise: string) {
-  return request<{ analysis: PremiseAnalysis; premise: string }>('/world/refine-premise', {
+  return request<RefinedPremise>('/world/refine-premise', {
     method: 'POST',
     body: JSON.stringify({ premise }),
   })
 }
 
-export function createNode(worldId: number, node: {
-  parent_id?: number
-  parent_edge_type?: EdgeType
-  domain: NodeDomain
-  role: NodeRole
-  label: string
-  description: string
-  causal_summary?: string
-  position_order: number
-}) {
-  return request<WorldNode>(`/world/nodes?world_id=${worldId}`, {
+// --- Escena 0: lugares y caminos propuestos (nada se guarda) ---
+
+export interface PlaceProposal {
+  name: string
+  rule: string
+  things: string[]
+  because: string
+}
+
+export interface PlaceProposals {
+  tension: string
+  places: PlaceProposal[]
+}
+
+export function proposePlaces(worldId: number) {
+  return request<PlaceProposals>(`/world/propose-places?id=${worldId}`, {
     method: 'POST',
-    body: JSON.stringify(node),
+    body: JSON.stringify({}),
   })
 }
 
-export function updateNode(worldId: number, nodeId: number, data: {
-  label: string
-  domain: NodeDomain
-  role: NodeRole
-  description: string
-  causal_summary: string
-}) {
-  return request<WorldNode>(`/world/nodes?world_id=${worldId}&node_id=${nodeId}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
+export interface RouteProposal {
+  from_id: number
+  to_id: number
+  from: string
+  to: string
+  distance: string
+  bidirectional: boolean
 }
 
-export function expandNodeCandidates(worldId: number, nodeId: number) {
-  return request<{ candidates: CandidateNode[] }>(
-    `/world/nodes/expand?world_id=${worldId}&node_id=${nodeId}`,
-    { method: 'POST' },
-  )
-}
-
-export function graphChat(worldId: number, message: string) {
-  return request<{ reply: string; created_nodes?: WorldNode[] }>(`/world/graph/chat?world_id=${worldId}`, {
+export function proposeRoutes(worldId: number) {
+  return request<{ routes: RouteProposal[] }>(`/world/propose-routes?id=${worldId}`, {
     method: 'POST',
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({}),
   })
-}
-
-export function generateWorld(premise: string) {
-  return request<{ job_id: string }>('/world/generate', {
-    method: 'POST',
-    body: JSON.stringify({ premise }),
-  })
-}
-
-export function getJobStatus(jobId: string) {
-  return request<{ status: 'pending' | 'done' | 'error'; world_id: number; error: string }>(
-    `/jobs/status?id=${jobId}`
-  )
-}
-
-export function getSubtreePreview(worldId: number, nodeId: number) {
-  return request<SubtreePreview>(`/world/nodes/subtree?world_id=${worldId}&node_id=${nodeId}`)
-}
-
-export function deleteSubtree(worldId: number, nodeId: number) {
-  return request<{ deleted_ids: number[] }>(
-    `/world/nodes/subtree/delete?world_id=${worldId}&node_id=${nodeId}`,
-    { method: 'DELETE' },
-  )
 }
 
 // --- World Detail ---
@@ -633,51 +579,6 @@ export function updateLocationEdge(id: number, data: Pick<LocationEdge, 'edge_ty
 
 export function deleteLocationEdge(id: number) {
   return request<void>(`/location/edges/delete?id=${id}`, { method: 'DELETE' })
-}
-
-/** requestId: para seguir la fase con getGenerationProgress mientras tarda. */
-export function generateLocationRegions(worldId: number, additive = false, requestId?: string) {
-  return request<LocationGraph>('/location/generate-regions', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, additive }),
-    requestId,
-  })
-}
-
-export function expandLocationNode(worldId: number, nodeId: number) {
-  return request<LocationGraph>('/location/expand-node', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, node_id: nodeId }),
-  })
-}
-
-export function enrichLocationNode(worldId: number, nodeId: number) {
-  return request<LocationNode>('/location/enrich-node', {
-    method: 'POST',
-    body: JSON.stringify({ world_id: worldId, node_id: nodeId }),
-  })
-}
-
-// --- Seed Templates ---
-
-export interface SeedTemplateBrief {
-  id: number
-  title: string
-  description: string
-  category: string
-  tags: string[]
-  node_count: number
-}
-
-export function listSeedTemplates() {
-  return request<SeedTemplateBrief[]>('/seeds')
-}
-
-export function createWorldFromSeed(seedId: number, name: string, premise: string) {
-  return request<{ job_id: string }>('/seeds/create-world', {
-    method: 'POST',
-    body: JSON.stringify({ seed_id: seedId, name, premise }),
-  })
 }
 
 // --- Character Profiles ---

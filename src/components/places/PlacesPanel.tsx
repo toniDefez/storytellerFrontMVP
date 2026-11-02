@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, Loader2, MapPin, Plus, Sparkles, Trash2, X } from 'lucide-react'
+import { ChevronLeft, Loader2, MapPin, Plus, Trash2, X } from 'lucide-react'
 import { useUrlParam } from '@/hooks/useUrlParam'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { LocationEdge, LocationNode, LocationNodePatch } from '@/services/api'
-import { notifyPlaceError } from '@/components/world-graph/placeErrors'
+import { notifyPlaceError } from './placeErrors'
 import { InlineText } from './InlineText'
 
 /** Medido con 2-4: más cosas y el escritor abre la escena con un inventario. */
@@ -30,10 +30,6 @@ interface Props {
   /** Guarda solo lo que cambia. */
   onUpdate: (id: number, patch: LocationNodePatch) => Promise<void>
   onDelete: (id: number) => Promise<void>
-  /** Propone lugares a partir del mundo; solo se ofrece con la lista vacía. */
-  onSuggest: () => void
-  suggesting: boolean
-  suggestingProgress?: string
 }
 
 /**
@@ -46,7 +42,7 @@ interface Props {
  * es lo que la escena puede usar: su nombre, las cosas que hay ahí y lo que
  * siempre se cumple. Misma forma que Personajes: lista a la izquierda y ficha.
  */
-export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDisconnect, onCreate, onUpdate, onDelete, onSuggest, suggesting, suggestingProgress }: Props) {
+export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDisconnect, onCreate, onUpdate, onDelete }: Props) {
   const { t } = useTranslation()
   // La ficha abierta va en la URL: «atrás» vuelve a la lista.
   const [placeParam, setPlaceParam] = useUrlParam('place')
@@ -83,10 +79,6 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
             <div className="flex flex-col items-center px-6 py-16 text-center">
               <p className="mb-2 font-display text-xl italic text-foreground/25">{t('location.places.empty')}</p>
               <p className="mb-5 text-sm text-muted-foreground">{t('location.places.emptyHint')}</p>
-              <Button variant="outline" size="sm" onClick={onSuggest} disabled={suggesting} className="gap-1.5">
-                {suggesting ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
-                {suggesting ? suggestingProgress || t('location.map.generatingPlaces') : t('location.places.suggest')}
-              </Button>
             </div>
           ) : (
             sorted.map(p => <PlaceRow key={p.id} place={p} routes={routesOf(p.id)} selected={p.id === selectedId} onClick={() => setSelectedId(p.id)} />)

@@ -1,17 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getWorldById, deleteWorld, getWorldDetail } from '../../services/api'
-import type { World, WorldNode, WorldDetail } from '../../services/api'
-import type { NodeFormInput } from '@/components/world-graph/NodeFormDialog'
-import { useWorldGraph } from '@/hooks/useWorldGraph'
+import { getWorldById, deleteWorld, getWorldDetail, updateWorld } from '../../services/api'
+import type { World, WorldDetail, WorldInput } from '../../services/api'
 import ConfirmModal from '../../components/ConfirmModal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DetailSkeleton } from '@/components/skeletons/DetailSkeleton'
 import { MoreHorizontal, Trash2 } from 'lucide-react'
 import { useUrlParam } from '@/hooks/useUrlParam'
-import { CausalTreeCanvas } from '@/components/world-graph/CausalTreeCanvas'
-import { GhostCandidates } from '@/components/world-graph/GhostCandidates'
+import { WorldPanel } from '@/components/world/WorldPanel'
 import { PlacesPanel } from '@/components/places/PlacesPanel'
 import { useLocationGraph } from '@/hooks/useLocationGraph'
 import { toast } from 'sonner'
@@ -24,6 +21,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { notifyError } from '@/lib/notifyError'
+
+type Tab = 'world' | 'locations' | 'characters' | 'stories'
 
 function inferDotColor(world: World): string {
   const text = (world.premise || world.description || '').toLowerCase()
@@ -45,14 +44,12 @@ export default function WorldDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
-  const [isExpanding, setIsExpanding] = useState(false)
   // La pestaña vive en la URL: «atrás» vuelve a la pestaña anterior, no saca del mundo.
   const [tabParam, setTabParam] = useUrlParam('tab')
-  const graphView = (tabParam ?? 'causal') as 'causal' | 'locations' | 'characters' | 'stories'
-  const setGraphView = (v: 'causal' | 'locations' | 'characters' | 'stories') =>
-    setTabParam(v === 'causal' ? null : v, { clear: ['place', 'character', 'story', 'scene', 'read'] })
+  const tab = (tabParam ?? 'world') as Tab
+  const setTab = (v: Tab) =>
+    setTabParam(v === 'world' ? null : v, { clear: ['place', 'character', 'story', 'scene', 'read'] })
   const [worldDetail, setWorldDetail] = useState<WorldDetail | null>(null)
-  const graph = useWorldGraph()
 
   const refreshWorldDetail = useCallback(() => {
     const worldId = Number(id)
@@ -62,44 +59,15 @@ export default function WorldDetailPage() {
 
   const {
     nodes: locationNodes, edges: locationEdges,
-    generating: locationGenerating,
-    generatingProgress: locationGeneratingProgress,
     error: locationError,
-    loadGraph: loadLocationGraph, generate: generateLocations,
+    loadGraph: loadLocationGraph,
     addNode: addLocationNode, editNode: editLocationNode, removeNode,
     addEdge, editEdge, removeEdge,
   } = useLocationGraph(Number(id))
 
-  // El hook guardaba el error y nadie lo enseñaba: generar localizaciones
-  // podía fallar sin que la pantalla cambiase.
   useEffect(() => {
     if (locationError) toast.error(`Localizaciones: ${locationError}`)
   }, [locationError])
-
-  const handleAddNode = useCallback(async (input: NodeFormInput, parentNode: WorldNode | null) => {
-    const wid = Number(id)
-    if (!id || Number.isNaN(wid)) return
-    await graph.addNodeManually(wid, {
-      parentId: parentNode?.id,
-      parentEdgeType: input.parentEdgeType,
-      domain: input.domain,
-      role: input.role,
-      label: input.label,
-      description: input.description,
-      causalSummary: input.description,
-    })
-  }, [id, graph])
-
-  const handleUpdateNode = useCallback(async (input: NodeFormInput, nodeId: number) => {
-    const wid = Number(id)
-    if (!id || Number.isNaN(wid)) return
-    await graph.updateNodeManually(wid, nodeId, {
-      label: input.label,
-      domain: input.domain,
-      role: input.role,
-      description: input.description,
-    })
-  }, [id, graph])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -117,24 +85,24 @@ export default function WorldDetailPage() {
       return
     }
 
-    Promise.all([
-      getWorldById(worldId),
-      graph.loadGraph(worldId),
-      getWorldDetail(worldId),
-    ])
-      .then(([w, , detail]) => {
+    Promise.all([getWorldById(worldId), getWorldDetail(worldId)])
+      .then(([w, detail]) => {
         setWorld(w)
         setWorldDetail(detail)
         document.title = `${w.name} — StoryTeller`
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, t])
 
   useEffect(() => {
     if (id) loadLocationGraph()
   }, [id, loadLocationGraph])
+
+  const handleSaveWorld = async (input: WorldInput) => {
+    const updated = await updateWorld(Number(id), input)
+    setWorld(updated)
+  }
 
   const handleDelete = async () => {
     setLoading(true)
@@ -167,6 +135,8 @@ export default function WorldDetailPage() {
   }
 
   const dotColor = inferDotColor(world)
+  const tabClass = (active: boolean, on: string) =>
+    `text-xs font-medium px-3 py-1 rounded-sm transition-colors ${active ? on : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`
 
   return (
     // Móvil: la cabecera con el menú mide 45 px y la barra se parte en dos
@@ -184,68 +154,26 @@ export default function WorldDetailPage() {
       />
 
       {/* ── Slim toolbar 44px ─────────────────────────────────────────── */}
-      <div
-        className="flex flex-wrap items-center gap-y-1 px-3 md:px-4 py-1.5 md:py-0 md:h-11 shrink-0 border-b border-border/60 bg-background"
-      >
-        {/* Left: world identity + tab switcher */}
+      <div className="flex flex-wrap items-center gap-y-1 px-3 md:px-4 py-1.5 md:py-0 md:h-11 shrink-0 border-b border-border/60 bg-background">
         <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
-          {/* World dot */}
-          <div
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: dotColor }}
-          />
-
-          {/* World name */}
-          <span
-            className="text-sm font-medium text-foreground truncate max-w-[180px]"
-            title={world.name}
-          >
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+          <span className="text-sm font-medium text-foreground truncate max-w-[180px]" title={world.name}>
             {world.name}
           </span>
-
-          {/* Separator */}
           <span className="hidden md:inline text-border/60 text-xs shrink-0 mx-1">·</span>
 
           {/* Tab switcher: en móvil, segunda fila a ancho completo */}
           <div className="grid grid-cols-4 basis-full md:basis-auto md:flex items-center gap-0 shrink-0 [&>button]:min-h-10 md:[&>button]:min-h-0">
-            <button
-              onClick={() => setGraphView('causal')}
-              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'causal'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
+            <button onClick={() => setTab('world')} className={tabClass(tab === 'world', 'bg-primary/10 text-primary')}>
               Mundo
             </button>
-            <button
-              onClick={() => setGraphView('locations')}
-              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'locations'
-                  ? 'bg-entity-location/10 text-entity-location'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
+            <button onClick={() => setTab('locations')} className={tabClass(tab === 'locations', 'bg-entity-location/10 text-entity-location')}>
               Lugares
             </button>
-            <button
-              onClick={() => setGraphView('characters')}
-              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'characters'
-                  ? 'bg-[#f97316]/10 text-[#c2410c]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
+            <button onClick={() => setTab('characters')} className={tabClass(tab === 'characters', 'bg-[#f97316]/10 text-[#c2410c]')}>
               Personajes
             </button>
-            <button
-              onClick={() => setGraphView('stories')}
-              className={`text-xs font-medium px-3 py-1 rounded-sm transition-colors ${
-                graphView === 'stories'
-                  ? 'bg-[#06b6d4]/10 text-[#0e7490]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-            >
+            <button onClick={() => setTab('stories')} className={tabClass(tab === 'stories', 'bg-[#06b6d4]/10 text-[#0e7490]')}>
               Historias
             </button>
           </div>
@@ -262,7 +190,6 @@ export default function WorldDetailPage() {
               <MoreHorizontal className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>
-          {/* Solo borrar (2026-10-31): biblia, exportar y editar quedaron desfasados. */}
           <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem
               onClick={() => setShowConfirmDelete(true)}
@@ -276,56 +203,15 @@ export default function WorldDetailPage() {
         </div>
       </div>
 
-      {/* ── Full-viewport graph ───────────────────────────────────────── */}
       <div className="overflow-hidden flex-1 min-h-0">
         <div className="relative h-full">
-          {/* Causal canvas */}
-          <div
-            style={{
-              position: 'absolute', inset: 0,
-              display: graphView === 'causal' ? 'block' : 'none',
-            }}
-          >
-            <div className="relative h-full">
-              <CausalTreeCanvas
-                nodes={graph.nodes}
-                worldId={Number(id)}
-                onDeleteWorld={() => setShowConfirmDelete(true)}
-                selectedNode={graph.selectedNode}
-                onSelectNode={graph.selectNode}
-                onAddNode={handleAddNode}
-                onUpdateNode={handleUpdateNode}
-                isExpanding={isExpanding}
-                chatHistory={graph.chatHistory}
-                chatLoading={graph.chatLoading}
-                onSendMessage={(text) => graph.sendChatMessage(Number(id), text)}
-                onExpand={async () => {
-                  setIsExpanding(true)
-                  try { await graph.expandNode(Number(id), graph.selectedNode!.id) }
-                  finally { setIsExpanding(false) }
-                }}
-                onDeleteSubtree={() => graph.removeSubtree(Number(id), graph.selectedNode!.id)}
-                onDeleteConfirmed={() => graph.deleteConfirmed(Number(id), graph.selectedNode!.id)}
-              />
-              {graph.ghostCandidates.length > 0 && graph.ghostParentId && (
-                <GhostCandidates
-                  candidates={graph.ghostCandidates}
-                  parentLabel={graph.nodes.find(n => n.id === graph.ghostParentId)?.label ?? ''}
-                  onConfirm={c => graph.confirmCandidate(Number(id), graph.ghostParentId!, c)}
-                  onDismiss={graph.dismissGhosts}
-                />
-              )}
-            </div>
+          {/* Mundo: la premisa y las tres líneas (escena 0). */}
+          <div style={{ position: 'absolute', inset: 0, display: tab === 'world' ? 'block' : 'none' }}>
+            <WorldPanel world={world} onSave={handleSaveWorld} onDeleteWorld={() => setShowConfirmDelete(true)} />
           </div>
 
-          {/* Lugares como fichas. El lienzo del mapa (terreno, facciones,
-              conexiones) queda aparcado: nada de eso llegaba a la escena. */}
-          <div
-            style={{
-              position: 'absolute', inset: 0,
-              display: graphView === 'locations' ? 'block' : 'none',
-            }}
-          >
+          {/* Lugares como fichas. */}
+          <div style={{ position: 'absolute', inset: 0, display: tab === 'locations' ? 'block' : 'none' }}>
             <PlacesPanel
               places={locationNodes}
               routes={locationEdges}
@@ -354,19 +240,10 @@ export default function WorldDetailPage() {
               // Solo lo que cambió: enviar properties: {} a ciegas borraba datos.
               onUpdate={editLocationNode}
               onDelete={removeNode}
-              onSuggest={generateLocations}
-              suggesting={locationGenerating}
-              suggestingProgress={locationGeneratingProgress}
             />
           </div>
 
-          {/* Characters view */}
-          <div
-            style={{
-              position: 'absolute', inset: 0,
-              display: graphView === 'characters' ? 'block' : 'none',
-            }}
-          >
+          <div style={{ position: 'absolute', inset: 0, display: tab === 'characters' ? 'block' : 'none' }}>
             <CharacterPanel
               worldId={Number(id)}
               worldPremise={worldDetail?.summary || world?.premise || ''}
@@ -375,13 +252,7 @@ export default function WorldDetailPage() {
             />
           </div>
 
-          {/* Stories view */}
-          <div
-            style={{
-              position: 'absolute', inset: 0,
-              display: graphView === 'stories' ? 'block' : 'none',
-            }}
-          >
+          <div style={{ position: 'absolute', inset: 0, display: tab === 'stories' ? 'block' : 'none' }}>
             <StoryPanel
               worldId={Number(id)}
               stories={worldDetail?.stories ?? []}
@@ -391,7 +262,6 @@ export default function WorldDetailPage() {
           </div>
         </div>
       </div>
-
     </div>
   )
 }

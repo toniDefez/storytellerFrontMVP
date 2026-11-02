@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import i18n from '@/i18n';
-import { notifyPlaceError } from '../world-graph/placeErrors';
+import { notifyPlaceError } from '../places/placeErrors';
 
 interface PaletteOption {
   id: number;
