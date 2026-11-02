@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, Loader2, MapPin, Plus, Trash2, X } from 'lucide-react'
+import { ChevronLeft, Loader2, MapPin, Plus, Sparkles, Trash2, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { useUrlParam } from '@/hooks/useUrlParam'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,9 +9,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { LocationEdge, LocationNode, LocationNodePatch } from '@/services/api'
+import type { LocationEdge, LocationNode, LocationNodePatch, PlaceProposal, PlaceProposals as Proposals, RouteProposal } from '@/services/api'
+import { proposePlaces, proposeRoutes } from '@/services/api'
 import { notifyPlaceError } from './placeErrors'
 import { InlineText } from './InlineText'
+import { PlaceProposals } from './PlaceProposals'
+import { RouteProposals } from './RouteProposals'
 
 /** Medido con 2-4: más cosas y el escritor abre la escena con un inventario. */
 export const MAX_THINGS = 4
@@ -19,6 +23,12 @@ const PILL = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 t
 const PILL_ON = 'border-entity-location/40 bg-entity-location/10 text-entity-location'
 
 interface Props {
+  worldId: number
+  /** Candado de la escena 0: con historia, lugares y caminos se añaden, no se quitan. */
+  locked: boolean
+  /** Con lugares y sin historias, el panel ofrece «Empezar una historia». */
+  hasStories: boolean
+  onStartStory: () => void
   places: LocationNode[]
   /** Caminos entre lugares; `note` guarda a cuánto están («medio día a pie»). */
   routes: LocationEdge[]
@@ -42,8 +52,75 @@ interface Props {
  * es lo que la escena puede usar: su nombre, las cosas que hay ahí y lo que
  * siempre se cumple. Misma forma que Personajes: lista a la izquierda y ficha.
  */
-export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDisconnect, onCreate, onUpdate, onDelete }: Props) {
+export function PlacesPanel({ worldId, locked, hasStories, onStartStory, places, routes, onConnect, onSetDistance, onDisconnect, onCreate, onUpdate, onDelete }: Props) {
   const { t } = useTranslation()
+  // Escena 0: las propuestas viven aquí y no se guardan; «Quedarse» las crea.
+  const [proposals, setProposals] = useState<Proposals | null>(null)
+  const [routeProposals, setRouteProposals] = useState<RouteProposal[] | null>(null)
+  const [proposing, setProposing] = useState<'places' | 'routes' | null>(null)
+
+  const askPlaces = async () => {
+    setProposing('places')
+    try {
+      const got = await proposePlaces(worldId)
+      if (got.places.length === 0) toast.info(t('location.places.proposeEmpty'))
+      setProposals(prev => prev && got.places.length > 0
+        ? { tension: got.tension || prev.tension, places: [...prev.places, ...got.places.filter(p => !prev.places.some(q => q.name === p.name))] }
+        : got)
+    } catch (err) {
+      notifyPlaceError(t, err, 'location.places.proposeError')
+    } finally {
+      setProposing(null)
+    }
+  }
+
+  const askRoutes = async () => {
+    setProposing('routes')
+    try {
+      const got = await proposeRoutes(worldId)
+      if (got.routes.length === 0) toast.info(t('location.places.routesAllConnected'))
+      setRouteProposals(got.routes)
+    } catch (err) {
+      notifyPlaceError(t, err, 'location.places.proposeRoutesError')
+    } finally {
+      setProposing(null)
+    }
+  }
+
+  // «Quedarse»: crear el lugar y guardar regla y cosas; con 409 (nombre
+  // repetido) la tarjeta se queda y el aviso es el de siempre.
+  const keepPlace = async (p: PlaceProposal) => {
+    try {
+      const created = await onCreate(p.name)
+      if (p.rule || p.things.length) await onUpdate(created.id, { properties: { rule: p.rule, props: p.things.slice(0, MAX_THINGS) } })
+      setProposals(prev => prev ? { ...prev, places: prev.places.filter(q => q.name !== p.name) } : prev)
+      return true
+    } catch (err) {
+      notifyPlaceError(t, err, 'location.map.createError')
+      return false
+    }
+  }
+  const dropPlace = (p: PlaceProposal) => setProposals(prev => prev ? { ...prev, places: prev.places.filter(q => q.name !== p.name) } : prev)
+
+  const keepRoute = async (r: RouteProposal) => {
+    try {
+      await onConnect(r.from_id, r.to_id, r.distance)
+      setRouteProposals(prev => prev ? prev.filter(q => !(q.from_id === r.from_id && q.to_id === r.to_id)) : prev)
+      return true
+    } catch (err) {
+      notifyPlaceError(t, err, 'location.map.saveError')
+      return false
+    }
+  }
+  const dropRoute = (r: RouteProposal) => setRouteProposals(prev => prev ? prev.filter(q => !(q.from_id === r.from_id && q.to_id === r.to_id)) : prev)
+
+  const proposeButton = (variant: 'outline' | 'ghost' = 'outline') => (
+    <Button variant={variant} size="sm" onClick={() => void askPlaces()} disabled={proposing !== null} className="min-h-10 gap-1.5 md:min-h-8">
+      {proposing === 'places' ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+      {proposing === 'places' ? t('location.places.proposing') : t('location.places.proposePlaces')}
+    </Button>
+  )
+  const hasProposals = (proposals?.places.length ?? 0) > 0 || (routeProposals?.length ?? 0) > 0
   // La ficha abierta va en la URL: «atrás» vuelve a la lista.
   const [placeParam, setPlaceParam] = useUrlParam('place')
   const selectedId = placeParam ? Number(placeParam) : null
@@ -79,11 +156,37 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
             <div className="flex flex-col items-center px-6 py-16 text-center">
               <p className="mb-2 font-display text-xl italic text-foreground/25">{t('location.places.empty')}</p>
               <p className="mb-5 text-sm text-muted-foreground">{t('location.places.emptyHint')}</p>
+              {!proposals && proposeButton()}
             </div>
           ) : (
             sorted.map(p => <PlaceRow key={p.id} place={p} routes={routesOf(p.id)} selected={p.id === selectedId} onClick={() => setSelectedId(p.id)} />)
           )}
           {naming && <NewPlaceRow onSubmit={create} onCancel={() => setNaming(false)} />}
+          {sorted.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-1 pt-3">
+              {!proposals && proposeButton('ghost')}
+              {places.length >= 2 && !routeProposals && (
+                <Button variant="ghost" size="sm" onClick={() => void askRoutes()} disabled={proposing !== null} className="min-h-10 gap-1.5 md:min-h-8">
+                  {proposing === 'routes' ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+                  {proposing === 'routes' ? t('location.places.proposing') : t('location.places.proposeRoutes')}
+                </Button>
+              )}
+              {!hasStories && (
+                <Button variant="ghost" size="sm" onClick={onStartStory} className="min-h-10 text-[#0e7490] md:min-h-8">
+                  {t('location.places.startStory')}
+                </Button>
+              )}
+            </div>
+          )}
+          {/* Móvil: las propuestas, apiladas bajo los botones. */}
+          {hasProposals && (
+            <div className="space-y-5 px-1 pt-4 md:hidden">
+              {proposals && proposals.places.length > 0 && (
+                <PlaceProposals tension={proposals.tension} places={proposals.places} proposing={proposing === 'places'} onKeep={keepPlace} onDrop={dropPlace} onMore={() => void askPlaces()} />
+              )}
+              {routeProposals && <RouteProposals routes={routeProposals} onKeep={keepRoute} onDrop={dropRoute} />}
+            </div>
+          )}
         </div>
 
         <div className="px-3 py-3">
@@ -108,6 +211,7 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
             place={selected}
             places={places}
             routes={routes}
+            locked={locked}
             onConnect={onConnect}
             onSetDistance={onSetDistance}
             onDisconnect={onDisconnect}
@@ -115,6 +219,13 @@ export function PlacesPanel({ places, routes, onConnect, onSetDistance, onDiscon
             onDelete={async id => { await onDelete(id); setSelectedId(null) }}
             onClose={() => setSelectedId(null)}
           />
+        ) : hasProposals ? (
+          <div className="mx-auto max-w-xl space-y-7 px-8 py-8">
+            {proposals && proposals.places.length > 0 && (
+              <PlaceProposals tension={proposals.tension} places={proposals.places} proposing={proposing === 'places'} onKeep={keepPlace} onDrop={dropPlace} onMore={() => void askPlaces()} />
+            )}
+            {routeProposals && <RouteProposals routes={routeProposals} onKeep={keepRoute} onDrop={dropRoute} />}
+          </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <MapPin className="mb-3 size-12 text-muted-foreground/15" />
@@ -194,10 +305,11 @@ function NewPlaceRow({ onSubmit, onCancel }: { onSubmit: (name: string) => Promi
   )
 }
 
-function PlaceSheet({ place, places, routes, onConnect, onSetDistance, onDisconnect, onUpdate, onDelete, onClose }: {
+function PlaceSheet({ place, places, routes, locked, onConnect, onSetDistance, onDisconnect, onUpdate, onDelete, onClose }: {
   place: LocationNode
   places: LocationNode[]
   routes: LocationEdge[]
+  locked: boolean
   onConnect: Props['onConnect']
   onSetDistance: Props['onSetDistance']
   onDisconnect: Props['onDisconnect']
@@ -263,6 +375,7 @@ function PlaceSheet({ place, places, routes, onConnect, onSetDistance, onDisconn
         place={place}
         places={places}
         routes={routes}
+        locked={locked}
         onConnect={onConnect}
         onSetDistance={onSetDistance}
         onDisconnect={onDisconnect}
@@ -281,14 +394,19 @@ function PlaceSheet({ place, places, routes, onConnect, onSetDistance, onDisconn
         />
       </section>
 
-      <Button
-        variant="link"
-        size="sm"
-        onClick={() => setConfirmDelete(true)}
-        className="gap-1.5 px-0 text-muted-foreground hover:text-destructive"
-      >
-        <Trash2 className="size-3.5" /> {t('location.map.delete')}
-      </Button>
+      {/* Candado de la escena 0: con historia no se borra; el texto es el fijado. */}
+      {locked ? (
+        <p className="text-xs italic text-muted-foreground">{t('location.places.locked')}</p>
+      ) : (
+        <Button
+          variant="link"
+          size="sm"
+          onClick={() => setConfirmDelete(true)}
+          className="gap-1.5 px-0 text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="size-3.5" /> {t('location.map.delete')}
+        </Button>
+      )}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent size="sm">
@@ -318,10 +436,11 @@ function PlaceSheet({ place, places, routes, onConnect, onSetDistance, onDisconn
  * 2026-10-29); la distancia es lo que la continuidad necesita para saber si
  * alguien puede llegar de una escena a otra.
  */
-function Routes({ place, places, routes, onConnect, onSetDistance, onDisconnect }: {
+function Routes({ place, places, routes, locked, onConnect, onSetDistance, onDisconnect }: {
   place: LocationNode
   places: LocationNode[]
   routes: LocationEdge[]
+  locked: boolean
   onConnect: Props['onConnect']
   onSetDistance: Props['onSetDistance']
   onDisconnect: Props['onDisconnect']
@@ -365,14 +484,16 @@ function Routes({ place, places, routes, onConnect, onSetDistance, onDisconnect 
                 boxed
                 className="h-8 flex-1 text-sm"
               />
-              <button
-                type="button"
-                onClick={() => { onDisconnect(route.id).catch(err => notifyPlaceError(t, err, 'location.map.saveError')) }}
-                aria-label={t('location.places.disconnect', { name: other.name })}
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
-              >
-                <X className="size-3.5" />
-              </button>
+              {!locked && (
+                <button
+                  type="button"
+                  onClick={() => { onDisconnect(route.id).catch(err => notifyPlaceError(t, err, 'location.map.saveError')) }}
+                  aria-label={t('location.places.disconnect', { name: other.name })}
+                  className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
             </li>
           ))}
         </ul>

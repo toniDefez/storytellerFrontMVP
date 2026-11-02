@@ -213,6 +213,10 @@ export default function WorldDetailPage() {
           {/* Lugares como fichas. */}
           <div style={{ position: 'absolute', inset: 0, display: tab === 'locations' ? 'block' : 'none' }}>
             <PlacesPanel
+              worldId={Number(id)}
+              locked={world.locked}
+              hasStories={(worldDetail?.stories?.length ?? 0) > 0}
+              onStartStory={() => setTab('stories')}
               places={locationNodes}
               routes={locationEdges}
               // Un camino vale en los dos sentidos; tipo y esfuerzo quedan por
