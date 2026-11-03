@@ -41,7 +41,8 @@ export default function TellPage() {
   const [worldId, setWorldId] = useState<number | null>(id ? Number(id) : null)
   const [world, setWorld] = useState<World | null>(null)
   const [storyId, setStoryId] = useState<number | null>(params.get('story') ? Number(params.get('story')) : null)
-  const afterSceneId = params.get('after') ? Number(params.get('after')) : undefined
+  // «after» sin «story» enlazaría con una escena de otra historia: se ignora.
+  const afterSceneId = params.get('story') && params.get('after') ? Number(params.get('after')) : undefined
   const reopenSceneId = params.get('scene') ? Number(params.get('scene')) : undefined
   const sceneIndex = params.get('n') ? Number(params.get('n')) : (afterSceneId ? 1 : 0)
 
@@ -120,7 +121,7 @@ export default function TellPage() {
         setFound(got)
         setSelected(new Set([...got.people.map(p => appearedKey('p', p.name)), ...got.places.map(p => appearedKey('s', p.name))]))
       } catch (err) {
-        setFound({ people: [], places: [] })
+        // found se queda en null: «Mirar qué ha aparecido» sigue ahí para reintentar.
         toast.error(`La escena está escrita, pero no se pudo mirar qué ha aparecido: ${describeError(err, 'error desconocido')}`)
       }
     } finally {
@@ -138,8 +139,12 @@ export default function TellPage() {
       if (!wid) { wid = await ensureWorld(premise, what); setWorldId(wid) }
       let sid = storyId
       if (!sid) { sid = (await ensureStory(wid, what, premise)).id; setStoryId(sid) }
-      const scene = await createTellScene(sid, what, afterSceneId, sceneIndex)
-      setSceneId(scene)
+      // Si un intento anterior falló después de crear la escena, se reutiliza: no se duplica.
+      let scene = sceneId
+      if (!scene) {
+        scene = await createTellScene(sid, what, afterSceneId, sceneIndex)
+        setSceneId(scene)
+      }
       await writeAndExtract(scene)
     } catch (err) {
       toast.error(`No se pudo escribir la escena: ${describeError(err, 'error desconocido')}`)
