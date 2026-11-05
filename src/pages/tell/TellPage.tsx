@@ -320,6 +320,12 @@ export default function TellPage() {
               <Feather className="size-4" />
               Escribirla
             </Button>
+            {/* Sin mundo todavía: la otra puerta (planificar primero) sigue abierta, también con cero mundos en el móvil. */}
+            {!worldId && (
+              <Link to="/worlds/create" className="block min-h-10 text-center text-sm text-muted-foreground underline underline-offset-4 decoration-border">
+                Prefiero planificar el mundo primero
+              </Link>
+            )}
           </div>
         )}
 

@@ -9,7 +9,7 @@ import {
 import type { StoryGraph, World } from '@/services/api'
 import { describeError } from '@/services/telemetry'
 import { LINES } from '@/components/world/worldLines'
-import { orderScenes, provisionalName } from './tellFlow'
+import { firstSentence, orderScenes, provisionalName } from './tellFlow'
 
 /**
  * Contar primero, pantalla 4: el mundo que crece. La historia como lista de
@@ -64,13 +64,18 @@ export default function TellStoryPage() {
         return nodes.filter(n => n.node_kind === 'moment').map(n => n.description ?? '').filter(Boolean).join(' ')
       }))
       const r = await refinePremise([world.premise, ...whats].filter(Boolean).join('\n\n'))
-      const provisional = world.name === provisionalName(world.premise) || /^Sin título/.test(world.name)
+      // El nombre y la premisa son provisionales si salieron del «qué pasa» (sin el « (2)» del sufijo).
+      const baseName = world.name.replace(/\s\(\d+\)$/, '')
+      const provisionalName_ = baseName === provisionalName(world.premise) || baseName === provisionalName(whats[0] ?? '') || /^Sin título/.test(baseName)
+      const provisionalPremise = !world.premise.trim() || world.premise.trim() === firstSentence(whats[0] ?? '')
+      const name = provisionalName_ && r.name ? r.name : world.name
+      const premise = provisionalPremise && r.premise ? r.premise : world.premise
       const updated = await updateWorld(world.id, {
-        name: provisional && r.name ? r.name : world.name,
-        premise: world.premise, description: world.description ?? '',
+        name,
+        premise, description: world.description ?? '',
         rule: r.rule || '', scarcity: r.scarcity || '', power: r.power || '',
       })
-      setWorld({ ...world, ...updated, rule: r.rule || '', scarcity: r.scarcity || '', power: r.power || '', name: provisional && r.name ? r.name : world.name })
+      setWorld({ ...world, ...updated, rule: r.rule || '', scarcity: r.scarcity || '', power: r.power || '', name, premise })
     } catch (err) {
       toast.error(`No se pudo leer el mundo: ${describeError(err, 'error desconocido')}`)
     } finally {
