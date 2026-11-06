@@ -1426,6 +1426,21 @@ export interface KeepResult {
   places: KeptItem[]
 }
 
+// --- Sugerir qué pasa después (2026-11-06) ---
+
+export interface SceneSuggestion {
+  title: string
+  what: string      // dos o tres frases con acciones
+  who: string[]     // solo gente que ya existe
+  where: string     // un sitio que ya existe, o vacío
+  because: string   // de qué parte de lo anterior sale
+}
+
+/** Tres ideas de qué puede pasar después de esa escena, con el contexto del mundo. Nada se guarda. */
+export function suggestNext(sceneId: number, requestId?: string): Promise<{ suggestions: SceneSuggestion[] }> {
+  return request<{ suggestions: SceneSuggestion[] }>(`/scene/suggest/${sceneId}`, { method: 'POST', body: '{}', requestId })
+}
+
 /** Pide al generador qué personas y sitios nuevos trae la prosa vigente. Nada se guarda. */
 export function extractScene(sceneId: number, requestId?: string): Promise<SceneExtractResult> {
   return request<SceneExtractResult>(`/scene/extract/${sceneId}`, { method: 'POST', body: '{}', requestId })

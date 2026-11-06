@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Feather, Loader2, MoreHorizontal, PenLine, RefreshCw, Server } from 'lucide-react'
+import { ArrowLeft, Feather, Lightbulb, Loader2, MoreHorizontal, PenLine, RefreshCw, Server } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useInstallation } from '@/hooks/useInstallation'
 import {
   dismissExtracted, extractScene, generateScene, getGenerationProgress, getLocationGraph, getWorldById, getWorldDetail,
-  keepExtracted, listSceneOutputs, saveSceneProse,
+  keepExtracted, listSceneOutputs, saveSceneProse, suggestNext,
 } from '@/services/api'
-import type { PersonFound, PlaceFound, World } from '@/services/api'
+import type { PersonFound, PlaceFound, SceneSuggestion, World } from '@/services/api'
 import { describeError, newRequestId } from '@/services/telemetry'
 import { notifyError } from '@/lib/notifyError'
 import { proseParagraphs } from '@/lib/prose'
@@ -252,6 +252,29 @@ export default function TellPage() {
     goStory()
   }
 
+  // «Sugiéreme ideas»: tres ideas con el contexto del mundo y lo contado. Tocar una la
+  // pone en «¿Qué pasa?», donde se corrige antes de escribirla; nada se guarda antes.
+  const [ideas, setIdeas] = useState<SceneSuggestion[] | null>(null)
+  const [suggesting, setSuggesting] = useState(false)
+  const handleSuggest = async () => {
+    if (!afterSceneId) return
+    setSuggesting(true)
+    try {
+      const res = await suggestNext(afterSceneId, newRequestId())
+      setIdeas(res.suggestions)
+      if (res.suggestions.length === 0) toast('No se me ocurre nada con lo que hay. Escríbelo tú.')
+    } catch (err) {
+      toast.error(`No se pudieron sugerir ideas: ${describeError(err, 'error desconocido')}`)
+    } finally {
+      setSuggesting(false)
+    }
+  }
+  const pickIdea = (idea: SceneSuggestion) => {
+    setWhat(idea.what)
+    setIdeas(null)
+    whatRef.current?.focus()
+  }
+
   const insertChip = (name: string) => {
     setWhat(prev => (prev.trim() ? `${prev.replace(/\s+$/, '')} ${name}` : name))
     whatRef.current?.focus()
@@ -302,6 +325,27 @@ export default function TellPage() {
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   {chips.people.map(n => <button key={`p:${n}`} type="button" onClick={() => insertChip(n)} className="min-h-9 rounded-full border border-entity-character/40 bg-entity-character-light px-3 text-sm text-foreground">{n}</button>)}
                   {chips.places.map(n => <button key={`s:${n}`} type="button" onClick={() => insertChip(n)} className="min-h-9 rounded-full border border-entity-location/40 bg-entity-location-light px-3 text-sm text-foreground">{n}</button>)}
+                </div>
+              )}
+              {afterSceneId && (
+                <div className="mb-3 space-y-2">
+                  <Button type="button" variant="outline" onClick={() => void handleSuggest()} disabled={suggesting} className="min-h-11 w-full gap-2">
+                    {suggesting ? <Loader2 className="size-4 animate-spin" /> : <Lightbulb className="size-4" />}
+                    {suggesting ? 'Pensando ideas…' : 'Sugiéreme ideas'}
+                  </Button>
+                  {ideas && ideas.length > 0 && (
+                    <ul className="space-y-2">
+                      {ideas.map(idea => (
+                        <li key={idea.title + idea.what}>
+                          <button type="button" onClick={() => pickIdea(idea)} className="w-full rounded-xl border border-border bg-card px-4 py-3 text-left">
+                            <p className="font-display text-[17px] text-foreground">{idea.title}</p>
+                            <p className="mt-1 text-sm text-foreground/90">{idea.what}</p>
+                            {idea.because && <p className="mt-1.5 text-xs italic text-muted-foreground">{idea.because}</p>}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
               <label className="block">
