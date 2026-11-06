@@ -9,6 +9,8 @@ import NotFoundPage from './pages/NotFoundPage'
 import ErrorPage from './pages/ErrorPage'
 import WorldDetailPage from './pages/home/WorldDetailPage'
 import SettingsPage from './pages/settings/SettingsPage'
+import TellPage from './pages/tell/TellPage'
+import TellStoryPage from './pages/tell/TellStoryPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <LoginPage />, errorElement: <ErrorPage /> },
@@ -24,6 +26,10 @@ export const router = createBrowserRouter([
           { path: 'worlds', element: <HomePage /> },
           { path: 'worlds/create', element: <CreateWorldPage /> },
           { path: 'worlds/:id', element: <WorldDetailPage /> },
+          // Contar primero (2026-11-03): la puerta básica, móvil primero.
+          { path: 'contar', element: <TellPage /> },
+          { path: 'worlds/:id/contar', element: <TellPage /> },
+          { path: 'worlds/:id/contar/:storyId', element: <TellStoryPage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'settings/installation', element: <Navigate to="/settings?tab=installation" replace /> },
         ],

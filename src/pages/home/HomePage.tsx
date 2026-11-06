@@ -8,7 +8,11 @@ import type { World } from '../../services/api'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { WorldCardSkeleton } from '@/components/skeletons/WorldCardSkeleton'
-import { Plus } from 'lucide-react'
+import { Plus, Feather } from 'lucide-react'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+
+/** Contar primero (2026-11-03): en el móvil la puerta por defecto es contar, no crear mundo. */
+const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
 
 const container = {
   hidden: {},
@@ -29,6 +33,7 @@ export default function HomePage() {
   const [worlds, setWorlds] = useState<World[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [tellOpen, setTellOpen] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -37,10 +42,18 @@ export default function HomePage() {
 
   useEffect(() => {
     getWorlds()
-      .then(data => setWorlds(Array.isArray(data) ? data : []))
+      .then(data => {
+        const list = Array.isArray(data) ? data : []
+        // Sin mundos, el móvil abre en «¿De qué va?»; el escritorio no cambia.
+        if (list.length === 0 && isPhone()) {
+          navigate('/contar', { replace: true })
+          return
+        }
+        setWorlds(list)
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [navigate])
 
   if (loading) {
     return (
@@ -111,13 +124,38 @@ export default function HomePage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t('home.worldCount', { count: worlds.length })}</p>
         </div>
-        <div className="flex gap-2 basis-full md:basis-auto">
-          <Button onClick={() => navigate('/worlds/create')} className="min-h-11 md:min-h-0 flex-1 md:flex-none">
+        <div className="flex flex-col gap-2 basis-full md:basis-auto md:flex-row">
+          <Button onClick={() => setTellOpen(true)} className="min-h-11 md:hidden">
+            <Feather className="w-4 h-4" />
+            Contar
+          </Button>
+          <Button onClick={() => navigate('/worlds/create')} variant="outline" className="min-h-11 md:min-h-0 md:flex-none">
             <Plus className="w-4 h-4" />
             {t('home.createButton')}
           </Button>
         </div>
       </div>
+
+      {/* Móvil: «Contar» pregunta en qué mundo, o uno nuevo. */}
+      <Dialog open={tellOpen} onOpenChange={setTellOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogTitle className="font-display text-xl font-normal">¿En qué mundo?</DialogTitle>
+          <ul className="space-y-1">
+            {worlds.map(w => (
+              <li key={w.id}>
+                <button type="button" onClick={() => navigate(`/worlds/${w.id}/contar`)} className="w-full min-h-11 rounded-md px-3 text-left font-display text-[17px] hover:bg-accent">
+                  {w.name}
+                </button>
+              </li>
+            ))}
+            <li className="border-t border-border pt-1">
+              <button type="button" onClick={() => navigate('/contar')} className="w-full min-h-11 rounded-md px-3 text-left text-sm text-primary hover:bg-accent">
+                Mundo nuevo
+              </button>
+            </li>
+          </ul>
+        </DialogContent>
+      </Dialog>
 
       <motion.div
         className="flex flex-col gap-3 max-w-3xl"

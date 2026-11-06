@@ -1384,3 +1384,74 @@ export function listSceneOutputs(sceneId: number): Promise<SceneOutput[]> {
 export function revertSceneOutput(sceneId: number, version: number): Promise<void> {
   return request<void>(`/scene/output/revert/${sceneId}/${version}`, { method: 'POST' })
 }
+
+// --- Contar primero: lo que la prosa trae al mundo (2026-11-03) ---
+// Espejo de internal/generation/domain/payloads.go y story_scene/app/extract.go.
+
+export interface PersonFound {
+  name: string
+  who: string      // quién es, en una frase (se guarda como premisa)
+  evidence: string // una frase literal de la prosa
+  wants: string    // ficha parcial: quiere
+  never: string    // ficha parcial: nunca
+  when?: { si: string; hace: string }
+}
+
+export interface PlaceFound {
+  name: string
+  evidence: string
+  rule: string     // «Aquí siempre…»
+  things: string[]
+}
+
+export interface SceneExtractResult {
+  people: PersonFound[]
+  places: PlaceFound[]
+}
+
+export interface KeepRequest {
+  people: PersonFound[]
+  places: PlaceFound[]
+}
+
+/** Resultado por tarjeta: error "duplicate" cuando el mundo ya tenía ese nombre. */
+export interface KeptItem {
+  name: string
+  id: number
+  error?: string
+}
+
+export interface KeepResult {
+  people: KeptItem[]
+  places: KeptItem[]
+}
+
+// --- Sugerir qué pasa después (2026-11-06) ---
+
+export interface SceneSuggestion {
+  title: string
+  what: string      // dos o tres frases con acciones
+  who: string[]     // solo gente que ya existe
+  where: string     // un sitio que ya existe, o vacío
+  because: string   // de qué parte de lo anterior sale
+}
+
+/** Tres ideas de qué puede pasar después de esa escena, con el contexto del mundo. Nada se guarda. */
+export function suggestNext(sceneId: number, requestId?: string): Promise<{ suggestions: SceneSuggestion[] }> {
+  return request<{ suggestions: SceneSuggestion[] }>(`/scene/suggest/${sceneId}`, { method: 'POST', body: '{}', requestId })
+}
+
+/** Pide al generador qué personas y sitios nuevos trae la prosa vigente. Nada se guarda. */
+export function extractScene(sceneId: number, requestId?: string): Promise<SceneExtractResult> {
+  return request<SceneExtractResult>(`/scene/extract/${sceneId}`, { method: 'POST', body: '{}', requestId })
+}
+
+/** Se queda con las tarjetas: crea personas (ficha parcial, nodo, reparto) y sitios (regla, cosas, lugar de la escena). */
+export function keepExtracted(sceneId: number, body: KeepRequest): Promise<KeepResult> {
+  return request<KeepResult>(`/scene/extract/${sceneId}/keep`, { method: 'POST', body: JSON.stringify(body) })
+}
+
+/** Tira nombres: no se vuelven a proponer en esa historia. */
+export function dismissExtracted(sceneId: number, names: string[]): Promise<void> {
+  return request<void>(`/scene/extract/${sceneId}/dismiss`, { method: 'POST', body: JSON.stringify({ names }) })
+}
